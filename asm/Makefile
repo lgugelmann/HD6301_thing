@@ -1,4 +1,4 @@
-PROGRAMS = blink
+PROGRAMS = blink sci_hello
 
 ########################################
 
