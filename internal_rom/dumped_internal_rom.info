@@ -1,0 +1,113 @@
+* Memory map that the code seems to assume:
+* Looks like single-chip mode (mode 7) because it's using P3_DDR (in all other
+* modes P3 is the data bus)
+* 0000 - 001F Internal registers
+* 0020 - 007F -- Unusable --
+* 0080 - 00FF Internal RAM
+* 0100 - EFFF -- Unusable --
+* F000 - FFFF Internal ROM
+
+* CPU Registers
+label 0000 P1_DDR
+label 0001 P2_DDR
+label 0002 P1_DR
+label 0003 P2_DR_MR
+label 0004 P3_DDR
+label 0005 P4_DDR
+label 0006 P3_DR
+label 0007 P4_DR
+label 0008 TIMER_CSR
+label 0009 TIMER_COUNTER_H
+label 000A TIMER_COUNTER_L
+label 000B TIMER_OUT_COMP_H
+label 000C TIMER_OUT_COMP_L
+label 000F P3_CSR
+label 0010 SCI_RMCR
+label 0011 SCI_TRCSR
+label 0012 SCI_RDR
+label 0013 SCI_TDR
+label 0014 RAM_CR
+
+*
+* Various interesting memory locations
+*
+
+* Initialized to 1166
+label 00D2 TMP_0
+label 00D3 TMP_1
+* F0E0 clears the top bit of this one
+* F926 tests $10
+label 00D4 Bitfield_mystery
+label 00E9 ROM_checksum
+
+
+* Not clear what's in this range - but it's not all code. Treating it as code
+* leads to instructions spanning over F090 which is where reset vectors point
+* to. Marking it as data for now.
+data F000-F08F
+
+* Reset routine
+prepend F090
+comment F093 Set all P1 pins to output
+comment F095 Output 0F on P1
+bin F098
+comment F099 Set P2.4 and P2.1 as output, P2.3,P2.2,P2.0 as input
+comment F09B Output 1 on P2.4, P2.1
+comment F0AB Init stack to 00FF (top of internal RAM)
+comment F09D Set up P3
+comment F0A4 Set up P4 - top 4 bits output / bottom 4 input
+comment F0AE Set up timer: enable output compare and input capture IRQ
+bin     F0AF
+comment F0B2 Run a few RAM tests with various bit patterns
+comment F0B9 Initialize RAM to 0
+
+* RAM self test. Called from Reset routine.
+label   F0BE RAM_self_test
+prepend F0BE
+comment F0BE RAM Self-test. The code writes the value in A to every location in
+comment F0BE RAM then reads it back again. If the test fails P3.3 goes high.
+bin     F0C9
+
+* Startup code after reset?
+prepend F0D2
+label   F0D2 startup
+comment F0D9 XOR the entire rom contents
+bin     F0D3
+comment F0E0 Clear top bit of bitfield(?)
+
+* Routine called from startup
+prepend F8F4
+label   F8F4 startup_p4_bitflipping_orchestrator
+comment F8F4 Parameters: X register, TMP_0 (00D2)
+
+* ZF906
+prepend F906
+
+* Some P4 bit flipping
+prepend F915
+label   F915 p4_bitflippy_1
+comment F915 Parameters: TMP_1 (00D3), used as A parameter for p4_bitflippy_2
+
+* Some P4 bit flipping
+prepend F95B
+label   F95B p4_bitflippy_2
+comment F95B Parameters: A register. Bits set/clear changes whether P4.6 is set.
+
+* Some P4 bit flipping
+prepend F934
+label   F934 p4_bitflippy_3
+comment F934 Parameters: (none)
+
+* Some P4 bit flipping
+prepend F94B
+label   F94B p4_bitflippy_5
+comment F94B Parameters: (none)
+
+* Some P4 bit flipping
+prepend F988
+label   F988 p4_bitflippy_4
+comment F988 Parameters: A register, TMP_0 (if nonzero some extra P4 bitflipping)
+end
+
+* F9B8
+prepend F9B8
