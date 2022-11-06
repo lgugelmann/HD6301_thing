@@ -1,4 +1,4 @@
-PROGRAMS = blink sci_hello sci_echo
+PROGRAMS = blink blink_parametrized sci_hello sci_echo
 
 ########################################
 
