@@ -15,17 +15,17 @@ class Programmer:
     COMMAND_STBY_OFF = 1
     COMMAND_RESET  = 3
 
-    MODE_GPIO = 0
-    MODE_CBUS = 1
+    MODE_UNSET = 0
+    MODE_GPIO = 1
+    MODE_CBUS = 2
 
     def __init__(self, ftdi_url):
         self.ftdi_url = ftdi_url
         self.ftdi = Ftdi()
         self.gpio = GpioAsyncController()
-        self.mode = self.MODE_GPIO
+        self.mode = self.MODE_UNSET
 
     def __enter__(self):
-        self._set_mode(self.MODE_CBUS)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -79,10 +79,7 @@ class Programmer:
         self.ftdi.set_cbus_gpio(command | self.CLK)
         self.ftdi.set_cbus_gpio(command)
 
-    def flash_write_data(self, start_address, data, stay_stby=False):
-        self.send_cbus_command(self.COMMAND_STBY_ON)
-        self.send_cbus_command(self.COMMAND_RESET)
-
+    def flash_write_data(self, start_address, data):
         for start in range(0, len(data), self.SECTOR_SIZE):
             end = min(start+self.SECTOR_SIZE, len(data))
             address = start_address + start
@@ -94,18 +91,9 @@ class Programmer:
             for i in range(start, end):
                 self._flash_write_byte(start_address + i, data[i])
 
-        if not stay_stby:
-            self.send_cbus_command(self.COMMAND_STBY_OFF)
-
-    def ram_write_data(self, start_address, data, stay_stby=False):
-        self.send_cbus_command(self.COMMAND_STBY_ON)
-        self.send_cbus_command(self.COMMAND_RESET)
-
+    def ram_write_data(self, start_address, data):
         for index, byte in enumerate(data):
             self._write_byte(start_address + index, byte)
-
-        if not stay_stby:
-            self.send_cbus_command(self.COMMAND_STBY_OFF)
 
 
 def write_flash_command(args):
@@ -134,11 +122,11 @@ def write_ram_command(args):
         sys.exit(1)
 
     with Programmer(args.ftdi_url) as prog:
-        prog.ram_write_data(base_address, data, stay_stby=args.stay_stby)
+        prog.ram_write_data(base_address, data)
 
 def write_byte_command(args):
     with Programmer(args.ftdi_url) as prog:
-        prog.ram_write_data(args.address, [args.byte], stay_stby=args.stay_stby)
+        prog.ram_write_data(args.address, [args.byte])
 
 def send_command_command(args):
     command = args.command
@@ -160,8 +148,6 @@ if __name__ == '__main__':
     write_flash_parser.add_argument('file')
     write_flash_parser.add_argument('--size', type=lambda x: int(x,0),
                                     default=0x10000)
-    write_flash_parser.add_argument('--stay_stby', action=argparse.BooleanOptionalAction,
-                                    default=False)
     write_flash_parser.set_defaults(func=write_flash_command)
 
     write_ram_parser = subparsers.add_parser('write_ram')
@@ -169,15 +155,11 @@ if __name__ == '__main__':
     write_ram_parser.add_argument('file')
     write_ram_parser.add_argument('--size', type=lambda x: int(x,0),
                                   default=0x10000)
-    write_ram_parser.add_argument('--stay_stby', action=argparse.BooleanOptionalAction,
-                                  default=False)
     write_ram_parser.set_defaults(func=write_ram_command)
 
     write_byte_parser = subparsers.add_parser('write_byte')
     write_byte_parser.add_argument('address', type=lambda x: int(x, 0))
     write_byte_parser.add_argument('byte', type=lambda x: int(x, 0))
-    write_byte_parser.add_argument('--stay_stby', action=argparse.BooleanOptionalAction,
-                                   default=False)
     write_byte_parser.set_defaults(func=write_byte_command)
 
     arguments = parser.parse_args()
