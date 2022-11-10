@@ -29,8 +29,18 @@ class Programmer:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.ftdi.close()
-        self.gpio.close()
+        self._close_with_latency_workaround(self.ftdi)
+        self._close_with_latency_workaround(self.gpio.ftdi)
+
+    def _close_with_latency_workaround(self, ftdi):
+        if not ftdi.is_connected:
+            return
+        # This is a workaround for a bug in pyftdi. It sets the latency to 255
+        # on close which messes up serial latency. The two lines below do what
+        # freeze=False would do, except keeping the latency at 16.
+        ftdi.set_bitmode(0, Ftdi.BitMode.RESET)
+        ftdi.set_latency_timer(16)
+        ftdi.close(freeze=True)
 
     def _set_mode(self, mode):
         if mode == self.mode:
@@ -39,11 +49,11 @@ class Programmer:
         self.mode = mode
 
         if mode == self.MODE_GPIO:
-            self.ftdi.close()
+            self._close_with_latency_workaround(self.ftdi)
             self.gpio.configure(self.ftdi_url, direction=0xff)
 
         if mode == self.MODE_CBUS:
-            self.gpio.close()
+            self._close_with_latency_workaround(self.gpio.ftdi)
             self.ftdi.open_from_url(self.ftdi_url)
             self.ftdi.set_cbus_direction(self.CBUS_PORT_MASK, self.CBUS_PORT_MASK)
 
