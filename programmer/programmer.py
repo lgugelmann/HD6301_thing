@@ -156,6 +156,9 @@ def send_command_command(args):
     with Programmer(args.ftdi_url) as prog:
         prog.send_cbus_command(command)
 
+def reset_command(args):
+    with Programmer(args.ftdi_url) as prog:
+        prog.enter_stby()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='HD6301V1 in-circuit programmer')
@@ -180,6 +183,9 @@ if __name__ == '__main__':
     write_byte_parser.add_argument('address', type=lambda x: int(x, 0))
     write_byte_parser.add_argument('byte', type=lambda x: int(x, 0))
     write_byte_parser.set_defaults(func=write_byte_command)
+
+    reset_parser = subparsers.add_parser('reset')
+    reset_parser.set_defaults(func=reset_command)
 
     arguments = parser.parse_args()
     if not hasattr(arguments, 'func'):
