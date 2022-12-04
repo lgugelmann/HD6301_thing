@@ -105,6 +105,12 @@ class Programmer:
         for index, byte in enumerate(data):
             self._write_byte(start_address + index, byte)
 
+    def enter_stby(self):
+        # STBY is entered on the first WR strobe after 250ms+ of inactivity. We
+        # assume 250ms have already elapsed.
+        self._set_mode(self.MODE_GPIO)
+        self.gpio.write(0)
+
 
 def write_flash_command(args):
     with open(args.file, "rb") as input_file:
@@ -120,6 +126,7 @@ def write_flash_command(args):
         sys.exit(2)
 
     with Programmer(args.ftdi_url) as prog:
+        prog.enter_stby()
         prog.flash_write_data(base_address, data)
 
 def write_ram_command(args):
@@ -132,10 +139,12 @@ def write_ram_command(args):
         sys.exit(1)
 
     with Programmer(args.ftdi_url) as prog:
+        prog.enter_stby()
         prog.ram_write_data(base_address, data)
 
 def write_byte_command(args):
     with Programmer(args.ftdi_url) as prog:
+        prog.enter_stby()
         prog.ram_write_data(args.address, [args.byte])
 
 def send_command_command(args):
