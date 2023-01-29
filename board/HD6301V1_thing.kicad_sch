@@ -4515,7 +4515,7 @@
     (effects (font (size 1.27 1.27)) (justify right bottom))
     (uuid e09c06a7-0c73-4a7a-968e-5e2c1192d4d5)
   )
-  (text "- Power / programming LEDs\n- Tweak reset RC on 4053"
+  (text "- Power / programming LEDs\n- Tweak reset RC on 4053\n- i2c pullups on greenpak"
     (at 226.06 173.99 0)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid e21dca6d-bb8b-432f-9b7d-6d309c565189)
