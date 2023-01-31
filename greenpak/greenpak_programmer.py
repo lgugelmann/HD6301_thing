@@ -74,6 +74,14 @@ def write_command(args):
 
     i2c.terminate()
 
+def reset_command(args):
+    i2c = I2cController()
+    i2c.configure(args.ftdi_url)
+    ram = i2c.get_port(args.i2c_address_base)
+
+    ram.write([200, 0x02])
+
+    i2c.terminate()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=
@@ -90,6 +98,9 @@ if __name__ == '__main__':
     write.add_argument('location', choices=['ram', 'nvm', 'eeprom'])
     write.add_argument('file', type=str)
     write.set_defaults(func=write_command)
+
+    reset = subparsers.add_parser('reset')
+    reset.set_defaults(func=reset_command)
 
     arguments = parser.parse_args()
     if not hasattr(arguments, 'func'):
