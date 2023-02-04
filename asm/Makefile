@@ -13,6 +13,10 @@ all: $(patsubst %, %.bin, $(PROGRAMS))
 
 $(patsubst %,%_prog,$(PROGRAMS)): PROGRAM=$(subst _prog,,$@)
 $(patsubst %,%_prog,$(PROGRAMS)):
+	../pico_programmer/programmer.py write_flash $(PROGRAM).bin
+
+$(patsubst %,%_minipro_prog,$(PROGRAMS)): PROGRAM=$(subst _prog,,$@)
+$(patsubst %,%_minipro_prog,$(PROGRAMS)):
 	minipro -z -p AT28C64B -w $(PROGRAM).bin
 
 %.p: %.s
