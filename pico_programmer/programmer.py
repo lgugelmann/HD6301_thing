@@ -107,8 +107,11 @@ def write_flash_command(args):
     with open(args.file, "rb") as input_file:
         data = input_file.read()
 
-    base_address = args.address
-    if base_address + len(data) -1 > 0xffff:
+    base_address = 0x10000 - len(data)
+    if args.address:
+        base_address = args.address
+
+    if base_address + len(data) > 0x10000:
         print("Error: address + data size beyond 65k")
         sys.exit(1)
 
@@ -165,10 +168,8 @@ if __name__ == '__main__':
     subparsers = parser.add_subparsers()
 
     write_flash_parser = subparsers.add_parser('write_flash')
-    write_flash_parser.add_argument('address', type=lambda x: int(x, 0))
     write_flash_parser.add_argument('file')
-    write_flash_parser.add_argument('--size', type=lambda x: int(x,0),
-                                    default=0x10000)
+    write_flash_parser.add_argument('--address', type=lambda x: int(x, 0))
     write_flash_parser.set_defaults(func=write_flash_command)
 
     write_ram_parser = subparsers.add_parser('write_ram')
