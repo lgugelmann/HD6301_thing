@@ -10,10 +10,20 @@ pico_sdk_init()
 
 add_executable(pico_programmer
   pico_programmer.cpp
+  usb_descriptors.c
 )
 
-target_link_libraries(pico_programmer pico_stdlib)
+target_include_directories(pico_programmer PUBLIC
+  # make sure tinyusb can find tusb_config.h
+  ${CMAKE_CURRENT_LIST_DIR}
+)
+
+target_link_libraries(pico_programmer PUBLIC
+  pico_stdlib
+  tinyusb_device
+)
 
 pico_enable_stdio_usb(pico_programmer 1)
+pico_enable_stdio_uart(pico_programmer 0)
 
 pico_add_extra_outputs(pico_programmer)

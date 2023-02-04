@@ -2,8 +2,13 @@
 #include <cstdio>
 
 #include "hardware/gpio.h"
+#include "hardware/uart.h"
 #include "pico/binary_info.h"
 #include "pico/stdlib.h"
+#include "tusb.h"
+
+const uint8_t PROGRAM_CDC = 0;
+const uint8_t UART_CDC = 1;
 
 const uint UART0_TX_PIN = 0;
 const uint UART0_RX_PIN = 1;
@@ -139,12 +144,104 @@ void init_pins() {
   gpio_put(CLK_PIN, 0);
 }
 
+void cdc_to_uart_task() {
+  if (tud_cdc_n_available(UART_CDC)) {
+    uint8_t buf[64];
+    uint32_t count = tud_cdc_n_read(UART_CDC, buf, sizeof(buf));
+    uart_write_blocking(uart0, buf, count);
+  }
+}
+
+void uart_to_cdc_task() {
+  uint8_t count = 0;
+  while (uart_is_readable(uart0) && count < 32) {
+    char c = uart_getc(uart0);
+    tud_cdc_n_write_char(UART_CDC, c);
+    count += 1;
+  }
+  tud_cdc_n_write_flush(UART_CDC);
+}
+
+void programmer_task() {
+  int c = getchar_timeout_us(1);
+  if (c == PICO_ERROR_TIMEOUT) {
+    return;
+  }
+  switch (c) {
+    case 's':
+      enter_stby();
+      break;
+    case 'x':
+      exit_stby();
+      break;
+    case 'd':
+      // Set data bits
+      c = getchar_timeout_us(10000);
+      if (c == PICO_ERROR_TIMEOUT) {
+        putchar('e');
+        break;
+      }
+      set_data(c);
+      break;
+    case 'l':
+      // Set low address bits
+      c = getchar_timeout_us(10000);
+      if (c == PICO_ERROR_TIMEOUT) {
+        putchar('e');
+        break;
+      }
+      set_address_low(c);
+      break;
+    case 'h':
+      // Set high address bits
+      c = getchar_timeout_us(10000);
+      if (c == PICO_ERROR_TIMEOUT) {
+        putchar('e');
+        break;
+      }
+      set_address_high(c);
+      break;
+    case 'a':
+      strobe_as();
+      break;
+    case 'w':
+      write_cycle();
+      break;
+    case 'r': {
+      int addr_start_l = getchar_timeout_us(10000);
+      int addr_start_h = getchar_timeout_us(10000);
+      int addr_end_l = getchar_timeout_us(10000);
+      int addr_end_h = getchar_timeout_us(10000);
+      if (addr_start_l == PICO_ERROR_TIMEOUT ||
+          addr_start_h == PICO_ERROR_TIMEOUT ||
+          addr_end_l == PICO_ERROR_TIMEOUT ||
+          addr_end_h == PICO_ERROR_TIMEOUT) {
+        putchar('e');
+        break;
+      } else {
+        putchar('r');
+      }
+      uint16_t addr_start = addr_start_l + (addr_start_h << 8);
+      uint16_t addr_end = addr_end_l + (addr_end_h << 8);
+      read_data(addr_start, addr_end);
+      break;
+    }
+    default:
+      break;
+  }
+}
+
 int main(int argc, char* argv[]) {
   bi_decl(bi_program_description("HD6301 programmer."));
   bi_decl(bi_1pin_with_name(LED_PIN, "On-board LED"));
 
+  tusb_init();
+  // pico_stdio takes over the first CDC
   stdio_init_all();
+  uart_init(uart0, 15625);
 
+  gpio_set_function(UART0_TX_PIN, GPIO_FUNC_UART);
+  gpio_set_function(UART0_RX_PIN, GPIO_FUNC_UART);
   gpio_init_mask(PIN_MASK_OUT | PIN_MASK_IN);
   gpio_set_dir_out_masked(PIN_MASK_OUT);
   gpio_set_dir_in_masked(PIN_MASK_IN);
@@ -152,72 +249,10 @@ int main(int argc, char* argv[]) {
   init_pins();
 
   while (true) {
-    int c = getchar_timeout_us(1000);
-    if (c == PICO_ERROR_TIMEOUT) {
-      continue;
-    }
-    switch (c) {
-      case 's':
-        enter_stby();
-        break;
-      case 'x':
-        exit_stby();
-        break;
-      case 'd':
-        // Set data bits
-        c = getchar_timeout_us(10000);
-        if (c == PICO_ERROR_TIMEOUT) {
-          putchar('e');
-          break;
-        }
-        set_data(c);
-        break;
-      case 'l':
-        // Set low address bits
-        c = getchar_timeout_us(10000);
-        if (c == PICO_ERROR_TIMEOUT) {
-          putchar('e');
-          break;
-        }
-        set_address_low(c);
-        break;
-      case 'h':
-        // Set high address bits
-        c = getchar_timeout_us(10000);
-        if (c == PICO_ERROR_TIMEOUT) {
-          putchar('e');
-          break;
-        }
-        set_address_high(c);
-        break;
-      case 'a':
-        strobe_as();
-        break;
-      case 'w':
-        write_cycle();
-        break;
-      case 'r': {
-        int addr_start_l = getchar_timeout_us(10000);
-        int addr_start_h = getchar_timeout_us(10000);
-        int addr_end_l = getchar_timeout_us(10000);
-        int addr_end_h = getchar_timeout_us(10000);
-        if (addr_start_l == PICO_ERROR_TIMEOUT ||
-            addr_start_h == PICO_ERROR_TIMEOUT ||
-            addr_end_l == PICO_ERROR_TIMEOUT ||
-            addr_end_h == PICO_ERROR_TIMEOUT) {
-          putchar('e');
-          break;
-        } else {
-          putchar('r');
-        }
-        uint16_t addr_start = addr_start_l + (addr_start_h << 8);
-        uint16_t addr_end = addr_end_l + (addr_end_h << 8);
-        read_data(addr_start, addr_end);
-        break;
-      }
-      default:
-        break;
-    }
+    tud_task();
+    cdc_to_uart_task();
+    uart_to_cdc_task();
+    programmer_task();
   }
   return 0;
 }
