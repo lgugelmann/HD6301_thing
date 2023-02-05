@@ -238,7 +238,7 @@ int main(int argc, char* argv[]) {
   tusb_init();
   // pico_stdio takes over the first CDC
   stdio_init_all();
-  uart_init(uart0, 15625);
+  uart_init(uart0, 62500);
 
   gpio_set_function(UART0_TX_PIN, GPIO_FUNC_UART);
   gpio_set_function(UART0_RX_PIN, GPIO_FUNC_UART);
