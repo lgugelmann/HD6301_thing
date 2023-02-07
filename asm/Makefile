@@ -7,17 +7,19 @@ P2BIN = p2bin
 
 ########################################
 
+.SUFFIXES:
+
 .PHONY: all
 
-all: $(patsubst %, %.bin, $(PROGRAMS))
+all: $(PROGRAMS)
 
-$(patsubst %,%_prog,$(PROGRAMS)): PROGRAM=$(subst _prog,,$@)
-$(patsubst %,%_prog,$(PROGRAMS)):
-	../pico_programmer/programmer.py write_flash $(PROGRAM).bin
+$(PROGRAMS): %: %.bin
 
-$(patsubst %,%_minipro_prog,$(PROGRAMS)): PROGRAM=$(subst _prog,,$@)
-$(patsubst %,%_minipro_prog,$(PROGRAMS)):
-	minipro -z -p AT28C64B -w $(PROGRAM).bin
+$(patsubst %,%_prog,$(PROGRAMS)): %_prog: %.bin
+	../pico_programmer/programmer.py write_flash $<
+
+$(patsubst %,%_minipro_prog,$(PROGRAMS)): %_minipro_prog: %.bin
+	minipro -z -p AT28C64B -w $<
 
 %.p: %.s
 	$(ASL) -L $<
