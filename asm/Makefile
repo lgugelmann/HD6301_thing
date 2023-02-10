@@ -1,4 +1,5 @@
-PROGRAMS = blink blink_parametrized sci_hello sci_echo
+PROGRAMS = blink blink_parametrized sci_hello sci_echo irq_test ps2_keyboard
+DEP = $(PROGRAMS:%=%.d)
 
 ########################################
 
@@ -15,19 +16,26 @@ all: $(PROGRAMS)
 
 $(PROGRAMS): %: %.bin
 
+
 $(patsubst %,%_prog,$(PROGRAMS)): %_prog: %.bin
 	../pico_programmer/programmer.py write_flash $<
 
 $(patsubst %,%_minipro_prog,$(PROGRAMS)): %_minipro_prog: %.bin
 	minipro -z -p AT28C64B -w $<
 
+-include $(DEP)
+
+%.d: %.s
+	./depgen.py $< > $@
+
 %.p: %.s
 	$(ASL) -L $<
 
 %.bin: %.p
-	$(P2BIN) $<
+	$(P2BIN) -r 0xe000-0xffff $<
 
 clean:
 	$(RM) $(patsubst %,%.bin,$(PROGRAMS))
 	$(RM) $(patsubst %,%.lst,$(PROGRAMS))
 	$(RM) $(patsubst %,%.p,$(PROGRAMS))
+	$(RM) $(patsubst %,%.d,$(PROGRAMS))
