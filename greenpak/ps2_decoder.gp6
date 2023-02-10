@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<GPDProject version="25" oldestCompatibleVersion="25" GPDVersion="6.32.002" lastChange="04/02/2023 13:24">
+<GPDProject version="25" oldestCompatibleVersion="25" GPDVersion="6.32.002" lastChange="05/02/2023 13:59">
     <generalProjectSettings/>
     <chip family="04" type="06" friendlyName="GreenPAK 6" partNumber="36" package="16">
-        <nvmData registerLenght="2048">51 20 0 91 13 3D 11 F4 47 D2 1F 4D 7F 44 FD 51 F5 47 D6 F 0 0 0 0 0 10 FD 17 0 0 0 0 0 0 0 0 80 49 0 0 10 1 0 0 0 0 0 0 0 0 0 0 D0 2 ED F 0 0 24 FD D3 4F FD D5 6F FD D7 8F FE 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 71 71 0 80 50 0 30 0 0 30 80 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 14 22 30 C 0 0 0 0 0 0 0 0 50 0 0 0 0 0 0 0 0 D7 7 0 0 0 0 0 0 0 20 0 1 0 8 0 2 1 0 0 2 0 1 0 0 2 1 0 0 2 0 1 0 0 2 1 0 30 2 4 1 21 0 13 0 1F 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 A5</nvmData>
+        <nvmData registerLenght="2048">51 20 0 91 13 3D 11 F4 47 D2 1F 4D 7F 44 FD 51 F5 47 D6 F 0 0 0 0 0 10 FD 17 0 0 0 0 0 0 0 0 A6 49 0 0 10 1 0 0 0 0 0 0 0 0 0 0 40 2 ED F 0 0 24 FD D3 4F FD D5 6F FD D7 8F FE 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 71 71 0 80 50 0 30 0 0 30 80 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 14 22 30 C 0 0 0 0 0 0 0 0 50 0 0 0 0 0 0 0 0 D7 7 0 0 0 0 0 0 0 20 0 1 0 8 0 2 1 0 0 2 0 1 0 0 2 1 0 0 2 0 1 2 0 52 20 1 30 2 4 1 21 0 13 0 1F 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 A5</nvmData>
         <eepromData id="0">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</eepromData>
-        <checksum crc32="0x8820FFEE" version="7"/>
+        <checksum crc32="0xCB52EF2B" version="7"/>
         <VDDItem id="0">
             <item id="0" caption="VDD (PIN 20)">
                 <graphics pos="(-590.00,30.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
@@ -211,7 +211,7 @@
             <graphics pos="(430.00,-30.00)" angle="0" flipping="0" hidden="1" tOrigin="(155.00,60.00)"/>
         </item>
         <item id="51" caption="MF5 (3-bit LUT11, DFF/LATCH14, 8-bit CNT5/DLY5)">
-            <graphics pos="(430.00,130.00)" angle="0" flipping="0" hidden="1" tOrigin="(155.00,60.00)"/>
+            <graphics pos="(-132.78,269.07)" angle="0" flipping="0" hidden="1" tOrigin="(155.00,60.00)"/>
         </item>
         <item id="52" caption="MF6 (3-bit LUT12, DFF/LATCH15, 8-bit CNT6/DLY6)">
             <graphics pos="(-511.11,280.00)" angle="0" flipping="0" hidden="1" tOrigin="(155.00,60.00)"/>
@@ -287,7 +287,7 @@
         </CNTDLY>
         <LUT id="69" regularShape="0" mode="0">
             <item id="69" caption="3-bit LUT11 (MF5)">
-                <graphics pos="(565.00,175.00)" angle="90" flipping="0" hidden="1" tOrigin="(20.00,15.00)"/>
+                <graphics pos="(2.22,314.07)" angle="90" flipping="0" hidden="1" tOrigin="(20.00,15.00)"/>
             </item>
         </LUT>
         <item id="70" caption="DFF/LATCH14 (MF5)">
@@ -295,7 +295,7 @@
         </item>
         <CNTDLY id="71" externalClockFrequence="0" externalClockFreqUnit="kHz">
             <item id="71" caption="8-bit CNT5/DLY5 (MF5)">
-                <graphics pos="(500.00,-50.00)" angle="0" flipping="0" hidden="1" tOrigin="(30.00,16.00)"/>
+                <graphics pos="(-7.78,313.07)" angle="0" flipping="0" hidden="0" tOrigin="(30.00,16.00)"/>
             </item>
         </CNTDLY>
         <LUT id="72" regularShape="0" mode="0">
@@ -304,7 +304,7 @@
             </item>
         </LUT>
         <item id="73" caption="DFF/LATCH15 (MF6)">
-            <graphics pos="(-285.56,267.78)" angle="0" flipping="0" hidden="0" tOrigin="(25.00,10.00)"/>
+            <graphics pos="(-249.17,332.77)" angle="0" flipping="0" hidden="0" tOrigin="(25.00,10.00)"/>
         </item>
         <CNTDLY id="74" externalClockFrequence="0" externalClockFreqUnit="kHz">
             <item id="74" caption="8-bit CNT6/DLY6 (MF6)">
@@ -469,25 +469,28 @@
             <points/>
         </wire>
         <wire output="206" input="645" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="20" wireText="NET20" wireState="0">
-            <points>(-338.00,283.00); (-307.00,283.00)</points>
+            <points>(-338.00,283.00); (-291.00,283.00); (-291.00,348.00); (-270.00,348.00)</points>
         </wire>
         <wire output="1" input="647" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="-1" wireText="GND" wireState="1">
             <points/>
         </wire>
-        <wire output="203" input="499" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="25" wireText="NET25" wireState="0">
-            <points>(-216.00,278.00); (-195.00,278.00); (-195.00,246.00); (-528.00,246.00)</points>
-        </wire>
         <wire output="144" input="646" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="28" wireText="NET28" wireState="0">
-            <points>(-528.00,326.00); (-260.00,326.00); (-260.00,308.00)</points>
-        </wire>
-        <wire output="50" input="650" autoRouting="1" pen="#ff8000ff;1.00;1;32;128" lineType="2" protected="1" CWLid="29" wireText="NET29" wireState="1">
-            <points/>
+            <points>(-528.00,326.00); (-279.00,326.00); (-279.00,394.00); (-224.00,394.00); (-224.00,373.00)</points>
         </wire>
         <wire output="0" input="506" autoRouting="1" pen="#ff8000ff;1.00;1;32;128" lineType="2" protected="1" CWLid="-1" wireText="VDD" wireState="1">
             <points/>
         </wire>
         <wire output="203" input="505" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="25" wireText="NET25" wireState="0">
-            <points>(-216.00,278.00); (-195.00,278.00); (-195.00,386.00); (-528.00,386.00)</points>
+            <points>(-179.00,343.00); (-159.00,343.00); (-159.00,386.00); (-528.00,386.00)</points>
+        </wire>
+        <wire output="206" input="643" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="20" wireText="NET20" wireState="0">
+            <points>(-338.00,283.00); (-51.00,283.00); (-51.00,334.00); (-29.00,334.00)</points>
+        </wire>
+        <wire output="202" input="499" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="30" wireText="NET30" wireState="0">
+            <points>(72.00,329.00); (93.00,329.00); (93.00,246.00); (-528.00,246.00)</points>
+        </wire>
+        <wire output="50" input="650" autoRouting="1" pen="#ff8000ff;1.00;1;32;128" lineType="2" protected="1" CWLid="29" wireText="NET29" wireState="1">
+            <points/>
         </wire>
     </chip>
     <emulatorConfiguration version="4" oldestCompatibleVersion="4">
@@ -685,6 +688,9 @@
                     <pinProbe instrumentId="26" measurementFlags="1">
                         <IdDto category="2" componentType="16" componentNumber="7" pinNumber="0"/>
                     </pinProbe>
+                    <pinProbe instrumentId="27" measurementFlags="1">
+                        <IdDto category="100" componentType="45" componentNumber="0" pinNumber="17"/>
+                    </pinProbe>
                 </pinProbes>
                 <groups>
                     <group name="GreenPAK -&gt; PIN 19 -&gt; OUT">
@@ -711,6 +717,13 @@
                     <group name="GreenPAK -&gt; CNT7/DLY7 -&gt; nOUT">
                         <waveforms>
                             <WaveformIdData analysisType="0" pinIdStr="2;16;7;0" xAxisBinding="0;;-1;-1;-1">
+                                <parameters/>
+                            </WaveformIdData>
+                        </waveforms>
+                    </group>
+                    <group name="IRQB (PIN 17)">
+                        <waveforms>
+                            <WaveformIdData analysisType="0" pinIdStr="100;45;0;17" xAxisBinding="0;;-1;-1;-1">
                                 <parameters/>
                             </WaveformIdData>
                         </waveforms>
@@ -895,6 +908,12 @@
                     <waveform>
                         <waveformSetup penColor="#26e056" penWidth="2" style="0" attributes="1" symbol="-1" symSize="6" symColor="#ff0000"/>
                         <WaveformIdData analysisType="0" pinIdStr="100;45;0;9" xAxisBinding="0;;-1;-1;-1">
+                            <parameters/>
+                        </WaveformIdData>
+                    </waveform>
+                    <waveform>
+                        <waveformSetup penColor="#26e056" penWidth="2" style="0" attributes="1" symbol="-1" symSize="6" symColor="#ff0000"/>
+                        <WaveformIdData analysisType="0" pinIdStr="100;45;0;17" xAxisBinding="0;;-1;-1;-1">
                             <parameters/>
                         </WaveformIdData>
                     </waveform>
