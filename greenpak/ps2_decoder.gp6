@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<GPDProject version="25" oldestCompatibleVersion="25" GPDVersion="6.32.002" lastChange="05/02/2023 13:59">
+<GPDProject version="25" oldestCompatibleVersion="25" GPDVersion="6.32.002" lastChange="10/02/2023 23:51">
     <generalProjectSettings/>
     <chip family="04" type="06" friendlyName="GreenPAK 6" partNumber="36" package="16">
-        <nvmData registerLenght="2048">51 20 0 91 13 3D 11 F4 47 D2 1F 4D 7F 44 FD 51 F5 47 D6 F 0 0 0 0 0 10 FD 17 0 0 0 0 0 0 0 0 A6 49 0 0 10 1 0 0 0 0 0 0 0 0 0 0 40 2 ED F 0 0 24 FD D3 4F FD D5 6F FD D7 8F FE 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 71 71 0 80 50 0 30 0 0 30 80 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 14 22 30 C 0 0 0 0 0 0 0 0 50 0 0 0 0 0 0 0 0 D7 7 0 0 0 0 0 0 0 20 0 1 0 8 0 2 1 0 0 2 0 1 0 0 2 1 0 0 2 0 1 2 0 52 20 1 30 2 4 1 21 0 13 0 1F 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 A5</nvmData>
+        <nvmData registerLenght="2048">51 20 0 91 13 3D 11 F4 47 D2 1F 4D 7F 44 FD 51 F5 47 D6 F 0 0 0 0 0 10 FD 17 0 0 0 0 0 0 0 0 A6 49 0 0 10 1 0 0 0 0 0 0 0 0 0 0 0 0 ED F 0 24 24 FD D3 4F FD D5 6F FD D7 8F FE 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 71 71 0 30 50 0 30 0 0 80 80 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 14 22 30 C 0 0 0 0 0 0 0 0 50 0 0 0 0 0 0 0 0 D7 7 0 0 0 0 0 0 0 20 0 1 0 8 0 2 1 0 0 2 0 1 0 0 2 1 0 0 2 0 1 2 0 52 20 1 30 2 4 1 21 0 13 0 1F 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 A5</nvmData>
         <eepromData id="0">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</eepromData>
-        <checksum crc32="0xCB52EF2B" version="7"/>
+        <checksum crc32="0x87E46EE4" version="7"/>
         <VDDItem id="0">
             <item id="0" caption="VDD (PIN 20)">
                 <graphics pos="(-590.00,30.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
@@ -22,10 +22,9 @@
                 <textLabel pos="(6.43,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">CLK</textLabel>
             </item>
         </IOPad>
-        <IOPad id="3" useCaseMode="2">
+        <IOPad id="3" useCaseMode="0">
             <item id="3" caption="PIN 17 (IO2)">
                 <graphics pos="(-590.00,240.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
-                <textLabel pos="(5.02,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">IRQB</textLabel>
             </item>
         </IOPad>
         <IOPad id="4" useCaseMode="1">
@@ -57,9 +56,10 @@
                 <textLabel pos="(6.55,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">SDA</textLabel>
             </item>
         </IOPad>
-        <IOPad id="9" useCaseMode="0">
+        <IOPad id="9" useCaseMode="2">
             <item id="9" caption="PIN 11 (IO6)">
                 <graphics pos="(-591.67,495.00)" angle="0" flipping="2" hidden="0" tOrigin="(20.00,10.00)"/>
+                <textLabel pos="(3.80,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">IRQB</textLabel>
             </item>
         </IOPad>
         <item id="10" caption="GND (PIN 10)">
@@ -486,11 +486,11 @@
         <wire output="206" input="643" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="20" wireText="NET20" wireState="0">
             <points>(-338.00,283.00); (-51.00,283.00); (-51.00,334.00); (-29.00,334.00)</points>
         </wire>
-        <wire output="202" input="499" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="30" wireText="NET30" wireState="0">
-            <points>(72.00,329.00); (93.00,329.00); (93.00,246.00); (-528.00,246.00)</points>
-        </wire>
         <wire output="50" input="650" autoRouting="1" pen="#ff8000ff;1.00;1;32;128" lineType="2" protected="1" CWLid="29" wireText="NET29" wireState="1">
             <points/>
+        </wire>
+        <wire output="202" input="515" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="30" wireText="NET30" wireState="0">
+            <points>(72.00,329.00); (93.00,329.00); (93.00,506.00); (-530.00,506.00)</points>
         </wire>
     </chip>
     <emulatorConfiguration version="4" oldestCompatibleVersion="4">
