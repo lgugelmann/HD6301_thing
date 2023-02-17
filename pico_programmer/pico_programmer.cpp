@@ -16,14 +16,14 @@ const uint UART0_RX_PIN = 1;
 // D0...D7 are assumed contiguous in pin numbers, so D0 = 2...D7=9
 const uint DATA_PIN_0 = 2;
 
-const uint DATA_LATCH_PIN = 10;
+const uint DATA_LATCH_PIN = 16;
 const uint ADDR_L_LATCH_PIN = 11;
 const uint ADDR_H_LATCH_PIN = 12;
 const uint STBY_PIN = 13;
 
 const uint AS_PIN = 14;
 const uint RW_PIN = 15;
-const uint CLK_PIN = 16;
+const uint CLK_PIN = 10;
 
 const uint DATA_IN_PINS[] = {17, 18, 19, 20, 21, 22, 26, 27};
 
