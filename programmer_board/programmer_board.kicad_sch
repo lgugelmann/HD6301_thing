@@ -1370,6 +1370,10 @@
     (stroke (width 0) (type default))
     (uuid 03b5b00e-64a2-4801-80aa-dfdc678e916b)
   )
+  (wire (pts (xy 34.29 50.8) (xy 34.29 49.53))
+    (stroke (width 0) (type default))
+    (uuid 041030a3-ab8b-4de5-ad8e-1386b7c586a6)
+  )
   (bus (pts (xy 220.98 38.1) (xy 220.98 40.64))
     (stroke (width 0) (type default))
     (uuid 05ea2fa0-b523-4961-9833-e49d6c5f2966)
@@ -1520,6 +1524,10 @@
   (wire (pts (xy 218.44 43.18) (xy 214.63 43.18))
     (stroke (width 0) (type default))
     (uuid 338eec54-b22b-43bf-82f5-94c2612620ed)
+  )
+  (wire (pts (xy 34.29 43.18) (xy 34.29 44.45))
+    (stroke (width 0) (type default))
+    (uuid 349fd7df-78b2-4ad3-8464-c670e04fa063)
   )
   (wire (pts (xy 236.22 107.95) (xy 241.3 107.95))
     (stroke (width 0) (type default))
@@ -1722,6 +1730,10 @@
     (stroke (width 0) (type default))
     (uuid 60f38bf9-4e93-48f7-9459-2347aa0bda3a)
   )
+  (wire (pts (xy 21.59 50.8) (xy 21.59 49.53))
+    (stroke (width 0) (type default))
+    (uuid 62110694-0f4a-4601-a110-65fc017a3a49)
+  )
   (bus (pts (xy 222.25 109.22) (xy 222.25 106.68))
     (stroke (width 0) (type default))
     (uuid 63501367-1f95-435b-9574-228ef3fe61af)
@@ -1819,6 +1831,10 @@
   (wire (pts (xy 236.22 92.71) (xy 241.3 92.71))
     (stroke (width 0) (type default))
     (uuid 87302699-cffc-4286-9430-500da2971663)
+  )
+  (wire (pts (xy 21.59 43.18) (xy 21.59 44.45))
+    (stroke (width 0) (type default))
+    (uuid 8b56cf18-51d2-4203-90c5-26b17e4a634a)
   )
   (bus (pts (xy 220.98 27.94) (xy 220.98 30.48))
     (stroke (width 0) (type default))
@@ -2796,6 +2812,36 @@
     )
   )
 
+  (symbol (lib_id "power:+5V") (at 21.59 43.18 0) (unit 1)
+    (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
+    (uuid 22184f39-1d9d-4feb-bb8b-65a1a48d1980)
+    (property "Reference" "#PWR025" (at 21.59 46.99 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Value" "+5V" (at 21.59 38.1 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Footprint" "" (at 21.59 43.18 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "" (at 21.59 43.18 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid ead4e6f1-7c53-45fc-a316-7d4d87811e24))
+    (instances
+      (project "programmer_board"
+        (path "/d80ca4e7-5430-4474-aabd-9f00c61eaf5c"
+          (reference "#PWR025") (unit 1)
+        )
+      )
+      (project "HD6301V1_thing"
+        (path "/f94fb884-8365-431c-b8b6-ec4493810111"
+          (reference "#PWR031") (unit 1)
+        )
+      )
+    )
+  )
+
   (symbol (lib_id "power:GND") (at 203.2 121.92 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 289eaad6-7c7f-47d6-a78e-9b3b468d20c5)
@@ -3144,6 +3190,37 @@
     )
   )
 
+  (symbol (lib_id "Device:C_Small") (at 21.59 46.99 0) (unit 1)
+    (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
+    (uuid 7df1beb4-0d28-4b8c-9255-4de2bc3e82a3)
+    (property "Reference" "C7" (at 24.13 46.3613 0)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property "Value" "4.7u" (at 24.13 48.9013 0)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property "Footprint" "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder" (at 21.59 46.99 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "~" (at 21.59 46.99 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid ecefa621-b4a0-4aaa-86fd-dfcdb1eb617d))
+    (pin "2" (uuid 944f2533-e385-4e9f-9d6c-7a08cbd10d65))
+    (instances
+      (project "programmer_board"
+        (path "/d80ca4e7-5430-4474-aabd-9f00c61eaf5c"
+          (reference "C7") (unit 1)
+        )
+      )
+      (project "HD6301V1_thing"
+        (path "/f94fb884-8365-431c-b8b6-ec4493810111"
+          (reference "C5") (unit 1)
+        )
+      )
+    )
+  )
+
   (symbol (lib_id "power:GND") (at 180.34 157.48 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 7fc8ed6a-62df-4997-ba8c-caa1f6356cc8)
@@ -3194,6 +3271,37 @@
     )
   )
 
+  (symbol (lib_id "Device:C_Small") (at 34.29 46.99 0) (unit 1)
+    (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
+    (uuid 8729bb3a-92a4-43ae-850d-dea7444e7eb3)
+    (property "Reference" "C8" (at 36.83 46.3613 0)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property "Value" "4.7u" (at 36.83 48.9013 0)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property "Footprint" "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder" (at 34.29 46.99 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "~" (at 34.29 46.99 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid 1fd3c912-833c-47d1-af1f-43333fef57ef))
+    (pin "2" (uuid 550c88e6-3ab3-42ba-9515-73ff588d11b2))
+    (instances
+      (project "programmer_board"
+        (path "/d80ca4e7-5430-4474-aabd-9f00c61eaf5c"
+          (reference "C8") (unit 1)
+        )
+      )
+      (project "HD6301V1_thing"
+        (path "/f94fb884-8365-431c-b8b6-ec4493810111"
+          (reference "C5") (unit 1)
+        )
+      )
+    )
+  )
+
   (symbol (lib_id "power:GND") (at 154.94 66.04 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 899d8de6-454f-478d-b3fb-dc715ee5f679)
@@ -3239,6 +3347,31 @@
       (project "programmer_board"
         (path "/d80ca4e7-5430-4474-aabd-9f00c61eaf5c"
           (reference "#PWR016") (unit 1)
+        )
+      )
+    )
+  )
+
+  (symbol (lib_id "power:+3.3V") (at 34.29 43.18 0) (unit 1)
+    (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
+    (uuid 8fecfc71-7b2d-4799-b0ca-fe17b8a3a93f)
+    (property "Reference" "#PWR024" (at 34.29 46.99 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Value" "+3.3V" (at 34.29 39.37 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Footprint" "" (at 34.29 43.18 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "" (at 34.29 43.18 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid cc63c572-59ed-45ef-a1ae-40fc01ed3693))
+    (instances
+      (project "programmer_board"
+        (path "/d80ca4e7-5430-4474-aabd-9f00c61eaf5c"
+          (reference "#PWR024") (unit 1)
         )
       )
     )
@@ -3667,6 +3800,36 @@
     )
   )
 
+  (symbol (lib_id "power:GND") (at 34.29 50.8 0) (unit 1)
+    (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
+    (uuid cfe4b9ba-d828-4e98-9445-1aea95fc0b34)
+    (property "Reference" "#PWR027" (at 34.29 57.15 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Value" "GND" (at 34.29 55.88 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Footprint" "" (at 34.29 50.8 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "" (at 34.29 50.8 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid 1912106c-698f-48bb-852e-f388a563240b))
+    (instances
+      (project "programmer_board"
+        (path "/d80ca4e7-5430-4474-aabd-9f00c61eaf5c"
+          (reference "#PWR027") (unit 1)
+        )
+      )
+      (project "HD6301V1_thing"
+        (path "/f94fb884-8365-431c-b8b6-ec4493810111"
+          (reference "#PWR032") (unit 1)
+        )
+      )
+    )
+  )
+
   (symbol (lib_id "power:+5V") (at 104.14 66.04 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid d26b38da-a0cb-4518-855e-944df46da358)
@@ -3768,6 +3931,36 @@
       (project "programmer_board"
         (path "/d80ca4e7-5430-4474-aabd-9f00c61eaf5c"
           (reference "#PWR019") (unit 1)
+        )
+      )
+    )
+  )
+
+  (symbol (lib_id "power:GND") (at 21.59 50.8 0) (unit 1)
+    (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
+    (uuid dd4dd268-9c24-46a3-8d1a-1bb84b311c1f)
+    (property "Reference" "#PWR026" (at 21.59 57.15 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Value" "GND" (at 21.59 55.88 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Footprint" "" (at 21.59 50.8 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "" (at 21.59 50.8 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid 56aac7dd-c411-455d-b1a2-5b3b9d8bb28d))
+    (instances
+      (project "programmer_board"
+        (path "/d80ca4e7-5430-4474-aabd-9f00c61eaf5c"
+          (reference "#PWR026") (unit 1)
+        )
+      )
+      (project "HD6301V1_thing"
+        (path "/f94fb884-8365-431c-b8b6-ec4493810111"
+          (reference "#PWR032") (unit 1)
         )
       )
     )
