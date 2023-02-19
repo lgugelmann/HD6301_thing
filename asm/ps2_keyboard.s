@@ -11,6 +11,13 @@ start:
         lds #$0200              ; Initialize the stack
         clr DDR1                ; Set port 1 to input
 
+        ;; Port 2 is connected to the keyboard controller interrupts
+        ;; P20 is IRQ clear (on low), P21 indicates whether an interrupt
+        ;; is a keyboard interrupt and is low on KBD interrupt
+        lda #$01
+        sta DDR2                ; Set port 2 to out/in/in
+        sta PORT2               ; Set P20 to 1
+
         lda #TRMCR_CC0
         sta TRMCR               ; Set clock source to internal and rate to E/16
 
@@ -37,7 +44,21 @@ send_byte:
 
 
 irq:
+        ;; Check if it's a keyboard interrupt
+        lda PORT2
+        bit A,#$02
+        beq kbd_irq
+
+        lda #$69
+        jsr send_byte
+        rti
+
+kbd_irq:
         ldb PORT1               ; load keycode from port1
+        ;; Send 0 then 1 on P20 to clear Keyboard interrupt
+        lda #$01
+        clr PORT2
+        sta PORT2
         jsr ps2_decoder_interrupt
         rti
 

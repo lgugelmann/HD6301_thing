@@ -1,8 +1,10 @@
         ifndef __registers_inc
 __registers_inc = 1
         
-DDR1  = $0000                   ; Data Direction Register port 1
+DDR1  = $0000                   ; Port 1 Data Direction Register
+DDR2  = $0001                   ; Port 2 Data Direction Register
 PORT1 = $0002                   ; Port 1 address
+PORT2 = $0003                   ; Port 2 address
 
 TRMCR = $0010                   ; Transfer Rate / Mode Control Register
 TRCSR = $0011                   ; Transmit / Receive Control Status Register
