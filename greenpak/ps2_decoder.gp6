@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<GPDProject version="25" oldestCompatibleVersion="25" GPDVersion="6.32.002" lastChange="10/02/2023 23:51">
+<GPDProject version="25" oldestCompatibleVersion="25" GPDVersion="6.32.002" lastChange="19/02/2023 22:55">
     <generalProjectSettings/>
     <chip family="04" type="06" friendlyName="GreenPAK 6" partNumber="36" package="16">
-        <nvmData registerLenght="2048">51 20 0 91 13 3D 11 F4 47 D2 1F 4D 7F 44 FD 51 F5 47 D6 F 0 0 0 0 0 10 FD 17 0 0 0 0 0 0 0 0 A6 49 0 0 10 1 0 0 0 0 0 0 0 0 0 0 0 0 ED F 0 24 24 FD D3 4F FD D5 6F FD D7 8F FE 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 71 71 0 30 50 0 30 0 0 80 80 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 14 22 30 C 0 0 0 0 0 0 0 0 50 0 0 0 0 0 0 0 0 D7 7 0 0 0 0 0 0 0 20 0 1 0 8 0 2 1 0 0 2 0 1 0 0 2 1 0 0 2 0 1 2 0 52 20 1 30 2 4 1 21 0 13 0 1F 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 A5</nvmData>
+        <nvmData registerLenght="2048">51 20 0 91 13 3D 11 F4 47 D2 1F 4D 7F 44 FD 51 F5 47 D6 F 0 0 0 0 0 10 FD 17 0 0 0 0 0 0 0 0 A6 49 0 0 10 1 0 0 0 0 0 0 0 0 0 0 0 0 ED F 0 24 24 FD D3 4F FD D5 6F FD D7 8F FE 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 71 71 0 1 10 0 10 0 0 80 80 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 14 22 30 C 0 0 0 0 0 0 0 0 50 0 0 0 0 0 0 0 0 D7 7 0 0 0 0 0 0 0 20 0 1 0 8 0 2 1 0 0 2 0 1 0 0 2 1 0 0 2 0 1 2 0 52 20 1 30 2 4 1 21 0 13 0 1F 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 A5</nvmData>
         <eepromData id="0">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</eepromData>
-        <checksum crc32="0x87E46EE4" version="7"/>
+        <checksum crc32="0xF57CD84D" version="7"/>
         <VDDItem id="0">
             <item id="0" caption="VDD (PIN 20)">
                 <graphics pos="(-590.00,30.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
@@ -13,52 +13,54 @@
         <IOPad id="1" useCaseMode="1">
             <item id="1" caption="PIN 19 (IO0)">
                 <graphics pos="(-590.00,100.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
-                <textLabel pos="(3.79,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">DATA</textLabel>
+                <textLabel pos="(-7.98,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">KBD_DATA</textLabel>
             </item>
         </IOPad>
         <IOPad id="2" useCaseMode="1">
             <item id="2" caption="PIN 18 (IO1)">
                 <graphics pos="(-590.00,170.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
-                <textLabel pos="(6.43,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">CLK</textLabel>
+                <textLabel pos="(-5.34,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">KBD_CLK</textLabel>
             </item>
         </IOPad>
-        <IOPad id="3" useCaseMode="0">
+        <IOPad id="3" useCaseMode="1">
             <item id="3" caption="PIN 17 (IO2)">
                 <graphics pos="(-590.00,240.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
+                <textLabel pos="(-3.65,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">KBD_IRQ</textLabel>
             </item>
         </IOPad>
         <IOPad id="4" useCaseMode="1">
             <item id="4" caption="PIN 16 (IO3)">
                 <graphics pos="(-590.00,310.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
-                <textLabel pos="(-9.23,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">IRQ_CLEAR</textLabel>
+                <textLabel pos="(-22.52,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">IRQ_CLEAR / P20</textLabel>
             </item>
         </IOPad>
         <IOPad id="5" useCaseMode="2">
             <item id="5" caption="PIN 15 (IO4)">
                 <graphics pos="(-590.00,380.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
-                <textLabel pos="(-6.76,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">KBD_IRQB</textLabel>
+                <textLabel pos="(-32.60,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">IRQ_INDICATOR / P21</textLabel>
             </item>
         </IOPad>
-        <IOPad id="6" useCaseMode="0">
+        <IOPad id="6" useCaseMode="1">
             <item id="6" caption="PIN 14 (IO5)">
-                <graphics pos="(-590.00,441.67)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
+                <graphics pos="(-588.70,483.26)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
+                <textLabel pos="(7.24,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">P22</textLabel>
             </item>
         </IOPad>
         <IOPad id="7" useCaseMode="1">
             <item id="7" caption="PIN 13 (SCL)">
-                <graphics pos="(-592.67,561.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
+                <graphics pos="(-596.57,648.08)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
                 <textLabel pos="(6.59,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">SCL</textLabel>
             </item>
         </IOPad>
         <IOPad id="8" useCaseMode="1">
             <item id="8" caption="PIN 12 (SDA)">
-                <graphics pos="(-592.67,614.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
+                <graphics pos="(-596.57,701.08)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
                 <textLabel pos="(6.55,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">SDA</textLabel>
             </item>
         </IOPad>
         <IOPad id="9" useCaseMode="2">
             <item id="9" caption="PIN 11 (IO6)">
-                <graphics pos="(-591.67,495.00)" angle="0" flipping="2" hidden="0" tOrigin="(20.00,10.00)"/>
+                <graphics pos="(-595.57,582.08)" angle="0" flipping="2" hidden="0" tOrigin="(20.00,10.00)"/>
                 <textLabel pos="(3.80,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">IRQB</textLabel>
             </item>
         </IOPad>
@@ -138,13 +140,13 @@
             <graphics pos="(-70.00,100.00)" angle="0" flipping="0" hidden="1" tOrigin="(30.00,40.00)"/>
         </item>
         <item id="29" caption="OSC1">
-            <graphics pos="(-352.86,574.68)" angle="0" flipping="0" hidden="0" tOrigin="(30.00,25.00)"/>
+            <graphics pos="(-356.76,661.76)" angle="0" flipping="0" hidden="0" tOrigin="(30.00,25.00)"/>
         </item>
         <item id="30" caption="OSC2">
             <graphics pos="(-70.00,270.00)" angle="0" flipping="0" hidden="1" tOrigin="(30.00,20.00)"/>
         </item>
         <item id="31" caption="I2C">
-            <graphics pos="(-472.67,542.00)" angle="0" flipping="0" hidden="0" tOrigin="(25.00,45.00)"/>
+            <graphics pos="(-476.57,629.08)" angle="0" flipping="0" hidden="0" tOrigin="(25.00,45.00)"/>
         </item>
         <item id="32" caption="TEMP SENSOR">
             <graphics pos="(320.00,370.00)" angle="0" flipping="0" hidden="1" tOrigin="(28.00,15.00)"/>
@@ -248,7 +250,7 @@
         </CNTDLY>
         <LUT id="60" regularShape="0" mode="0">
             <item id="60" caption="3-bit LUT8 (MF2)">
-                <graphics pos="(-250.66,451.63)" angle="90" flipping="0" hidden="1" tOrigin="(20.00,15.00)"/>
+                <graphics pos="(-423.52,420.44)" angle="90" flipping="0" hidden="1" tOrigin="(20.00,15.00)"/>
             </item>
         </LUT>
         <item id="61" caption="DFF/LATCH11 (MF2)">
@@ -295,7 +297,7 @@
         </item>
         <CNTDLY id="71" externalClockFrequence="0" externalClockFreqUnit="kHz">
             <item id="71" caption="8-bit CNT5/DLY5 (MF5)">
-                <graphics pos="(-7.78,313.07)" angle="0" flipping="0" hidden="0" tOrigin="(30.00,16.00)"/>
+                <graphics pos="(-172.85,576.92)" angle="180" flipping="0" hidden="0" tOrigin="(30.00,16.00)"/>
             </item>
         </CNTDLY>
         <LUT id="72" regularShape="0" mode="0">
@@ -304,7 +306,7 @@
             </item>
         </LUT>
         <item id="73" caption="DFF/LATCH15 (MF6)">
-            <graphics pos="(-249.17,332.77)" angle="0" flipping="0" hidden="0" tOrigin="(25.00,10.00)"/>
+            <graphics pos="(-225.77,308.08)" angle="0" flipping="0" hidden="0" tOrigin="(25.00,10.00)"/>
         </item>
         <CNTDLY id="74" externalClockFrequence="0" externalClockFreqUnit="kHz">
             <item id="74" caption="8-bit CNT6/DLY6 (MF6)">
@@ -331,10 +333,10 @@
             </item>
         </EEPROM>
         <wire output="147" input="111" autoRouting="1" pen="#ff8000ff;1.00;1;32;128" lineType="2" protected="1" CWLid="0" wireText="NET0" wireState="0">
-            <points>(-531.00,572.00); (-494.00,572.00)</points>
+            <points>(-535.00,659.00); (-498.00,659.00)</points>
         </wire>
         <wire output="148" input="112" autoRouting="1" pen="#ff8000ff;1.00;1;32;128" lineType="2" protected="1" CWLid="1" wireText="NET1" wireState="0">
-            <points>(-531.00,625.00); (-504.00,625.00); (-504.00,602.00); (-494.00,602.00)</points>
+            <points>(-535.00,712.00); (-508.00,712.00); (-508.00,689.00); (-498.00,689.00)</points>
         </wire>
         <wire output="141" input="262" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="7" wireText="NET7" wireState="0">
             <points>(-528.00,116.00); (-459.00,116.00); (-459.00,115.00); (-447.00,115.00)</points>
@@ -469,29 +471,40 @@
             <points/>
         </wire>
         <wire output="206" input="645" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="20" wireText="NET20" wireState="0">
-            <points>(-338.00,283.00); (-291.00,283.00); (-291.00,348.00); (-270.00,348.00)</points>
+            <points>(-338.00,283.00); (-267.00,283.00); (-267.00,324.00); (-247.00,324.00)</points>
         </wire>
         <wire output="1" input="647" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="-1" wireText="GND" wireState="1">
             <points/>
         </wire>
         <wire output="144" input="646" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="28" wireText="NET28" wireState="0">
-            <points>(-528.00,326.00); (-279.00,326.00); (-279.00,394.00); (-224.00,394.00); (-224.00,373.00)</points>
-        </wire>
-        <wire output="0" input="506" autoRouting="1" pen="#ff8000ff;1.00;1;32;128" lineType="2" protected="1" CWLid="-1" wireText="VDD" wireState="1">
-            <points/>
+            <points>(-528.00,326.00); (-325.79,326.00); (-325.79,361.80); (-200.00,361.80); (-200.00,348.00)</points>
         </wire>
         <wire output="203" input="505" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="25" wireText="NET25" wireState="0">
-            <points>(-179.00,343.00); (-159.00,343.00); (-159.00,386.00); (-528.00,386.00)</points>
+            <points>(-156.00,319.00); (-135.00,319.00); (-135.00,386.00); (-528.00,386.00)</points>
         </wire>
         <wire output="206" input="643" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="20" wireText="NET20" wireState="0">
-            <points>(-338.00,283.00); (-51.00,283.00); (-51.00,334.00); (-29.00,334.00)</points>
+            <points>(-338.00,283.00); (-75.00,283.00); (-75.00,588.00); (-93.00,588.00)</points>
         </wire>
         <wire output="50" input="650" autoRouting="1" pen="#ff8000ff;1.00;1;32;128" lineType="2" protected="1" CWLid="29" wireText="NET29" wireState="1">
             <points/>
         </wire>
         <wire output="202" input="515" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="30" wireText="NET30" wireState="0">
-            <points>(72.00,329.00); (93.00,329.00); (93.00,506.00); (-530.00,506.00)</points>
+            <points>(-194.00,593.00); (-534.00,593.00)</points>
         </wire>
+        <wire output="0" input="506" autoRouting="1" pen="#ff8000ff;1.00;1;32;128" lineType="2" protected="1" CWLid="-1" wireText="VDD" wireState="1">
+            <points/>
+        </wire>
+        <textLabel pos="(-58.95,277.59)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">We need to make sure that when HD6301 comes out of reset it sees
+P20 = 0
+P21 = 1
+P22 = 0
+for correct mode selection.
+
+While IRQ_CLEAR/P20 is 0, DFF 15 stays in nSet mode and output is 1.
+
+When HD6301 is reset, P20 is in input mode so IRQ_CLEAR/P20
+pull-down is active and pulls the port to 0.
+This automatically makes P21 show 1 as it should.</textLabel>
     </chip>
     <emulatorConfiguration version="4" oldestCompatibleVersion="4">
         <settings>
@@ -1129,24 +1142,6 @@
                                     <point value="(-734;320)"/>
                                     <point value="(-744;320)"/>
                                     <point value="(-744;355)"/>
-                                </path>
-                            </connection>
-                        </connections>
-                    </network>
-                    <network networkId="26" name="NET26">
-                        <connections>
-                            <connection connectionType="0" routingType="0" sceneIndex="0">
-                                <from>
-                                    <IdDto category="100" componentType="45" componentNumber="0" pinNumber="16"/>
-                                </from>
-                                <to>
-                                    <IdDto category="5" componentType="43" componentNumber="5" pinNumber="0"/>
-                                </to>
-                                <path>
-                                    <point value="(-613;321)"/>
-                                    <point value="(-635;321)"/>
-                                    <point value="(-635;320)"/>
-                                    <point value="(-649;320)"/>
                                 </path>
                             </connection>
                         </connections>
