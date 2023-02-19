@@ -136,3 +136,49 @@ The asm folder contains some demo programs to get started.
 
 It seems that the [AS](http://john.ccac.rwth-aachen.de:8000/as/) is a popular
 choice that also supports the 4 extra instructions that the HD6301 introduced.
+
+## Bus documentation
+
+| Pin number | Function            | Notes                                                                        |
+|------------|---------------------|------------------------------------------------------------------------------|
+| 1..4       | Data bits D0..D3    | Bus users need to coordinate who's driving                                   |
+| 5          | 5V                  | Only one device is allowed to power this                                     |
+| 6          | GND                 |                                                                              |
+| 7..10      | Data bits D4..D7    | Bus users need to coordinate who's driving                                   |
+| 11..14     | Address bits A0..A3 | Bus users need to coordinate who's driving                                   |
+| 15         | 3.3V                | Only one device is allowed to power this, optional                           |
+| 16         | GND                 |                                                                              |
+| 17..24     | A4..A11             | Bus users need to coordinate who's driving                                   |
+| 25         | GND                 |                                                                              |
+| 26         | 3.3V                | Only one device is allowed to power this, optional                           |
+| 27..30     | A12..A15            | Bus users need to coordinate who's driving                                   |
+| 31         | RX                  | Serial receive as seen from a device on the bus                              |
+| 32         | TX                  | Serial transmit as seen from a device on the bus                             |
+| 33         | CLK                 | Bus clock                                                                    |
+| 34         | R/WB                | Read is high                                                                 |
+| 35         | GND                 |                                                                              |
+| 36         | 5V                  | Only one device is allowed to power this                                     |
+| 37         | C1                  | Control line 1, up to the exact devices on the bus to decide what this does. |
+| 38         | C2                  | Control line 2, up to the exact devices on the bus to decide what this does. |
+| 39         | RESETB              | Active low reset. Open drain. Pullup on CPU board.                           |
+| 40         | IRQB                | Active low interrupt. Open drain. Pullup on CPU board.                       |
+
+This is 40 pins as it's easy to find 40pin IDC connectors and ribbon cables. The
+power / GND pins are mirrored so that an upside-down connector has them in the
+same place.
+
+There are no chip select pins. Additional boards that want to fit into specific
+parts of the memory map need to decode the address pins on their board and
+coordinate with everyone else. Programmable GreenPAKs make this easy enough.
+
+Pins are all push-pull unless stated otherwise. Any shared use needs to be
+coordinated.
+
+Logic levels are assumed 5V CMOS.
+
+### Bus details for HD6301 board
+
+| Pin number | Function | Notes                                                                             |
+|------------|----------|-----------------------------------------------------------------------------------|
+| 37         | AS       | Address latch strobe. Allows Pico Programmer to access RAM/ROM addresses.         |
+| 38         | STBYB    | Active low standby signal. For Pico Programmer to make HD6301 lets go of the bus. |
