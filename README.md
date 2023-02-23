@@ -31,6 +31,9 @@ Alternatively, the datasheet seems to suggest that the reset line has a
 Schmitt-trigger input. That would make an RC circuit with a long time constant
 also workable. Have not tried that.
 
+NOTE: Existing the standby mode also requires holding reset low for a bit longer
+than STBY.
+
 ## In-circuit programming via USB
 
 Beyond getting the HD6301 up and running another goal is to have proper
