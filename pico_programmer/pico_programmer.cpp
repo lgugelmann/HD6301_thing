@@ -13,85 +13,94 @@ const uint8_t UART_CDC = 1;
 const uint UART0_TX_PIN = 0;
 const uint UART0_RX_PIN = 1;
 
-// D0...D7 are assumed contiguous in pin numbers, so D0 = 2...D7=9
-const uint DATA_PIN_0 = 2;
+const uint IRQ_PIN = 2;
+const uint C1_PIN = 3;
+const uint CLK_PIN = 4;
+const uint RW_PIN = 5;
+const uint STBY_PIN = 26;
 
-const uint DATA_LATCH_PIN = 16;
-const uint ADDR_L_LATCH_PIN = 11;
-const uint ADDR_H_LATCH_PIN = 12;
-const uint STBY_PIN = 13;
+const uint ADDR_H_LATCH_PIN = 6;
+const uint ADDR_H_LATCH_OE_PIN = 7;
+const uint DATA_LATCH_OE_PIN = 16;
+const uint DATA_LATCH_PIN = 17;
+const uint DATA_BUF_OE_PIN = 18;
+const uint ADDR_L_BUF_OE_PIN = 19;
+const uint ADDR_L_LATCH_PIN = 20;
+const uint ADDR_L_LATCH_OE_PIN = 21;
+const uint ADDR_H_BUF_OE_PIN = 22;
 
-const uint AS_PIN = 14;
-const uint RW_PIN = 15;
-const uint CLK_PIN = 10;
-
-const uint DATA_IN_PINS[] = {17, 18, 19, 20, 21, 22, 26, 27};
+// D0...D7 are assumed contiguous in pin numbers, so D0=8...D7=15
+const uint DATA_PIN_0 = 8;
 
 const uint LED_PIN = 25;
 
-constexpr uint data_out_mask(uint8_t bits) { return (uint)bits << DATA_PIN_0; }
-const uint PIN_MASK_DATA_OUT = data_out_mask(0xff);
+const uint PIN_MASK_DATA = 0xff << DATA_PIN_0;
 
-constexpr uint pin_mask_out() {
-  uint mask = 0;
-  mask |= 1 << DATA_LATCH_PIN;
-  mask |= 1 << ADDR_L_LATCH_PIN;
-  mask |= 1 << ADDR_H_LATCH_PIN;
-  mask |= 1 << STBY_PIN;
-  mask |= 1 << AS_PIN;
-  mask |= 1 << RW_PIN;
-  mask |= 1 << CLK_PIN;
-  mask |= 1 << LED_PIN;
-  mask |= data_out_mask(0xff);
-  return mask;
-}
-constexpr uint PIN_MASK_OUT = pin_mask_out();
+const uint PIN_MASK_LATCH_OE = 1 << DATA_LATCH_OE_PIN |
+                               1 << ADDR_L_LATCH_OE_PIN |
+                               1 << ADDR_H_LATCH_OE_PIN;
 
-constexpr uint pin_mask_in() {
-  uint ret = 0;
-  for (uint i = 0; i < 8; ++i) {
-    ret |= 1 << DATA_IN_PINS[i];
-  }
-  return ret;
-}
-constexpr uint PIN_MASK_IN = pin_mask_in();
+const uint PIN_MASK_BUF_OE =
+    1 << DATA_BUF_OE_PIN | 1 << ADDR_L_BUF_OE_PIN | 1 << ADDR_H_BUF_OE_PIN;
+
+const uint PIN_MASK_OE = PIN_MASK_LATCH_OE | PIN_MASK_BUF_OE;
+
+const uint PIN_MASK_LATCH =
+    1 << DATA_LATCH_PIN | 1 << ADDR_L_LATCH_PIN | 1 << ADDR_H_LATCH_PIN;
+
+
+
+const uint PIN_MASK_BUS = 1 << CLK_PIN | 1 << RW_PIN;
+
+const uint PIN_MASK_LED = 1 << LED_PIN;
+const uint PIN_MASK_STBY = 1 << STBY_PIN;
+const uint PIN_MASK_C1 = 1 << C1_PIN;
+const uint PIN_MASK_IRQ = 1 << IRQ_PIN;
+
+const uint PIN_MASK_ALL = PIN_MASK_DATA | PIN_MASK_OE | PIN_MASK_LATCH |
+                          PIN_MASK_BUS | PIN_MASK_LED | PIN_MASK_STBY |
+                          PIN_MASK_C1 | PIN_MASK_IRQ;
 
 void enter_stby() {
   gpio_put(LED_PIN, 1);
+  // Make sure input buffers aren't driving pico D* pins just in case.
+  gpio_set_mask(PIN_MASK_BUF_OE);
+  // Enter standby.
   gpio_put(STBY_PIN, 0);
+  // Data, address latches drive system bus
+  gpio_clr_mask(PIN_MASK_LATCH_OE);
 }
 
 void exit_stby() {
   gpio_put(LED_PIN, 0);
+  // Stop driving bus from pico.
+  gpio_set_mask(PIN_MASK_LATCH_OE);
   gpio_put(STBY_PIN, 1);
 }
 
-void strobe_as() {
-  gpio_put(AS_PIN, 1);
+// Turn 8 data bits into a pin bitfield setting the right D* pin values.
+uint data_to_mask(uint8_t bits) { return (uint)bits << DATA_PIN_0; }
+
+// Turn a pin bitfield into data bits
+uint8_t mask_to_data(uint bitfield) { return (uint8_t)(bitfield >> DATA_PIN_0); }
+
+void set_latch(uint8_t data, uint latch_pin) {
+  gpio_put_masked(PIN_MASK_DATA, data_to_mask(data));
+  gpio_put(latch_pin, 1);
   busy_wait_us_32(1);
-  gpio_put(AS_PIN, 0);
+  gpio_put(latch_pin, 0);
 }
 
-void set_data(const uint8_t data) {
-  gpio_put_masked(PIN_MASK_DATA_OUT, data_out_mask(data));
-  gpio_put(DATA_LATCH_PIN, 1);
-  busy_wait_us_32(1);
-  gpio_put(DATA_LATCH_PIN, 0);
+void set_data(uint8_t data) {
+  set_latch(data, DATA_LATCH_PIN);
 }
 
-void set_address_low(const uint8_t address) {
-  gpio_put_masked(PIN_MASK_DATA_OUT, data_out_mask(address));
-  gpio_put(DATA_LATCH_PIN, 1);
-  busy_wait_us_32(1);
-  gpio_put(DATA_LATCH_PIN, 0);
-  strobe_as();
+void set_address_low(uint8_t data) {
+  set_latch(data, ADDR_L_LATCH_PIN);
 }
 
-void set_address_high(const uint8_t address) {
-  gpio_put_masked(PIN_MASK_DATA_OUT, data_out_mask(address));
-  gpio_put(ADDR_H_LATCH_PIN, 1);
-  busy_wait_us_32(1);
-  gpio_put(ADDR_H_LATCH_PIN, 0);
+void set_address_high(uint8_t data) {
+  set_latch(data, ADDR_H_LATCH_PIN);
 }
 
 void set_address(uint16_t address) {
@@ -104,14 +113,16 @@ uint8_t read_cycle() {
   busy_wait_us_32(1);
   gpio_put(CLK_PIN, 1);
   busy_wait_us_32(1);
-  int read = gpio_get_all();
+
+  gpio_set_dir_in_masked(PIN_MASK_DATA);
+  gpio_put(DATA_BUF_OE_PIN, 0);
+  uint8_t data = mask_to_data(gpio_get_all());
+  gpio_put(DATA_BUF_OE_PIN, 1);
+  gpio_set_dir_out_masked(PIN_MASK_DATA);
+
   gpio_put(CLK_PIN, 0);
 
-  uint8_t ret = 0;
-  for (int i = 0; i < 8; ++i) {
-    ret += ((read >> DATA_IN_PINS[i]) & 1) << i;
-  }
-  return ret;
+  return data;
 }
 
 void write_cycle() {
@@ -132,16 +143,23 @@ void read_data(uint16_t start, uint16_t end) {
 }
 
 void init_pins() {
-  // Set STBY, LED
+  gpio_set_function(UART0_TX_PIN, GPIO_FUNC_UART);
+  gpio_set_function(UART0_RX_PIN, GPIO_FUNC_UART);
+
+  // Set to input, clear any output value
+  gpio_init_mask(PIN_MASK_ALL);
+
+  // Set every OE pin, STBY, RW high, all others stay clear
+  gpio_set_mask(PIN_MASK_OE | PIN_MASK_STBY | 1 << RW_PIN);
+
+  // PIN_MASK_C1 | PIN_MASK_IRQ stay as input. CLK and RW are put into high
+  // impedance by the GreenPAK chip depending on STBY state - we can always
+  // drive them here.
+  gpio_set_dir_out_masked(PIN_MASK_DATA | PIN_MASK_OE | PIN_MASK_LATCH |
+                          PIN_MASK_LED | PIN_MASK_STBY | PIN_MASK_BUS);
+
+  // Set STBY, LED values
   exit_stby();
-
-  gpio_put(DATA_LATCH_PIN, 0);
-  gpio_put(ADDR_L_LATCH_PIN, 0);
-  gpio_put(ADDR_H_LATCH_PIN, 0);
-
-  gpio_put(AS_PIN, 0);
-  gpio_put(RW_PIN, 1);
-  gpio_put(CLK_PIN, 0);
 }
 
 void cdc_to_uart_task() {
@@ -201,9 +219,6 @@ void programmer_task() {
       }
       set_address_high(c);
       break;
-    case 'a':
-      strobe_as();
-      break;
     case 'w':
       write_cycle();
       break;
@@ -233,18 +248,11 @@ void programmer_task() {
 
 int main(int argc, char* argv[]) {
   bi_decl(bi_program_description("HD6301 programmer."));
-  bi_decl(bi_1pin_with_name(LED_PIN, "On-board LED"));
 
   tusb_init();
   // pico_stdio takes over the first CDC
   stdio_init_all();
   uart_init(uart0, 62500);
-
-  gpio_set_function(UART0_TX_PIN, GPIO_FUNC_UART);
-  gpio_set_function(UART0_RX_PIN, GPIO_FUNC_UART);
-  gpio_init_mask(PIN_MASK_OUT | PIN_MASK_IN);
-  gpio_set_dir_out_masked(PIN_MASK_OUT);
-  gpio_set_dir_in_masked(PIN_MASK_IN);
 
   init_pins();
 
