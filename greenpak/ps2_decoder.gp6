@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<GPDProject version="25" oldestCompatibleVersion="25" GPDVersion="6.32.002" lastChange="19/02/2023 22:55">
+<GPDProject version="25" oldestCompatibleVersion="25" GPDVersion="6.32.002" lastChange="05/03/2023 20:09">
     <generalProjectSettings/>
     <chip family="04" type="06" friendlyName="GreenPAK 6" partNumber="36" package="16">
-        <nvmData registerLenght="2048">51 20 0 91 13 3D 11 F4 47 D2 1F 4D 7F 44 FD 51 F5 47 D6 F 0 0 0 0 0 10 FD 17 0 0 0 0 0 0 0 0 A6 49 0 0 10 1 0 0 0 0 0 0 0 0 0 0 0 0 ED F 0 24 24 FD D3 4F FD D5 6F FD D7 8F FE 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 71 71 0 1 10 0 10 0 0 80 80 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 14 22 30 C 0 0 0 0 0 0 0 0 50 0 0 0 0 0 0 0 0 D7 7 0 0 0 0 0 0 0 20 0 1 0 8 0 2 1 0 0 2 0 1 0 0 2 1 0 0 2 0 1 2 0 52 20 1 30 2 4 1 21 0 13 0 1F 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 A5</nvmData>
+        <nvmData registerLenght="2048">51 61 0 91 13 3D 11 F4 47 D2 1F 4D 7F 44 FD 51 F5 47 D6 F 0 0 0 0 0 10 FD 17 0 0 0 0 0 0 0 0 A6 39 0 0 10 1 0 0 0 0 0 0 0 0 0 ED F 0 0 0 0 24 24 FD D3 4F FD D5 6F FD D7 8F FE 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 10 0 0 10 10 61 61 0 0 80 80 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 14 22 30 C 0 0 0 0 0 0 0 0 50 0 0 0 0 0 0 0 0 D7 7 0 0 0 0 0 0 0 20 0 1 0 8 0 2 1 0 0 2 0 1 0 0 2 1 0 0 2 0 1 2 0 52 20 1 30 2 4 1 21 0 13 0 1F 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 A5</nvmData>
         <eepromData id="0">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</eepromData>
-        <checksum crc32="0xF57CD84D" version="7"/>
+        <checksum crc32="0xD41662BC" version="7"/>
         <VDDItem id="0">
             <item id="0" caption="VDD (PIN 20)">
                 <graphics pos="(-590.00,30.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
@@ -12,38 +12,38 @@
         </VDDItem>
         <IOPad id="1" useCaseMode="1">
             <item id="1" caption="PIN 19 (IO0)">
-                <graphics pos="(-590.00,100.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
-                <textLabel pos="(-7.98,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">KBD_DATA</textLabel>
+                <graphics pos="(-596.00,504.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
+                <textLabel pos="(8.75,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">P22</textLabel>
             </item>
         </IOPad>
-        <IOPad id="2" useCaseMode="1">
+        <IOPad id="2" useCaseMode="2">
             <item id="2" caption="PIN 18 (IO1)">
-                <graphics pos="(-590.00,170.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
-                <textLabel pos="(-5.34,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">KBD_CLK</textLabel>
+                <graphics pos="(-591.00,400.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
+                <textLabel pos="(-34.25,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">IRQ_INDICATOR / P21</textLabel>
             </item>
         </IOPad>
         <IOPad id="3" useCaseMode="1">
             <item id="3" caption="PIN 17 (IO2)">
-                <graphics pos="(-590.00,240.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
-                <textLabel pos="(-3.65,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">KBD_IRQ</textLabel>
+                <graphics pos="(-587.00,326.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
+                <textLabel pos="(-23.06,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">IRQ_CLEAR / P20</textLabel>
             </item>
         </IOPad>
         <IOPad id="4" useCaseMode="1">
             <item id="4" caption="PIN 16 (IO3)">
-                <graphics pos="(-590.00,310.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
-                <textLabel pos="(-22.52,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">IRQ_CLEAR / P20</textLabel>
+                <graphics pos="(-591.00,245.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
+                <textLabel pos="(-3.11,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">KBD_IRQ</textLabel>
             </item>
         </IOPad>
-        <IOPad id="5" useCaseMode="2">
+        <IOPad id="5" useCaseMode="1">
             <item id="5" caption="PIN 15 (IO4)">
-                <graphics pos="(-590.00,380.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
-                <textLabel pos="(-32.60,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">IRQ_INDICATOR / P21</textLabel>
+                <graphics pos="(-585.00,100.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
+                <textLabel pos="(-6.54,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">KBD_DATA</textLabel>
             </item>
         </IOPad>
         <IOPad id="6" useCaseMode="1">
             <item id="6" caption="PIN 14 (IO5)">
-                <graphics pos="(-588.70,483.26)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
-                <textLabel pos="(7.24,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">P22</textLabel>
+                <graphics pos="(-589.24,172.26)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
+                <textLabel pos="(-6.63,-27.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">KBD_CLK</textLabel>
             </item>
         </IOPad>
         <IOPad id="7" useCaseMode="1">
@@ -338,12 +338,6 @@
         <wire output="148" input="112" autoRouting="1" pen="#ff8000ff;1.00;1;32;128" lineType="2" protected="1" CWLid="1" wireText="NET1" wireState="0">
             <points>(-535.00,712.00); (-508.00,712.00); (-508.00,689.00); (-498.00,689.00)</points>
         </wire>
-        <wire output="141" input="262" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="7" wireText="NET7" wireState="0">
-            <points>(-528.00,116.00); (-459.00,116.00); (-459.00,115.00); (-447.00,115.00)</points>
-        </wire>
-        <wire output="142" input="546" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="8" wireText="NET8" wireState="0">
-            <points>(-528.00,186.00); (-500.00,186.00)</points>
-        </wire>
         <wire output="160" input="261" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="9" wireText="CLK" wireState="1">
             <points/>
         </wire>
@@ -476,12 +470,6 @@
         <wire output="1" input="647" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="-1" wireText="GND" wireState="1">
             <points/>
         </wire>
-        <wire output="144" input="646" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="28" wireText="NET28" wireState="0">
-            <points>(-528.00,326.00); (-325.79,326.00); (-325.79,361.80); (-200.00,361.80); (-200.00,348.00)</points>
-        </wire>
-        <wire output="203" input="505" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="25" wireText="NET25" wireState="0">
-            <points>(-156.00,319.00); (-135.00,319.00); (-135.00,386.00); (-528.00,386.00)</points>
-        </wire>
         <wire output="206" input="643" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="20" wireText="NET20" wireState="0">
             <points>(-338.00,283.00); (-75.00,283.00); (-75.00,588.00); (-93.00,588.00)</points>
         </wire>
@@ -491,8 +479,20 @@
         <wire output="202" input="515" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="30" wireText="NET30" wireState="0">
             <points>(-194.00,593.00); (-534.00,593.00)</points>
         </wire>
-        <wire output="0" input="506" autoRouting="1" pen="#ff8000ff;1.00;1;32;128" lineType="2" protected="1" CWLid="-1" wireText="VDD" wireState="1">
+        <wire output="145" input="262" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="22" wireText="NET22" wireState="0">
+            <points>(-523.00,116.00); (-459.00,116.00); (-459.00,115.00); (-447.00,115.00)</points>
+        </wire>
+        <wire output="0" input="497" autoRouting="1" pen="#ff8000ff;1.00;1;32;128" lineType="2" protected="1" CWLid="-1" wireText="VDD" wireState="1">
             <points/>
+        </wire>
+        <wire output="203" input="496" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="8" wireText="NET8" wireState="0">
+            <points>(-156.00,319.00); (-135.00,319.00); (-135.00,406.00); (-529.00,406.00)</points>
+        </wire>
+        <wire output="146" input="546" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="25" wireText="NET25" wireState="0">
+            <points>(-527.00,188.00); (-515.00,188.00); (-515.00,186.00); (-500.00,186.00)</points>
+        </wire>
+        <wire output="143" input="646" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="26" wireText="NET26" wireState="0">
+            <points>(-525.00,342.00); (-255.00,342.00); (-255.00,370.00); (-200.00,370.00); (-200.00,348.00)</points>
         </wire>
         <textLabel pos="(-58.95,277.59)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">We need to make sure that when HD6301 comes out of reset it sees
 P20 = 0
@@ -1129,6 +1129,24 @@ This automatically makes P21 show 1 as it should.</textLabel>
                     </component>
                 </components>
                 <networks>
+                    <network networkId="28" name="NET28">
+                        <connections>
+                            <connection connectionType="0" routingType="0" sceneIndex="0">
+                                <from>
+                                    <IdDto category="5" componentType="43" componentNumber="5" pinNumber="0"/>
+                                </from>
+                                <to>
+                                    <IdDto category="100" componentType="45" componentNumber="0" pinNumber="17"/>
+                                </to>
+                                <path>
+                                    <point value="(-649;320)"/>
+                                    <point value="(-619;320)"/>
+                                    <point value="(-619;337)"/>
+                                    <point value="(-610;337)"/>
+                                </path>
+                            </connection>
+                        </connections>
+                    </network>
                     <network networkId="27" name="NET27">
                         <connections>
                             <connection connectionType="0" routingType="0" sceneIndex="0">
@@ -1170,29 +1188,13 @@ This automatically makes P21 show 1 as it should.</textLabel>
                                     <IdDto category="5" componentType="43" componentNumber="4" pinNumber="0"/>
                                 </from>
                                 <to>
-                                    <IdDto category="100" componentType="45" componentNumber="0" pinNumber="18"/>
+                                    <IdDto category="100" componentType="45" componentNumber="0" pinNumber="14"/>
                                 </to>
                                 <path>
                                     <point value="(-640;181)"/>
-                                    <point value="(-613;181)"/>
-                                </path>
-                            </connection>
-                        </connections>
-                    </network>
-                    <network networkId="22" name="NET22">
-                        <connections>
-                            <connection connectionType="0" routingType="0" sceneIndex="0">
-                                <from>
-                                    <IdDto category="5" componentType="43" componentNumber="3" pinNumber="0"/>
-                                </from>
-                                <to>
-                                    <IdDto category="100" componentType="45" componentNumber="0" pinNumber="19"/>
-                                </to>
-                                <path>
-                                    <point value="(-649;109)"/>
-                                    <point value="(-627;109)"/>
-                                    <point value="(-627;111)"/>
-                                    <point value="(-613;111)"/>
+                                    <point value="(-627;181)"/>
+                                    <point value="(-627;183)"/>
+                                    <point value="(-612;183)"/>
                                 </path>
                             </connection>
                         </connections>
@@ -1210,6 +1212,24 @@ This automatically makes P21 show 1 as it should.</textLabel>
                                     <point value="(-746;124)"/>
                                     <point value="(-746;109)"/>
                                     <point value="(-734;109)"/>
+                                </path>
+                            </connection>
+                        </connections>
+                    </network>
+                    <network networkId="7" name="NET7">
+                        <connections>
+                            <connection connectionType="0" routingType="0" sceneIndex="0">
+                                <from>
+                                    <IdDto category="5" componentType="43" componentNumber="3" pinNumber="0"/>
+                                </from>
+                                <to>
+                                    <IdDto category="100" componentType="45" componentNumber="0" pinNumber="15"/>
+                                </to>
+                                <path>
+                                    <point value="(-649;109)"/>
+                                    <point value="(-619;109)"/>
+                                    <point value="(-619;111)"/>
+                                    <point value="(-608;111)"/>
                                 </path>
                             </connection>
                         </connections>
