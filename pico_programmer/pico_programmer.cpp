@@ -109,18 +109,26 @@ void set_address(uint16_t address) {
 }
 
 uint8_t read_cycle() {
+  // Set RW to read
   gpio_put(RW_PIN, 1);
   busy_wait_us_32(1);
+
+  // Pico data pins to input
+  gpio_set_dir_in_masked(PIN_MASK_DATA);
+  // Disable driving bus data pins from data latch
+  gpio_put(DATA_LATCH_OE_PIN, 1);
+  // Enable reading from bus data and writing to Pico data pins
+  gpio_put(DATA_BUF_OE_PIN, 0);
+  // Clock pin high: OE on RAM/ROM gets enabled
   gpio_put(CLK_PIN, 1);
   busy_wait_us_32(1);
-
-  gpio_set_dir_in_masked(PIN_MASK_DATA);
-  gpio_put(DATA_BUF_OE_PIN, 0);
   uint8_t data = mask_to_data(gpio_get_all());
-  gpio_put(DATA_BUF_OE_PIN, 1);
-  gpio_set_dir_out_masked(PIN_MASK_DATA);
 
+  // The same procedure in reverse
   gpio_put(CLK_PIN, 0);
+  gpio_put(DATA_BUF_OE_PIN, 1);
+  gpio_put(DATA_LATCH_OE_PIN, 0);
+  gpio_set_dir_out_masked(PIN_MASK_DATA);
 
   return data;
 }
