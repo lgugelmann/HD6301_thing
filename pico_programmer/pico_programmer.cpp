@@ -260,7 +260,10 @@ int main(int argc, char* argv[]) {
   tusb_init();
   // pico_stdio takes over the first CDC
   stdio_init_all();
+  // We're transferring binary data. Without this we get extra unwanted bytes.
+  stdio_set_translate_crlf(&stdio_usb, false);
   uart_init(uart0, 62500);
+  uart_set_translate_crlf(uart0, false);
 
   init_pins();
 
