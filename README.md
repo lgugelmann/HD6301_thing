@@ -181,7 +181,6 @@ Logic levels are assumed 5V CMOS.
 
 ### Bus details for HD6301 board
 
-| Pin number | Function | Notes                                                                             |
-|------------|----------|-----------------------------------------------------------------------------------|
-| 37         | AS       | Address latch strobe. Allows Pico Programmer to access RAM/ROM addresses.         |
-| 38         | STBYB    | Active low standby signal. For Pico Programmer to make HD6301 lets go of the bus. |
+| Pin number | Function | Notes                                                                            |
+|------------|----------|----------------------------------------------------------------------------------|
+| 38         | STBYB    | Active low standby signal. For Pico Programmer to make HD6301 let go of the bus. |
