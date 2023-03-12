@@ -3,12 +3,12 @@ __macros_inc = 1
 
 ; Define a zero page variable without having to keep track of their exact
 ; address
-zp_addr set $001f
+zp_addr set $0020
 zp_var  macro name, size
 oldorg set *
         org zp_addr
-name    label *   
-        db.b size
+name    label *
+        ds.b size
 zp_addr set zp_addr+size
         org oldorg
         endm
