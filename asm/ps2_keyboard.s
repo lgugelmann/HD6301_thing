@@ -9,14 +9,7 @@
 
 start:
         lds #$0200              ; Initialize the stack
-        clr DDR1                ; Set port 1 to input
-
-        ;; Port 2 is connected to the keyboard controller interrupts
-        ;; P20 is IRQ clear (on low), P21 indicates whether an interrupt
-        ;; is a keyboard interrupt and is low on KBD interrupt
-        lda #$01
-        sta DDR2                ; Set port 2 to out/in/in
-        sta PORT2               ; Set P20 to 1
+        jsr ps2_decoder_init
 
         lda #TRMCR_CC0
         sta TRMCR               ; Set clock source to internal and rate to E/16
@@ -24,12 +17,37 @@ start:
         lda #TRCSR_TE|TRCSR_RE  ; Enable read / transmit
         sta TRCSR
 
-        jsr ps2_decoder_init
-
         cli                     ; Enable interrupts
 
 loop:
+        jsr ps2_decoder_get_key
+        cmp B,#$01
+        bne .control_code
+        jsr send_byte
         bra loop                ; Sit around waiting for IRQs
+
+.control_code:
+        cmp A,#$66              ; Backspace
+        bne +
+        ;; ASCII backspace just means 'move one back' on terminals. To implement
+        ;; 'real' backspace we need to send backspace, space, backspace.
+        lda #$08                ; ASCII backspace
+        jsr send_byte
+        lda #$20                ; ASCII space
+        jsr send_byte
+        lda #$08                ; ASCII backspace
+        jsr send_byte
+
++
+        cmp A,#$5A              ; Enter
+        bne +
+        lda #$0D                ; CR
+        jsr send_byte
+        lda #$0A                ; LF
+        jsr send_byte
+
++
+        bra loop
 
         ;; Send byte stored in A
 send_byte:
@@ -44,21 +62,6 @@ send_byte:
 
 
 irq:
-        ;; Check if it's a keyboard interrupt
-        lda PORT2
-        bit A,#$02
-        beq kbd_irq
-
-        lda #$69
-        jsr send_byte
-        rti
-
-kbd_irq:
-        ldb PORT1               ; load keycode from port1
-        ;; Send 0 then 1 on P20 to clear Keyboard interrupt
-        lda #$01
-        clr PORT2
-        sta PORT2
         jsr ps2_decoder_interrupt
         rti
 
