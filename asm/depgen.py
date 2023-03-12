@@ -13,11 +13,12 @@ if __name__ == '__main__':
     to_parse = [sys.argv[1]]
     while len(to_parse) > 0:
         filename = to_parse.pop()
+        path = pathlib.Path(filename).parent
         with open(filename) as input_file:
             for line in input_file:
-                match = re.search(r"\s+include (\w+)", line)
+                match = re.search(r"\s+include ([\w/]+)", line)
                 if match:
-                    include = match.group(1) + '.inc'
+                    include = path.joinpath(match.group(1) + '.inc').as_posix()
                     if include not in includes:
                         includes.add(include)
                         to_parse.append(include)

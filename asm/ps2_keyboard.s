@@ -4,8 +4,8 @@
 
         org $e000
 
-        include registers
-        include ps2_decoder
+        include include/registers
+        include include/ps2_decoder
 
 start:
         lds #$0200              ; Initialize the stack
