@@ -17,6 +17,7 @@ serial_init:
 
 ;; Send the byte in A over serial
 serial_send_byte:
+        psh b
         ;; Wait for the send queue to be empty
 .wait_empty:
         ldb TRCSR
@@ -24,6 +25,7 @@ serial_send_byte:
         beq .wait_empty
 
         sta TDR
+        pul b
         rts
 
 
