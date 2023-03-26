@@ -1,6 +1,6 @@
         ifndef __registers_inc
 __registers_inc = 1
-        
+
 DDR1  = $0000                   ; Port 1 Data Direction Register
 DDR2  = $0001                   ; Port 2 Data Direction Register
 PORT1 = $0002                   ; Port 1 address
@@ -17,5 +17,7 @@ TRCSR_TE   = %00000010          ; Transmit Enable
 TRCSR_RE   = %00001000          ; Read Enable
 TRCSR_TDRE = %00100000          ; Transmit Data Register Empty
 TRCSR_RDRF = %10000000          ; Receive Data Register Full
+
+TERMINAL_SEND_CHAR = $7f00
 
         endif
