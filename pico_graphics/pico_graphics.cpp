@@ -1,5 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include "hardware/clocks.h"
 #include "hardware/dma.h"
@@ -24,43 +24,44 @@ extern "C" {
 #define FONT_N_CHARS 128
 #define FONT_FIRST_ASCII 0
 
-#define FRAME_WIDTH 800
-#define FRAME_HEIGHT 600
-#define VREG_VSEL VREG_VOLTAGE_1_30
-#define DVI_TIMING dvi_timing_800x600p_60hz
-
-static const struct dvi_serialiser_cfg serializer_cfg = {
-    .pio = pio0,
-    .sm_tmds = {0, 1, 2},
-    .pins_tmds = {12, 18, 16},
-    .pins_clk = 14,
-    .invert_diffpairs = false};
+constexpr int kD0Pin = 0;
+constexpr int kDMask = 0xff;
+constexpr int kA0Pin = 8;
+constexpr int kAMask = 3 << kA0Pin;
+constexpr int kAddressPinCount = 3;
+constexpr int kCsPin = 11;
+constexpr int kCsMask = 1 << kCsPin;
+constexpr int kAllPinMask = kDMask | kAMask | kCsMask;
 
 struct dvi_inst dvi0;
 struct semaphore dvi_start_sem;
 
-#define CHAR_COLS (FRAME_WIDTH / FONT_CHAR_WIDTH)
-#define CHAR_ROWS (FRAME_HEIGHT / FONT_CHAR_HEIGHT)
-char charbuf[CHAR_ROWS * CHAR_COLS];
+constexpr int kFrameWidth = 800;
+constexpr int kFrameHeight = 600;
+
+constexpr int kNumCols = kFrameWidth / FONT_CHAR_WIDTH;
+constexpr int kNumRows = kFrameHeight / FONT_CHAR_HEIGHT;
+constexpr int kCharBufSize = kNumRows * kNumCols;
+char charbuf[kCharBufSize] = {0};
 
 static inline void prepare_scanline(const char *chars, uint y) {
-  static uint8_t scanbuf[FRAME_WIDTH / 8];
+  static uint8_t scanbuf[kFrameWidth / 8];
   // First blit font into 1bpp scanline buffer, then encode scanbuf into tmdsbuf
-  for (uint i = 0; i < CHAR_COLS; ++i) {
-    uint c = chars[i + y / FONT_CHAR_HEIGHT * CHAR_COLS];
+  for (uint i = 0; i < kNumCols; ++i) {
+    uint c = chars[i + y / FONT_CHAR_HEIGHT * kNumCols];
     scanbuf[i] =
         font[(c - FONT_FIRST_ASCII) + (y % FONT_CHAR_HEIGHT) * FONT_N_CHARS];
   }
   uint32_t *tmdsbuf;
   queue_remove_blocking(&dvi0.q_tmds_free, &tmdsbuf);
-  tmds_encode_1bpp((const uint32_t *)scanbuf, tmdsbuf, FRAME_WIDTH);
+  tmds_encode_1bpp((const uint32_t *)scanbuf, tmdsbuf, kFrameWidth);
   queue_add_blocking(&dvi0.q_tmds_valid, &tmdsbuf);
 }
 
 void core1_scanline_callback() {
   static uint y = 1;
   prepare_scanline(charbuf, y);
-  y = (y + 1) % FRAME_HEIGHT;
+  y = (y + 1) % kFrameHeight;
 }
 
 void __not_in_flash("main") core1_main() {
@@ -70,39 +71,84 @@ void __not_in_flash("main") core1_main() {
 
   // The text display is completely IRQ driven (takes up around 30% of cycles @
   // VGA). We could do something useful, or we could just take a nice nap
-  while (1) {
+  while (true) {
     __wfi();
   }
   __builtin_unreachable();
 }
 
+void bus_irq_callback(uint gpio, uint32_t event_mask) {
+  static int cursor_row = 0;
+  static int cursor_column = 0;
+  uint32_t gpio_state = gpio_get_all();
+  char data = (gpio_state & kDMask) >> kD0Pin;
+  uint32_t command = (gpio_state & kAMask) >> kA0Pin;
+  switch (command) {
+    case 0: {
+      // make sure we don't accidentally write bytes >127
+      int pos = cursor_column + cursor_row * kNumCols;
+      charbuf[pos] = data & 0x7f;
+      charbuf[(pos + 1) % kCharBufSize] = '_';
+      cursor_column = cursor_column + 1;
+      if (cursor_column == kNumCols) {
+        cursor_column = 0;
+        cursor_row = (cursor_row + 1) % kNumRows;
+      }
+    }
+    default:
+      break;
+  }
+}
+
 int __not_in_flash("main") main() {
-  vreg_set_voltage(VREG_VSEL);
+  vreg_set_voltage(VREG_VOLTAGE_1_30);
   sleep_ms(10);
+
   // Run system at TMDS bit clock
-  set_sys_clock_khz(DVI_TIMING.bit_clk_khz, true);
+  const auto *dvi_timing = &dvi_timing_800x600p_60hz;
+  set_sys_clock_khz(dvi_timing->bit_clk_khz, true);
 
-  setup_default_uart();
+  stdio_init_all();
 
-  printf("Configuring DVI\n");
+  // Fill character buffer with space characters
+  for (int i = 0; i < kNumRows * kNumCols; ++i) {
+    charbuf[i] = ' ';
+  }
+  charbuf[0] = '_';
 
-  dvi0.timing = &DVI_TIMING;
+  // Bus I/O & IRQ init
+  gpio_init_mask(kAllPinMask);  // Sets pins in the mask to input
+  gpio_pull_up(kCsPin);
+  for (int i = kA0Pin; i < kA0Pin + kAddressPinCount; ++i) {
+    gpio_pull_down(i);
+  }
+  gpio_set_irq_enabled_with_callback(kCsPin, GPIO_IRQ_EDGE_FALL, true,
+                                     &bus_irq_callback);
+
+  // DVI Initialization
+  const dvi_serialiser_cfg serializer_cfg = {.pio = pio0,
+                                             .sm_tmds = {0, 1, 2},
+                                             .pins_tmds = {18, 20, 26},
+                                             .pins_clk = 16,
+                                             .invert_diffpairs = true};
+  dvi0.timing = dvi_timing;
   dvi0.ser_cfg = serializer_cfg;
   dvi0.scanline_callback = core1_scanline_callback;
+
   dvi_init(&dvi0, next_striped_spin_lock_num(), next_striped_spin_lock_num());
 
-  printf("Prepare first scanline\n");
-  for (int i = 0; i < CHAR_ROWS * CHAR_COLS; ++i) {
-    charbuf[i] = FONT_FIRST_ASCII + i % FONT_N_CHARS;
-  }
   prepare_scanline(charbuf, 0);
 
-  printf("Core 1 start\n");
   sem_init(&dvi_start_sem, 0, 1);
   hw_set_bits(&bus_ctrl_hw->priority, BUSCTRL_BUS_PRIORITY_PROC1_BITS);
   multicore_launch_core1(core1_main);
-
   sem_release(&dvi_start_sem);
-  while (1) __wfi();
+
+  printf("init done");
+  // Sit around waiting for interrupts
+  while (true) {
+    __wfi();
+  }
+
   __builtin_unreachable();
 }

@@ -13,9 +13,14 @@ add_subdirectory(PicoDVI/software/libdvi)
 
 add_compile_options(-Wall)
 
+# ----------------------------------------
+
 add_executable(pico_graphics
   pico_graphics.cpp
 )
+
+pico_enable_stdio_usb(pico_graphics 1)
+pico_enable_stdio_uart(pico_graphics 0)
 
 target_compile_definitions(pico_graphics PRIVATE
   DVI_VERTICAL_REPEAT=1
