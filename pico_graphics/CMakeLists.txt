@@ -37,3 +37,28 @@ target_link_libraries(pico_graphics
 )
 
 pico_add_extra_outputs(pico_graphics)
+
+# ----------------------------------------
+
+add_executable(pico_graphics_test
+  pico_graphics_gpio_tester.cpp
+)
+
+pico_enable_stdio_usb(pico_graphics_test 1)
+pico_enable_stdio_uart(pico_graphics_test 0)
+
+target_compile_definitions(pico_graphics_test PRIVATE
+  DVI_VERTICAL_REPEAT=1
+  DVI_N_TMDS_BUFFERS=3
+  DVI_MONOCHROME_TMDS=1
+)
+
+target_link_libraries(pico_graphics_test
+  pico_stdlib
+  pico_multicore
+  pico_util
+  hardware_dma
+  libdvi
+)
+
+pico_add_extra_outputs(pico_graphics_test)
