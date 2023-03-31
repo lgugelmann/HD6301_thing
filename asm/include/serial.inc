@@ -12,7 +12,14 @@ serial_init:
 
         lda #TRCSR_TE|TRCSR_RE  ; Enable read / transmit
         sta TRCSR
+        rts
 
+;; Read the next character on the serial line into A, blocking.
+serial_read_byte_blocking:
+        lda TRCSR
+        bit A,#TRCSR_RDRF       ; receive register full -> nonzero result here
+        beq serial_read_byte_blocking
+        lda RDR
         rts
 
 ;; Send the byte in A over serial
