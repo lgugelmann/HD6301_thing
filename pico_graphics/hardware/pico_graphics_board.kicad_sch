@@ -1408,7 +1408,6 @@
     )
   )
 
-
   (junction (at 62.23 135.89) (diameter 0) (color 0 0 0 0)
     (uuid 1bc28432-1e94-4469-a3c9-2ece59c9650f)
   )
@@ -3316,7 +3315,7 @@
     (property "Value" "270" (at 58.42 50.8 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "Resistor_SMD:R_Array_Convex_4x1206" (at 66.04 42.545 90)
+    (property "Footprint" "Resistor_SMD:R_Array_Concave_4x0603" (at 66.04 42.545 90)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (at 66.04 49.53 0)
@@ -4426,7 +4425,7 @@
     (property "Value" "270" (at 58.42 40.64 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "Resistor_SMD:R_Array_Convex_4x1206" (at 66.04 32.385 90)
+    (property "Footprint" "Resistor_SMD:R_Array_Concave_4x0603" (at 66.04 32.385 90)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (at 66.04 39.37 0)
