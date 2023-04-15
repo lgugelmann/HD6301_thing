@@ -6,10 +6,10 @@ __macros_inc = 1
 zp_addr set $0020
 zp_var  macro name, size
 oldorg set *
-        org zp_addr
+        org zp_addr[]
 name    label *
         ds.b size
-zp_addr set zp_addr+size
+zp_addr[] set zp_addr[] + size
         org oldorg
         endm
 
