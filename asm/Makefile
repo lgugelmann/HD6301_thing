@@ -1,4 +1,4 @@
-PROGRAMS = blink blink_parametrized sci_hello sci_echo irq_test ps2_keyboard graphic_terminal_test
+PROGRAMS = sci_hello sci_echo ps2_keyboard graphic_terminal_test
 DEP = $(PROGRAMS:%=%.d)
 
 ########################################
