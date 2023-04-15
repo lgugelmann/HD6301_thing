@@ -5,54 +5,48 @@
 
         org $e000
 
-        include include/ps2_decoder
+        include include/keyboard
+        include include/registers
         include include/serial
 
 start:
-        lds #$0200              ; Initialize the stack
-        jsr ps2_decoder_init
+        lds #$7eff              ; Initialize the stack
+        jsr keyboard_init
         jsr serial_init
         cli                     ; Enable interrupts
 
 loop:
-        jsr ps2_decoder_get_key
-        cmp B,#$01
-        bne .control_code
-        jsr serial_send_byte
-        sta TERMINAL_SEND_CHAR
-        bra loop                ; Sit around waiting for IRQs
+        jsr keyboard_getchar
+        cmpa #0
+        beq loop
 
-.control_code:
-        cmp A,#$66              ; Backspace
+        cmpa #$08              ; Backspace
         bne +
         ;; ASCII backspace just means 'move one back' on terminals. To implement
         ;; 'real' backspace we need to send backspace, space, backspace.
-        lda #$08                ; ASCII backspace
         sta TERMINAL_SEND_CHAR
         jsr serial_send_byte
         lda #$20                ; ASCII space
-        sta TERMINAL_SEND_CHAR
         jsr serial_send_byte
         lda #$08                ; ASCII backspace
-        sta TERMINAL_SEND_CHAR
         jsr serial_send_byte
+        bra loop
 
 +
-        cmp A,#$5A              ; Enter
+        cmp A,#$0A              ; LF
         bne +
         lda #$0D                ; CR
-        sta TERMINAL_SEND_CHAR
         jsr serial_send_byte
         lda #$0A                ; LF
-        sta TERMINAL_SEND_CHAR
-        jsr serial_send_byte
 
 +
+        sta TERMINAL_SEND_CHAR
+        jsr serial_send_byte
         bra loop
 
 
 irq:
-        jsr ps2_decoder_interrupt
+        jsr keyboard_irq
         rti
 
         org $fff0
