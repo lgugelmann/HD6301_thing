@@ -1,4 +1,4 @@
-PROGRAMS = sci_hello sci_echo graphic_terminal_test
+PROGRAMS = sci_hello sci_echo
 DEP = $(PROGRAMS:%=%.d)
 
 ########################################
