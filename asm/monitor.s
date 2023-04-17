@@ -30,6 +30,9 @@ hello_command:
 bye_command:
         byt "bye\0"
         adr bye
+reset_command:
+        byt "reset\0"
+        adr start
 COMMANDS_SIZE = * - commands
 
 
