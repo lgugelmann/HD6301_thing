@@ -1,4 +1,4 @@
-PROGRAMS = sci_hello sci_echo
+PROGRAMS = sci_hello sci_echo monitor
 DEP = $(PROGRAMS:%=%.d)
 
 ########################################
