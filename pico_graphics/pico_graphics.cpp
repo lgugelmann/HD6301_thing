@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #include "hardware/clocks.h"
 #include "hardware/dma.h"
@@ -8,6 +9,7 @@
 #include "hardware/structs/ssi.h"
 #include "hardware/sync.h"
 #include "hardware/vreg.h"
+#include "pico/bit_ops.h"
 #include "pico/multicore.h"
 #include "pico/sem.h"
 #include "pico/stdlib.h"
@@ -19,19 +21,27 @@ extern "C" {
 }
 
 #include "font.h"
+
+// Note: width has to be 8 or you need to change the logic in prepare_scanline
 #define FONT_CHAR_WIDTH 8
 #define FONT_CHAR_HEIGHT 15
 #define FONT_N_CHARS 128
 #define FONT_FIRST_ASCII 0
 
-constexpr int kD0Pin = 0;
-constexpr int kDMask = 0xff;
-constexpr int kA0Pin = 8;
-constexpr int kAMask = 3 << kA0Pin;
-constexpr int kAddressPinCount = 3;
-constexpr int kCsPin = 11;
+constexpr int kLedPin = 25;
+constexpr int kLedMask = 1 << kLedPin;
+// D1..D6 are at pins 14,13...9
+constexpr int kD0Pin = 15;
+constexpr int kD7Pin = 8;
+constexpr int kDMask = 0xff << kD7Pin;
+// A1..A4 are at pins 5...2
+constexpr int kA0Pin = 6;
+constexpr int kA5Pin = 1;
+constexpr int kAMask = 0x3f << kA5Pin;
+constexpr int kAddressPinCount = 6;
+constexpr int kCsPin = 0;
 constexpr int kCsMask = 1 << kCsPin;
-constexpr int kAllPinMask = kDMask | kAMask | kCsMask;
+constexpr int kAllPinMask = kDMask | kAMask | kCsMask | kLedMask;
 
 struct dvi_inst dvi0;
 struct semaphore dvi_start_sem;
@@ -42,15 +52,27 @@ constexpr int kFrameHeight = 600;
 constexpr int kNumCols = kFrameWidth / FONT_CHAR_WIDTH;
 constexpr int kNumRows = kFrameHeight / FONT_CHAR_HEIGHT;
 constexpr int kCharBufSize = kNumRows * kNumCols;
-char charbuf[kCharBufSize] = {0};
 
-static inline void prepare_scanline(const char *chars, uint y) {
-  static uint8_t scanbuf[kFrameWidth / 8];
+struct graphics_state {
+  char charbuf[kCharBufSize] = {0};
+  int cursor_pos = 0;
+};
+
+graphics_state state;
+
+static inline void prepare_scanline(const graphics_state *state, uint y) {
+  static uint8_t scanbuf[kNumCols];
   // First blit font into 1bpp scanline buffer, then encode scanbuf into tmdsbuf
   for (uint i = 0; i < kNumCols; ++i) {
-    uint c = chars[i + y / FONT_CHAR_HEIGHT * kNumCols];
+    uint c = state->charbuf[i + y / FONT_CHAR_HEIGHT * kNumCols];
     scanbuf[i] =
         font[(c - FONT_FIRST_ASCII) + (y % FONT_CHAR_HEIGHT) * FONT_N_CHARS];
+  }
+  uint cursor_pixel_row = (state->cursor_pos / kNumCols) * FONT_CHAR_HEIGHT;
+  if (cursor_pixel_row <= y && y < cursor_pixel_row + FONT_CHAR_HEIGHT) {
+    // we're in the cursor row, invert the character under the cursor
+    scanbuf[state->cursor_pos % kNumCols] =
+        ~scanbuf[state->cursor_pos % kNumCols];
   }
   uint32_t *tmdsbuf;
   queue_remove_blocking(&dvi0.q_tmds_free, &tmdsbuf);
@@ -58,9 +80,9 @@ static inline void prepare_scanline(const char *chars, uint y) {
   queue_add_blocking(&dvi0.q_tmds_valid, &tmdsbuf);
 }
 
-void core1_scanline_callback() {
+void __not_in_flash("main") core1_scanline_callback() {
   static uint y = 1;
-  prepare_scanline(charbuf, y);
+  prepare_scanline(&state, y);
   y = (y + 1) % kFrameHeight;
 }
 
@@ -78,23 +100,56 @@ void __not_in_flash("main") core1_main() {
 }
 
 void bus_irq_callback(uint gpio, uint32_t event_mask) {
-  static int cursor_row = 0;
-  static int cursor_column = 0;
   uint32_t gpio_state = gpio_get_all();
-  char data = (gpio_state & kDMask) >> kD0Pin;
-  uint32_t command = (gpio_state & kAMask) >> kA0Pin;
+  // Data and address are laid out backside-front on the board
+  uint8_t data = __rev((gpio_state & kDMask) >> kD7Pin) >> 24;
+  uint8_t command = __rev((gpio_state & kAMask) >> kA5Pin) >> 26;
   switch (command) {
+    // Write character, advance cursor
     case 0: {
-      // make sure we don't accidentally write bytes >127
-      int pos = cursor_column + cursor_row * kNumCols;
-      charbuf[pos] = data & 0x7f;
-      charbuf[(pos + 1) % kCharBufSize] = '_';
-      cursor_column = cursor_column + 1;
-      if (cursor_column == kNumCols) {
-        cursor_column = 0;
-        cursor_row = (cursor_row + 1) % kNumRows;
-      }
+      state.charbuf[state.cursor_pos] = data & 0x7f;
+      state.cursor_pos = (state.cursor_pos + 1) % kCharBufSize;
+      break;
     }
+    // Clear commands
+    case 1: {
+      switch (data) {
+        case 0: {  // Clear full screen, reset cursor to 0
+          memset(state.charbuf, ' ', kCharBufSize);
+          state.cursor_pos = 0;
+          break;
+        }
+        case 1: {  // Clear current row, reset cursor to row start
+          state.cursor_pos -= (state.cursor_pos % kNumCols);
+          memset(state.charbuf + state.cursor_pos, ' ', kNumCols);
+          break;
+        }
+        case 2: {  // Clear next row, reset cursor to next row start
+          state.cursor_pos =
+              (state.cursor_pos - (state.cursor_pos % kNumCols) + kNumCols) %
+              kCharBufSize;
+          memset(state.charbuf + state.cursor_pos, ' ', kNumCols);
+          break;
+        }
+      }
+      break;
+    }
+    // Cursor position delta commands. Data contains signed delta to cursor
+    // position.
+    case 2: {
+      int new_position = (state.cursor_pos + (signed char)data) % kCharBufSize;
+      if (new_position < 0) {
+        new_position += kCharBufSize;
+      }
+      state.cursor_pos = new_position;
+      break;
+    }
+    // Same as 0 but doesn't advance cursor
+    case 3: {
+      state.charbuf[state.cursor_pos] = data & 0x7f;
+      break;
+    }
+
     default:
       break;
   }
@@ -112,18 +167,19 @@ int __not_in_flash("main") main() {
 
   // Fill character buffer with space characters
   for (int i = 0; i < kNumRows * kNumCols; ++i) {
-    charbuf[i] = ' ';
+    state.charbuf[i] = ' ';
   }
-  charbuf[0] = '_';
 
   // Bus I/O & IRQ init
   gpio_init_mask(kAllPinMask);  // Sets pins in the mask to input
   gpio_pull_up(kCsPin);
-  for (int i = kA0Pin; i < kA0Pin + kAddressPinCount; ++i) {
+  for (int i = kA5Pin; i <= kA0Pin; ++i) {
     gpio_pull_down(i);
   }
   gpio_set_irq_enabled_with_callback(kCsPin, GPIO_IRQ_EDGE_FALL, true,
                                      &bus_irq_callback);
+  gpio_set_dir(kLedPin, true /* set as output */);
+  gpio_put(kLedPin, 1);
 
   // DVI Initialization
   const dvi_serialiser_cfg serializer_cfg = {.pio = pio0,
@@ -137,14 +193,13 @@ int __not_in_flash("main") main() {
 
   dvi_init(&dvi0, next_striped_spin_lock_num(), next_striped_spin_lock_num());
 
-  prepare_scanline(charbuf, 0);
+  prepare_scanline(&state, 0);
 
   sem_init(&dvi_start_sem, 0, 1);
   hw_set_bits(&bus_ctrl_hw->priority, BUSCTRL_BUS_PRIORITY_PROC1_BITS);
   multicore_launch_core1(core1_main);
   sem_release(&dvi_start_sem);
 
-  printf("init done");
   // Sit around waiting for interrupts
   while (true) {
     __wfi();

@@ -29,6 +29,7 @@ target_compile_definitions(pico_graphics PRIVATE
 )
 
 target_link_libraries(pico_graphics
+  pico_bit_ops
   pico_stdlib
   pico_multicore
   pico_util
