@@ -32,7 +32,7 @@ $(patsubst %,%_minipro_prog,$(PROGRAMS)): %_minipro_prog: %.bin
 	$(ASL) -L $<
 
 %.bin: %.p
-	$(P2BIN) -r 0xe000-0xffff $<
+	$(P2BIN) -segment CODE $<
 
 clean:
 	$(RM) $(patsubst %,%.bin,$(PROGRAMS))
