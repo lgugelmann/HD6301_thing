@@ -24,15 +24,12 @@ serial_read_byte_blocking:
 
 ;; Send the byte in A over serial
 serial_send_byte:
-        psh b
         ;; Wait for the send queue to be empty
 .wait_empty:
-        ldb TRCSR
-        bit B,#TRCSR_TDRE
+        tim #TRCSR_TDRE,TRCSR
         beq .wait_empty
 
         sta TDR
-        pul b
         rts
 
 ;; Print the byte in A as a series of 0 and 1s
