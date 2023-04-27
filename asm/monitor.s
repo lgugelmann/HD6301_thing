@@ -44,6 +44,8 @@ terminal_string:
         byt "> \0"
 error_string:
         byt "Unknown command: \0"
+no_user_program_error_string:
+        byt "Error: no user program running.\0"
 
 ; A table with all the available commands. The format is a null-terminated
 ; string with the command itself, followed by 2 bytes with the address to jump
@@ -79,6 +81,9 @@ start:
         lds #MONITOR_STACK_START ; Set stack to monitor stack location
 
         jsr stdio_init          ; Initializes serial, keyboard & graphics
+
+        ldx #0
+        stx user_stack_ptr
 
         cli                     ; Enable interrupts
 
@@ -172,7 +177,8 @@ exec:
         ; indexed jump, X needs to contain the address to jmp to, so we first do
         ; an indexed load to get to the actual address, then we jump.
         ldx 1,x
-        jmp 0,x                 ; rts is in the command we jump to
+        jmp 0,x
+        ; rts for 'exec' is in the command we jump to
 
 .error:
         ldx #error_string
@@ -197,19 +203,32 @@ bye:
 
 run:
         lds #USER_STACK_START
-        ; Push the monitor start address on the user stack so a program can rts
-        ; back to it.
-        ldx #line_start
-        pshx
-        jmp test_user_program
+        ; jsr and not jmp so the user program can rts back to the monitor.
+        jsr test_user_program
+
+        ; Clear the user stack pointer to flag that there isn't a user program
+        ; runnning.
+        ldx #0
+        stx user_stack_ptr
+        ; Can't rts here: the monitor stack might have been changed around by
+        ; invoking the monitor program from the user program.
+        lds #MONITOR_STACK_START
+        jmp line_start
 
 continue:
-        lds user_stack_ptr
+        ldx user_stack_ptr
+        cpx #0
+        beq .error
 
+        lds user_stack_ptr
         ; The user program was interrupted and still has program counter,
         ; accumulators, etc on the user stack. RTI restores these and continues
         ; execution.
         rti
+.error:
+        ldx #no_user_program_error_string
+        jsr putstring
+        rts
 
 irq:
         ; The 6301 puts stack pointer, accumulators, register flags etc on the
