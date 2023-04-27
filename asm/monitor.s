@@ -70,6 +70,11 @@ continue_command:
         adr continue
         byt "c\0"
         adr continue
+print_command:
+        byt "print\0"
+        adr print
+        byt "p\0"
+        adr print
 
 COMMANDS_SIZE = * - commands
 
@@ -225,6 +230,69 @@ continue:
         ; accumulators, etc on the user stack. RTI restores these and continues
         ; execution.
         rti
+.error:
+        ldx #no_user_program_error_string
+        jsr putstring
+        rts
+
+; Print the current status registers, accumulators, program counter, and stack
+; pointer of the (paused) user program. This assumes the data is on the user
+; stack in the following order:
+; SP+1: condition code register
+; SP+2: B register
+; SP+3: A register
+; SP+4: X register high
+; SP+5: X register low
+; SP+6: program counter high
+; SP+7: program counter low
+print:
+        ldx user_stack_ptr
+        cpx #0
+        beq .error
+
+        ldx #.print_string
+        jsr putstring
+        ldx user_stack_ptr
+
+        lda 1,x                 ; CC
+        jsr putchar_bin
+        lda #" "
+        jsr putchar
+
+        lda 2,x                 ; B
+        jsr putchar_hex
+        lda #" "
+        jsr putchar
+
+        lda 3,x                 ; A
+        jsr putchar_hex
+        lda #" "
+        jsr putchar
+
+        lda 4,x                 ; X
+        jsr putchar_hex
+        lda 5,x
+        jsr putchar_hex
+        lda #" "
+        jsr putchar
+
+        lda 6,x                 ; PC
+        jsr putchar_hex
+        lda 7,x
+        jsr putchar_hex
+        lda #" "
+        jsr putchar
+
+        xgdx                    ; Exchange X with D (A|B)
+        jsr putchar_hex
+        tba
+        jsr putchar_hex
+
+        rts
+
+.print_string:
+        byt "\n--HINZVC  B  A    X   PC   SP\n\0"
+
 .error:
         ldx #no_user_program_error_string
         jsr putstring
