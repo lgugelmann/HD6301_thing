@@ -285,6 +285,6 @@ vectors:
         adr start               ; Timer output compare
         adr start               ; Timer input capture
         adr irq                 ; IRQ1
-        adr start               ; Software interrupt SWI
+        adr invoke_monitor      ; Software interrupt SWI
         adr start               ; NMI
         adr start               ; Reset / illegal address or instruction
