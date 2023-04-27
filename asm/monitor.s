@@ -343,8 +343,16 @@ test_user_program_function:
         jsr putchar
 
         cmp a,#"X"
-        bne test_user_program_function
+        bne +
         rts
+
++
+        cmp a,#"S"
+        bne +
+        swi
+
++
+        bra test_user_program_function
 
         org $fff0
 vectors:
