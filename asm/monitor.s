@@ -235,11 +235,21 @@ irq:
         ; stack before entering an interrupt routine. We don't need to take
         ; precautions to preserve them.
         jsr keyboard_irq
-        bvs .invoke_monitor     ; keyboard IRQ sets V if 'break' key is pressed
+        bvs invoke_monitor      ; keyboard IRQ sets V if 'break' key is pressed
         rti
 
-.invoke_monitor:
-        sts user_stack_ptr      ; Store the current user stack pointer
+invoke_monitor:
+        ; Check whether we're already in the monitor program by looking at where
+        ; the stack pointer currently is. If it's above the top of user memory
+        ; (topmost place the user stack should be) we're already in the monitor.
+        tsx
+        cpx #USER_STACK_START
+        bls .invoke
+        rti
+
+.invoke:
+        ; Store the user stack pointer, reset and switch to the monitor stack
+        sts user_stack_ptr
         lds #MONITOR_STACK_START
         cli                     ; Re-enable interrupts, they are disabled when
                                 ; an interrupt is called
