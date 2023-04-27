@@ -29,10 +29,10 @@ $(patsubst %,%_minipro_prog,$(PROGRAMS)): %_minipro_prog: %.bin
 	./depgen.py $< > $@
 
 %.p: %.s
-	$(ASL) -L $<
+	$(ASL) -Werror -q -L $<
 
 %.bin: %.p
-	$(P2BIN) -segment CODE $<
+	$(P2BIN) -q -segment CODE $<
 
 clean:
 	$(RM) $(patsubst %,%.bin,$(PROGRAMS))
