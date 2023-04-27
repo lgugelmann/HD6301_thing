@@ -6,7 +6,7 @@
         include include/registers
         include include/stdio
 
-INPUT_BUFFER_SIZE = GRAPHICS_TERMINAL_WIDTH
+INPUT_BUFFER_SIZE = GRAPHICS_TERMINAL_WIDTH - 3
 USER_STACK_START = $7dff
 MONITOR_STACK_START = $7eff
 
@@ -99,7 +99,7 @@ keyboard_in:
         beq keyboard_in
 
         cmp a,#127
-        bgt keyboard_in         ; Ignore control characters
+        bhi keyboard_in         ; Ignore control characters
 
         cmp a,#KEY_DELETE
         beq keyboard_in         ; Ignore delete for now, not supported
@@ -113,8 +113,8 @@ keyboard_in:
 
 .not_enter:
         ; Make sure not to overflow the input buffer
-        cpx #(input_buffer + INPUT_BUFFER_SIZE - 2)
-        bgt line_start
+        cpx #(input_buffer + INPUT_BUFFER_SIZE - 1)
+        bhi line_start
 
         sta 0,x                 ; Store character in buffer
         jsr putchar             ; Put it on the screen
