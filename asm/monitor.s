@@ -61,9 +61,14 @@ reset_command:
 run_command:
         byt "run\0"
         adr run
+        byt "r\0"
+        adr run
 continue_command:
         byt "continue\0"
         adr continue
+        byt "c\0"
+        adr continue
+
 COMMANDS_SIZE = * - commands
 
 
