@@ -11,6 +11,8 @@ __stdio_inc = 1
         PUBLIC stdio_init
         PUBLIC getchar
         PUBLIC putchar
+        PUBLIC putchar_bin
+        PUBLIC putchar_hex
         PUBLIC putstring
 
 stdio_init:
@@ -19,10 +21,13 @@ stdio_init:
         jsr serial_init
         rts
 
+; Input one character from the keyboard in A. Returns 0 if no character is
+; available.
 getchar:
         jsr keyboard_getchar
         rts
 
+; Output the character in A on both graphical and serial terminal
 putchar:
         jsr serial_send_byte
 
@@ -35,6 +40,55 @@ putchar:
 .no_lf:
         jsr graphics_putchar
         rts
+
+; Output the byte in A as a binary string, msb first
+putchar_bin:
+        psh b
+        pshx
+        tab
+        ldx #9
+.loop:
+        dex
+        beq .end
+        ;; shift bits in B left into carry and print '0' or '1' as needed
+        rol B
+        bcs .print_one
+        lda #"0"
+        bra .print
+.print_one:
+        lda #"1"
+.print:
+        jsr putchar
+        bra .loop
+
+.end:
+        pulx
+        pul b
+        rts
+
+; Output the byte in A as two hexadecimal characters
+putchar_hex:
+        psh a
+        ; High nibble
+        lsr a
+        lsr a
+        lsr a
+        lsr a
+        add a,#"0"
+        cmp a,#"9"
+        bls .number             ; If 0..9, print it
+        add a,#("A" - "0" - 10) ; If >=10, move into the A..F range instead
+.number:
+        jsr putchar
+
+        ; Low nibble
+        pul a
+        and a,#$0f
+        add a,#"0"
+        cmp a,#"9"
+        bls putchar             ; rts in putchar
+        add a,#("A" - "0" - 10)
+        bra putchar             ; rts in putchar
 
 putstring:
         psh a
