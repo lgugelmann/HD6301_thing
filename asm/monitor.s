@@ -259,12 +259,12 @@ print:
         lda #" "
         jsr putchar
 
-        lda 2,x                 ; B
+        lda 3,x                 ; A
         jsr putchar_hex
         lda #" "
         jsr putchar
 
-        lda 3,x                 ; A
+        lda 2,x                 ; B
         jsr putchar_hex
         lda #" "
         jsr putchar
@@ -291,7 +291,7 @@ print:
         rts
 
 .print_string:
-        byt "\n--HINZVC  B  A    X   PC   SP\n\0"
+        byt "\n--HINZVC  A  B    X   PC   SP\n\0"
 
 .error:
         ldx #no_user_program_error_string
