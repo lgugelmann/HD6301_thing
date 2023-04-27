@@ -51,12 +51,6 @@ no_user_program_error_string:
 ; string with the command itself, followed by 2 bytes with the address to jump
 ; to to run it.
 commands:
-hello_command:
-        byt "hello\0"
-        adr hello
-bye_command:
-        byt "bye\0"
-        adr bye
 reset_command:
         byt "reset\0"
         adr start
@@ -189,20 +183,6 @@ exec:
         ldx #error_string
         jsr putstring
         ldx #input_buffer
-        jsr putstring
-        rts
-
-hello_string:
-        byt "Hello World!\0"
-hello:
-        ldx #hello_string
-        jsr putstring
-        rts
-
-bye_string:
-        byt "Bye\0"
-bye:
-        ldx #bye_string
         jsr putstring
         rts
 
