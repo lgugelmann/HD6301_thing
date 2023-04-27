@@ -95,7 +95,7 @@ line_start:
 
 keyboard_in:
         jsr getchar
-        cmp a,#0
+        tst a
         beq keyboard_in
 
         cmp a,#127
@@ -137,7 +137,7 @@ exec:
         cba                     ; compare buffer and command bytes
         bne .next_command       ; mismatch, try the next command
 
-        tst a                   ; 0 or negative (but we have no negatives in A)
+        tst a
         beq .found_command      ; We reached the end of the buffer
                                 ; string. Match!
         inx
@@ -148,7 +148,7 @@ exec:
         bra .loop
 
 .next_command:
-        tst b                   ; 0 or negative but no negatives in B
+        tst b
         bne .next_loop
         ; We found a 0 in the commands list, we're at the end of a command
         ; string. Next are 2 bytes of addresses to skip, and we need to reset
