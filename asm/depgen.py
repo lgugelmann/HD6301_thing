@@ -16,11 +16,14 @@ if __name__ == '__main__':
         path = pathlib.Path(filename).parent
         with open(filename) as input_file:
             for line in input_file:
-                match = re.search(r"\s+include ([\w/]+)", line)
+                match = re.search(r"\s+include ([\w/.]+)", line)
                 if match:
-                    include = path.joinpath(match.group(1) + '.inc').as_posix()
-                    if include not in includes:
-                        includes.add(include)
-                        to_parse.append(include)
+                    include_file = pathlib.Path(match.group(1))
+                    if include_file.suffix == '':
+                        include_file = include_file.with_suffix('.inc')
+                    include_path = path.joinpath(include_file).as_posix()
+                    if include_path not in includes:
+                        includes.add(include_path)
+                        to_parse.append(include_path)
 
     print(f'{p_file}: {" ".join(includes)}')
