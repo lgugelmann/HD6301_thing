@@ -50,4 +50,21 @@ reserve_memory_addr[] set reserve_memory_addr[] + size
         orgrestore
         endm
 
+; Reserves a block of memory of 'size' bytes in the 'system' area of memory
+; above $7e00.
+reserve_system_memory_addr set $7e00
+reserve_system_memory macro name, size
+        orgsave
+        org reserve_system_memory_addr[]
+name    label *
+        ds.b size
+reserve_system_memory_addr[] set reserve_system_memory_addr[] + size
+
+        if * > $7eff - 64       ; Probably way more than needed
+          error "Not enough space for monitor stack left"
+        endif
+
+        orgrestore
+        endm
+
         endif
