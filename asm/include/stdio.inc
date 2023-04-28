@@ -90,6 +90,8 @@ putchar_hex:
         add a,#("A" - "0" - 10)
         bra putchar             ; rts in putchar
 
+; Outputs the 0-terminated string pointed to by X. After running, X is
+; guaranteed to point to the 0 byte at the end of the string.
 putstring:
         psh a
 .loop:
