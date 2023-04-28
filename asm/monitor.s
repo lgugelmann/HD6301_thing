@@ -46,28 +46,39 @@ error_string:
         byt "Unknown command: \0"
 no_user_program_error_string:
         byt "Error: no user program running.\0"
+extra_parameters_error_string:
+        byt "Error: extra unexpected parameters found.\0"
+missing_parameters_error_string:
+        byt "Error: this command requires some parameters.\0"
 
 ; A table with all the available commands. The format is a null-terminated
-; string with the command itself, followed by 2 bytes with the address to jump
-; to to run it.
+; string with the command itself, followed by 1 byte with the number of
+; parameters, then 2 bytes with the address to jump to to run it.
 commands:
 reset_command:
         byt "reset\0"
+        byt $00
         adr start
 run_command:
         byt "run\0"
+        byt $01
         adr run
         byt "r\0"
+        byt $01
         adr run
 continue_command:
         byt "continue\0"
+        byt $00
         adr continue
         byt "c\0"
+        byt $00
         adr continue
 print_command:
         byt "print\0"
+        byt $00
         adr print
         byt "p\0"
+        byt $00
         adr print
 
 COMMANDS_SIZE = * - commands
@@ -122,60 +133,95 @@ keyboard_in:
         clr 0,x                 ; Put a 0 at the new buffer end
         bra keyboard_in
 
-; Figure out what command we intend to run and run it.
+; Figure out what command we intend to run and run it. We run through the
+; command list one by one and compare it to the input buffer and either find a
+; match or reach the end of the command list.
 exec:
         ldx #input_buffer
         stx input_buffer_ptr
         ldx #commands
         stx command_ptr
-.loop:
+.command_match_loop:
+        ; The code after this assumes X is command_ptr. Don't reorder.
         ldx input_buffer_ptr
         lda 0,x
         ldx command_ptr
         ldb 0,x
 
+        ; If B is 0 we found a command boundary.
+        beq .command_boundary
+
         cba                     ; compare buffer and command bytes
         bne .next_command       ; mismatch, try the next command
 
-        tst a
-        beq .found_command      ; We reached the end of the buffer
-                                ; string. Match!
+        ; Match, move on to the next character.
         inx
         stx command_ptr
         ldx input_buffer_ptr
         inx
         stx input_buffer_ptr
-        bra .loop
+        bra .command_match_loop
+
+.command_boundary:
+        ; A needs to be 0 (no-parameter command) or a space (1+ parameters).
+        tab
+        ora #" "
+        cmp a,#" "              ; This is true for A=0 and A=' '
+        bne .next_command       ; No match, try the next command
+        tba
+
+        ldb 1,x                 ; Get the parameter count
+        bne .parameters_expected
+
+        tst a                   ; No parameters, we need a 0 in A
+        beq .found_command
+
+        ldx #extra_parameters_error_string
+        jsr putstring
+        rts
+
+.parameters_expected:
+        cmp a,#" "
+        beq .found_command      ; Expecting parameters, got a space, up to the
+                                ; command implementation to parse them.
+
+        ldx #missing_parameters_error_string
+        jsr putstring
+        rts
 
 .next_command:
+        ; We need to continue looping through the command buffer until we find
+        ; the end of the current one (if we're not there yet).
         tst b
-        bne .next_loop
+        beq .command_end
+
+        inx
+        ldb 0,x
+        bra .next_command
+
+.command_end:
         ; We found a 0 in the commands list, we're at the end of a command
-        ; string. Next are 2 bytes of addresses to skip, and we need to reset
-        ; the input buffer pointer.
-        inx
-        inx
-        inx
+        ; string. Skip that plus 3 bytes of parameters and addresses to get to
+        ; the next one or the end of the list.
+        ldb #(1 + 3)
+        abx
         stx command_ptr
 
         cpx #(commands + COMMANDS_SIZE)
         bge .error
 
+        ; Reset the input buffer pointer to the start and try matching the next
+        ; command.
         ldx #input_buffer
         stx input_buffer_ptr
-        bra .loop
-
-.next_loop:
-        inx
-        ldb 0,x
-        bra .next_command
+        bra .command_match_loop
 
 .found_command:
-        ; X points to the 0 at the end of the command string, increase by one to
+        ; X points to the 0 at the end of the command string, increase by two to
         ; get to the address where the address to jump to is contained. For an
         ; indexed jump, X needs to contain the address to jmp to, so we first do
         ; an indexed load to get to the actual address, then we jump.
-        ldx 1,x
+        ldx 2,x
         jmp 0,x
         ; rts for 'exec' is in the command we jump to
 
@@ -271,7 +317,7 @@ print:
         rts
 
 .print_string:
-        byt "\n--HINZVC  A  B    X   PC   SP\n\0"
+        byt "--HINZVC  A  B    X   PC   SP\n\0"
 
 .error:
         ldx #no_user_program_error_string
