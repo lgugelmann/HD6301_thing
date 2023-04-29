@@ -14,6 +14,7 @@ __stdio_inc = 1
         PUBLIC putchar_bin
         PUBLIC putchar_hex
         PUBLIC putstring
+        PUBLIC putx_hex
 
 stdio_init:
         jsr graphics_init
@@ -89,6 +90,18 @@ putchar_hex:
         bls putchar             ; rts in putchar
         add a,#("A" - "0" - 10)
         bra putchar             ; rts in putchar
+
+; Output the two bytes in X as hexadecimal characters
+putx_hex:
+        pshx
+        xgdx                    ; A, B stored in X
+        jsr putchar_hex
+        tba
+        jsr putchar_hex
+        xgdx                    ; restore A, B
+        pulx
+        rts
+
 
 ; Outputs the 0-terminated string pointed to by X. After running, X is
 ; guaranteed to point to the 0 byte at the end of the string.
