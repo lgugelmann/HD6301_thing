@@ -60,9 +60,6 @@ To program both ROM and monitor at once use `make prog`.
    entering/exiting the monitor without interfering with user programs.
  * Hexdump for memory in the monitor.
  * Utility to print a number in decimal.
- * `include/*` code is linked twice right now, once into the monitor and once in
-   user programs. Create a standard library for user programs which is just
-   labels to the monitor versions.
  * A `help` command for the monitor.
  * Make the memory map more explict and document it to avoid monitor / user
    program conflicts. The `include/macros.inc` macros don't help anymore as
