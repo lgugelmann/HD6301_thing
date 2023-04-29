@@ -13,6 +13,7 @@ __stdio_inc = 1
         PUBLIC_SHARED getchar
         PUBLIC_SHARED putchar
         PUBLIC_SHARED putchar_bin
+        PUBLIC_SHARED putchar_dec
         PUBLIC_SHARED putchar_hex
         PUBLIC_SHARED putstring
         PUBLIC_SHARED putx_hex
@@ -68,6 +69,32 @@ putchar_bin:
         pul b
         rts
 
+; Output the (unsigned) byte in A as 3 decimal digits.
+putchar_dec:
+        psh b
+        tab
+
+        lda #"0" - 1
+.hundred_loop:
+        inc a
+        sub b,#100
+        bcc .hundred_loop
+        jsr putchar             ; Write hundreds digit
+
+        lda #"9" + 1
+.tens_loop:
+        dec a
+        add b,#10
+        bmi .tens_loop
+        jsr putchar             ; Write tens digit
+
+        add b,#"0"
+        tba
+        jsr putchar             ; Write last digit
+
+        pul b
+        rts
+
 ; Output the byte in A as two hexadecimal characters
 putchar_hex:
         psh a
@@ -102,7 +129,6 @@ putx_hex:
         xgdx                    ; restore A, B
         pulx
         rts
-
 
 ; Outputs the 0-terminated string pointed to by X. After running, X is
 ; guaranteed to point to the 0 byte at the end of the string.
