@@ -26,11 +26,14 @@ prog: monitor_prog programs_prog
 
 -include $(DEP)
 
-%.d: %.s
-	./depgen.py $< > $@
+monitor.p: monitor.s
+	$(ASL) -Werror -q -U -a -L $<
 
-%.p: %.s
-	$(ASL) -Werror -q -L $<
+programs.p: programs.s
+	$(ASL) -Werror -q -U -L $<
+
+%.d: %.s monitor.p
+	./depgen.py $< > $@
 
 %.bin: %.p
 	$(P2BIN) -q -segment CODE $<
@@ -40,3 +43,4 @@ clean:
 	$(RM) $(patsubst %,%.lst,$(TARGETS))
 	$(RM) $(patsubst %,%.p,$(TARGETS))
 	$(RM) $(patsubst %,%.d,$(TARGETS))
+	$(RM) $(patsubst %,%.inc,$(TARGETS))

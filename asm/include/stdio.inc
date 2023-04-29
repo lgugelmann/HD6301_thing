@@ -4,17 +4,18 @@ __stdio_inc = 1
         cpu 6301
 
         include graphics
+        include macros
         include serial
         include keyboard
 
         SECTION stdio
         PUBLIC stdio_init
-        PUBLIC getchar
-        PUBLIC putchar
-        PUBLIC putchar_bin
-        PUBLIC putchar_hex
-        PUBLIC putstring
-        PUBLIC putx_hex
+        PUBLIC_SHARED getchar
+        PUBLIC_SHARED putchar
+        PUBLIC_SHARED putchar_bin
+        PUBLIC_SHARED putchar_hex
+        PUBLIC_SHARED putstring
+        PUBLIC_SHARED putx_hex
 
 stdio_init:
         jsr graphics_init
