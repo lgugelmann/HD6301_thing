@@ -2,6 +2,9 @@
 
         cpu 6301
 
+        SECTION sci_echo
+        PUBLIC sci_echo_start
+
 TRMCR = $0010                   ; Transfer Rate / Mode Control Register
 TRCSR = $0011                   ; Transmit / Receive Control Status Register
 RDR   = $0012                   ; Receive Data Register
@@ -16,9 +19,7 @@ TRCSR_TDRE = %00100000          ; Transmit Data Register Empty
 TRCSR_RDRF = %10000000          ; Receive Data Register Full
 
 
-        org $e000
-start:
-        lds #$0200              ; Initialize the stack
+sci_echo_start:
         lda #TRMCR_CC0
         sta TRMCR               ; Set clock source to internal and rate to E/16
 
@@ -33,8 +34,8 @@ wait_read:
         jsr send_byte
         bra wait_read
 
-        ;; Send byte stored in A 
-send_byte:      
+        ;; Send byte stored in A
+send_byte:
         ;; Wait for the send queue to be empty
 .wait_empty:
         ldb TRCSR
@@ -44,7 +45,4 @@ send_byte:
         sta TDR
         rts
 
-vectors:
-        org $fffe
-        adr start
-
+        ENDSECTION

@@ -16,10 +16,15 @@ program_registry:
         adr hello_start
 +
         adr +
+        byt "sci_echo\0"
+        adr sci_echo_start
++
+        adr +
         byt "test\0"
         adr test_program_start
 +
         adr $0000               ; End marker
 
         include programs/hello.s
+        include programs/sci_echo.s
         include programs/test.s
