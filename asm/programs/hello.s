@@ -1,6 +1,6 @@
         cpu 6301
 
-        include ../include/stdio.inc
+        include ../stdlib.inc
 
         SECTION hello_program
         PUBLIC hello_start

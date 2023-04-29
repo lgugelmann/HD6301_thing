@@ -1,6 +1,6 @@
         cpu 6301
 
-        include ../include/stdio.inc
+        include ../stdlib.inc
 
         SECTION test_program
         PUBLIC test_program_start
