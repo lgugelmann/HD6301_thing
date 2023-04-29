@@ -1,5 +1,5 @@
-PROGRAMS = sci_hello sci_echo monitor
-DEP = $(PROGRAMS:%=%.d)
+TARGETS = monitor programs
+DEP = $(TARGETS:%=%.d)
 
 ########################################
 
@@ -10,18 +10,19 @@ P2BIN = p2bin
 
 .SUFFIXES:
 
-.PHONY: all
+.PHONY: all monitor_prog programs_prog prog
 
-all: $(PROGRAMS)
+all: $(TARGETS)
 
-$(PROGRAMS): %: %.bin
+$(TARGETS): %: %.bin
 
-
-$(patsubst %,%_prog,$(PROGRAMS)): %_prog: %.bin
+monitor_prog: monitor.bin
 	../pico_programmer/programmer.py write_flash $<
 
-$(patsubst %,%_minipro_prog,$(PROGRAMS)): %_minipro_prog: %.bin
-	minipro -z -p AT28C64B -w $<
+programs_prog: programs.bin
+	../pico_programmer/programmer.py write_flash --address 0x8000 $<
+
+prog: monitor_prog programs_prog
 
 -include $(DEP)
 
@@ -35,7 +36,7 @@ $(patsubst %,%_minipro_prog,$(PROGRAMS)): %_minipro_prog: %.bin
 	$(P2BIN) -q -segment CODE $<
 
 clean:
-	$(RM) $(patsubst %,%.bin,$(PROGRAMS))
-	$(RM) $(patsubst %,%.lst,$(PROGRAMS))
-	$(RM) $(patsubst %,%.p,$(PROGRAMS))
-	$(RM) $(patsubst %,%.d,$(PROGRAMS))
+	$(RM) $(patsubst %,%.bin,$(TARGETS))
+	$(RM) $(patsubst %,%.lst,$(TARGETS))
+	$(RM) $(patsubst %,%.p,$(TARGETS))
+	$(RM) $(patsubst %,%.d,$(TARGETS))

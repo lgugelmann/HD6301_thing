@@ -3,8 +3,11 @@
         org $f000
 
         include include/macros
+        include include/map
         include include/registers
         include include/stdio
+
+        SECTION monitor
 
 INPUT_BUFFER_SIZE = GRAPHICS_TERMINAL_WIDTH - 3
 USER_STACK_START = $7dff
@@ -21,29 +24,18 @@ MONITOR_STACK_START = $7eff
 ;   c0-  ff  Graphics registers
 ; 8000-ffff  ROM
 
-        orgsave
-        org $7e00
-
-input_buffer: ; Input buffer, holds one line
-        ds.b INPUT_BUFFER_SIZE
-input_buffer_ptr:
-        ds.b 2
-command_ptr:
-        ds.b 2
-user_stack_ptr:
-        ds.b 2
-
-        if * > $7eff - 64       ; Probably way more than needed
-          error "Not enough space for monitor stack left"
-        endif
-
-        orgrestore
+        ; Input buffer, holds one line
+        reserve_system_memory input_buffer,INPUT_BUFFER_SIZE
+        reserve_system_memory input_buffer_param0_ptr,2
+        reserve_system_memory command_ptr,2
+        reserve_system_memory user_stack_ptr,2
+        reserve_system_memory monitor_stack_ptr,2
 
 terminal_string:
         byt KEY_ENTER
         byt "> \0"
-error_string:
-        byt "Unknown command: \0"
+unknown_command_error_string:
+        byt "Unknown command: '\0"
 no_user_program_error_string:
         byt "Error: no user program running.\0"
 extra_parameters_error_string:
@@ -55,40 +47,54 @@ missing_parameters_error_string:
 ; string with the command itself, followed by 1 byte with the number of
 ; parameters, then 2 bytes with the address to jump to to run it.
 commands:
-reset_command:
+        adr +
         byt "reset\0"
         byt $00
         adr start
-run_command:
++
+        adr +
         byt "run\0"
         byt $01
         adr run
++
+        adr +
         byt "r\0"
         byt $01
         adr run
-continue_command:
++
+        adr +
         byt "continue\0"
         byt $00
         adr continue
++
+        adr +
         byt "c\0"
         byt $00
         adr continue
-print_command:
++
+        adr +
         byt "print\0"
         byt $00
         adr print
++
+        adr +
         byt "p\0"
         byt $00
         adr print
-
-COMMANDS_SIZE = * - commands
-
++
+        adr +
+        byt "ls\0"
+        byt $00
+        adr ls_command
++
+        adr $0000
 
 start:
         lda #RAMCR_RAM_ENABLE   ; Disable onboard RAM
         sta RAMCR
 
         lds #MONITOR_STACK_START ; Set stack to monitor stack location
+        sts monitor_stack_ptr
 
         jsr stdio_init          ; Initializes serial, keyboard & graphics
 
@@ -133,47 +139,24 @@ keyboard_in:
         clr 0,x                 ; Put a 0 at the new buffer end
         bra keyboard_in
 
-; Figure out what command we intend to run and run it. We run through the
-; command list one by one and compare it to the input buffer and either find a
-; match or reach the end of the command list.
+; Figure out what command we intend to run and run it.
 exec:
         ldx #input_buffer
-        stx input_buffer_ptr
+        pshx
         ldx #commands
-        stx command_ptr
-.command_match_loop:
-        ; The code after this assumes X is command_ptr. Don't reorder.
-        ldx input_buffer_ptr
-        lda 0,x
-        ldx command_ptr
-        ldb 0,x
+        jsr map_find
+        bcc .unknown_command_error ; match / no-match is indicated with C
 
-        ; If B is 0 we found a command boundary.
-        beq .command_boundary
+        stx command_ptr         ; Store a pointer to the matching command
 
-        cba                     ; compare buffer and command bytes
-        bne .next_command       ; mismatch, try the next command
-
-        ; Match, move on to the next character.
-        inx
-        stx command_ptr
-        ldx input_buffer_ptr
-        inx
-        stx input_buffer_ptr
-        bra .command_match_loop
-
-.command_boundary:
-        ; A needs to be 0 (no-parameter command) or a space (1+ parameters).
-        tab
-        ora #" "
-        cmp a,#" "              ; This is true for A=0 and A=' '
-        bne .next_command       ; No match, try the next command
-        tba
-
-        ldb 1,x                 ; Get the parameter count
+        ldb 0,x                 ; Get the expected parameter count
         bne .parameters_expected
 
-        tst a                   ; No parameters, we need a 0 in A
+        ; Get the pointer for the input buffer position put on the stack by the
+        ; map_find above.
+        pulx
+
+        lda 0,x                 ; No parameters, we need a 0 in that position
         beq .found_command
 
         ldx #extra_parameters_error_string
@@ -181,76 +164,87 @@ exec:
         rts
 
 .parameters_expected:
+        ; Get the pointer for the input buffer position put on the stack by the
+        ; map_find above.
+        pulx
+        lda 0,x
         cmp a,#" "
-        beq .found_command      ; Expecting parameters, got a space, up to the
-                                ; command implementation to parse them.
+        beq .found_params_command ; Expecting a space, got one
 
         ldx #missing_parameters_error_string
         jsr putstring
         rts
 
-.next_command:
-        ; We need to continue looping through the command buffer until we find
-        ; the end of the current one (if we're not there yet).
-        tst b
-        beq .command_end
-
+.found_params_command:
         inx
-        ldb 0,x
-        bra .next_command
-
-.command_end:
-        ; We found a 0 in the commands list, we're at the end of a command
-        ; string. Skip that plus 3 bytes of parameters and addresses to get to
-        ; the next one or the end of the list.
-        ldb #(1 + 3)
-        abx
-        stx command_ptr
-
-        cpx #(commands + COMMANDS_SIZE)
-        bge .error
-
-        ; Reset the input buffer pointer to the start and try matching the next
-        ; command.
-        ldx #input_buffer
-        stx input_buffer_ptr
-        bra .command_match_loop
+        stx input_buffer_param0_ptr
 
 .found_command:
-        ; X points to the 0 at the end of the command string, increase by two to
-        ; get to the address where the address to jump to is contained. For an
-        ; indexed jump, X needs to contain the address to jmp to, so we first do
-        ; an indexed load to get to the actual address, then we jump.
-        ldx 2,x
+        ldx command_ptr
+
+        ; X points to the first byte past the command string, the address to
+        ; jump to is 1 byte beyond that. For an indexed jump, X needs to contain
+        ; the address to jmp to, so we first do an indexed load to get to the
+        ; actual address, then we jump.
+        ldx 1,x
         jmp 0,x
         ; rts for 'exec' is in the command we jump to
 
-.error:
-        ldx #error_string
+.unknown_command_error:
+        ldx #unknown_command_error_string
         jsr putstring
         ldx #input_buffer
         jsr putstring
+        lda #"'"
+        jsr putchar
         rts
 
+; Run the program named in the first parameter. The valid program names are
+; listed in the program registry at $8000.
 run:
+        ldx input_buffer_param0_ptr
+        pshx
+        ldx #$8000
+        jsr map_find
+        bcc .unknown_program_error
+
+        ldx 0,x                 ; X is at the location of the start address
+        ins                     ; Discard the 2 byte return value on the stack
+        ins
+
+        sts monitor_stack_ptr
         lds #USER_STACK_START
         ; jsr and not jmp so the user program can rts back to the monitor.
-        jsr test_user_program
+        jsr 0,x
+
+        lds monitor_stack_ptr
 
         ; Clear the user stack pointer to flag that there isn't a user program
         ; runnning.
         ldx #0
         stx user_stack_ptr
-        ; Can't rts here: the monitor stack might have been changed around by
-        ; invoking the monitor program from the user program.
-        lds #MONITOR_STACK_START
-        jmp line_start
 
+        rts
+
+.unknown_program_error_string:
+        byt "Error: unknown program '\0"
+
+.unknown_program_error:
+        ldx #.unknown_program_error_string
+        jsr putstring
+        ldx input_buffer_param0_ptr
+        jsr putstring
+        lda #"'"
+        jsr putchar
+        rts
+
+; Resume the currently running user program by 'rti' from the user stack.
 continue:
         ldx user_stack_ptr
         cpx #0
         beq .error
 
+        sts monitor_stack_ptr
         lds user_stack_ptr
         ; The user program was interrupted and still has program counter,
         ; accumulators, etc on the user stack. RTI restores these and continues
@@ -317,11 +311,52 @@ print:
         rts
 
 .print_string:
-        byt "--HINZVC  A  B    X   PC   SP\n\0"
+        byt "\n--HINZVC  A  B    X   PC   SP\n\0"
 
 .error:
         ldx #no_user_program_error_string
         jsr putstring
+        rts
+
+; List all program names and their entry points in the program registry. The
+; code is a bit more convoluted because it does not assume that all entries of
+; the registry are contiguous. In theory they could be all over the place.
+ls_command:
+
+        ; Program registry is at the start of ROM.
+        ldx #$8000
+.loop:
+        ldd 0,x                 ; Load next entry pointer in (A|B)
+        beq .end                ; If it's 0 we're done
+
+        ; Store the pointer on the stack for later.
+        xgdx
+        pshx
+        xgdx
+
+        ; Skip the two pointer bytes
+        inx
+        inx
+
+        ; Prints the program name and advances X to the 0 terminator.
+        jsr putstring
+
+        ; Print program address
+        lda #" "
+        jsr putchar
+        inx
+        lda 0,x                 ; Program address high
+        jsr putchar_hex
+        inx
+        lda 0,x                 ; Program address low
+        jsr putchar_hex
+        lda #"\n"
+        jsr putchar
+
+        pulx                    ; Set X to the next entry
+        bra .loop
+
+.end:
         rts
 
 irq:
@@ -344,41 +379,11 @@ invoke_monitor:
 .invoke:
         ; Store the user stack pointer, reset and switch to the monitor stack
         sts user_stack_ptr
-        lds #MONITOR_STACK_START
+        lds monitor_stack_ptr
         cli                     ; Re-enable interrupts, they are disabled when
                                 ; an interrupt is called
+        jsr print
         jmp line_start
-
-
-; A small test program that just echos the typed characters back on the screen
-; or exits with 'X' (capital X). Prints a string when freshly started to help
-; distinguish 'run' from 'continue'.
-test_string:
-        byt "\nUser program start\n\0"
-test_user_program:
-        clr GRAPHICS_CLEAR      ; Clear screen
-        ldx #test_string
-        jsr putstring
-        jsr test_user_program_function
-        rts                     ; Back to the monitor
-
-test_user_program_function:
-        jsr getchar
-        tst a
-        beq test_user_program_function
-        jsr putchar
-
-        cmp a,#"X"
-        bne +
-        rts
-
-+
-        cmp a,#"S"
-        bne +
-        swi
-
-+
-        bra test_user_program_function
 
         org $fff0
 vectors:
@@ -390,3 +395,5 @@ vectors:
         adr invoke_monitor      ; Software interrupt SWI
         adr start               ; NMI
         adr start               ; Reset / illegal address or instruction
+
+        ENDSECTION
