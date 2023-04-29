@@ -52,7 +52,7 @@ depending on which code you changed.
 
 To program both ROM and monitor at once use `make prog`.
 
-## TODOs and ideas
+## TODOs and ideas for improvements
 
  * Make backspace work in the monitor.
  * Add serial input as an alternative way to get characters from `getchar`.
@@ -64,3 +64,8 @@ To program both ROM and monitor at once use `make prog`.
    user programs. Create a standard library for user programs which is just
    labels to the monitor versions.
  * A `help` command for the monitor.
+ * Make the memory map more explict and document it to avoid monitor / user
+   program conflicts. The `include/macros.inc` macros don't help anymore as
+   monitor and user programs are assembled separately.
+   * Get the keyboard buffer away from user RAM.
+   * Make it clear which zeropage addresses are system vs user usable.
