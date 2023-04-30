@@ -5,6 +5,12 @@ __serial_inc = 1
 
         include registers
 
+        SECTION serial
+        PUBLIC serial_init
+        PUBLIC_SHARED serial_send_byte
+        PUBLIC_SHARED serial_send_string
+        PUBLIC_SHARED serial_clear_screen
+
 ;; Initialize Serial Communication Interface
 serial_init:
         lda #TRMCR_CC0
@@ -71,14 +77,15 @@ serial_send_string:
         pul a
         rts
 
-__serial_clear_screen_command:
-        dc.B "\x1b[2J\0"
-
 serial_clear_screen:
         pshx
-        ldx #__serial_clear_screen_command
+        ldx #.serial_clear_screen_command
         jsr serial_send_string
         pulx
         rts
+.serial_clear_screen_command:
+        byt "\x1b[2J\0"
+
+        ENDSECTION
 
         endif
