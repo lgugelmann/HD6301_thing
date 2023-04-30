@@ -27,8 +27,7 @@ stdio_init:
 ; Input one character from the keyboard in A. Returns 0 if no character is
 ; available.
 getchar:
-        jsr keyboard_getchar
-        rts
+        jmp keyboard_getchar
 
 ; Output the character in A on both graphical and serial terminal
 putchar:
@@ -41,8 +40,8 @@ putchar:
         jsr serial_send_byte
         lda #KEY_ENTER
 .no_lf:
-        jsr graphics_putchar
-        rts
+        jmp graphics_putchar
+        ; rts in graphics_putchar
 
 ; Output the byte in A as a binary string, msb first
 putchar_bin:
