@@ -23,8 +23,13 @@ program_registry:
         byt "test\0"
         adr test_program_start
 +
+        adr +
+        byt "snake\0"
+        adr snake_start
++
         adr $0000               ; End marker
 
         include programs/hello.s
         include programs/sci_echo.s
+        include programs/snake.s
         include programs/test.s
