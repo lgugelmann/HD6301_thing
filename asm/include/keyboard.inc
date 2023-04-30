@@ -87,7 +87,8 @@ keyboard_irq:
 .end:
         rts
 
-; Return the next character from the keyboard in A, or 0 if there isn't any.
+; Return the next character from the keyboard in A, or 0 if there isn't any. Z
+; is set / cleared depending on the state of A.
 keyboard_getchar:
         clr a
 
@@ -113,6 +114,7 @@ keyboard_getchar:
         beq .decode_next
 .end:
         pulb
+        tst a
         rts
 
         ENDSECTION keyboard

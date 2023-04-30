@@ -17,7 +17,6 @@ test_program_start:
 
 test_user_program_function:
         jsr getchar
-        tst a
         beq test_user_program_function
         jsr putchar
 

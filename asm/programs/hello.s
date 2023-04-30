@@ -14,7 +14,6 @@ hello_start:
         jsr putstring
 .loop:
         jsr getchar
-        tst a
         beq .loop
         rts
 

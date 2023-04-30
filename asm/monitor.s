@@ -112,7 +112,6 @@ line_start:
 
 keyboard_in:
         jsr getchar
-        tst a
         beq keyboard_in
 
         cmp a,#127
