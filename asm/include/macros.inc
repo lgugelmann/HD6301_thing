@@ -13,7 +13,10 @@ orgrestore macro
 
 ; Define a zero page variable without having to keep track of their exact
 ; address
-zp_addr set $0020
+        ifndef __stdlib_inc
+        SHARED zp_addr[]
+zp_addr[] set $0020
+        endif
 zp_var  macro name, size
         orgsave
         org zp_addr[]
