@@ -40,9 +40,9 @@ There are two `Makefile` targets: `monitor_prog` and `programs_prog` which will
 assemble the relevant piece of code (if needed) and write it at the appropriate
 location in the ROM.
 
-The monitor program goes at the end of the ROM. Technically it's put at `$f000`
-(1k from the end) but programming erases the last 4k anyway as it needs to clear
-a whole sector.
+The monitor program goes at the end of the ROM. It's put at `$f000` (4k from the
+end) as the programmer insists on flashing at sector boundaries
+only. Technically it's much smaller than that.
 
 The user programs are put at the start of the ROM with the program registry at
 `$8000` and the user programs after that.
@@ -66,3 +66,8 @@ To program both ROM and monitor at once use `make prog`.
    monitor and user programs are assembled separately.
    * Get the keyboard buffer away from user RAM.
    * Make it clear which zeropage addresses are system vs user usable.
+ * `zp_var` should be smarter to allow different programs to reuse the same
+   addresses. Probably a case of being careful with offset definitions, global
+   variables, and sections.
+ * Make the programmer able to flash at non-4k boundaries to speed up monitor
+   flashing a tiny bit.
