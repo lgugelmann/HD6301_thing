@@ -38,31 +38,6 @@ serial_send_byte:
         sta TDR
         rts
 
-;; Print the byte in A as a series of 0 and 1s
-serial_print_byte_binary:
-        psh b
-        pshx
-        tab
-        ldx #9
-.loop:
-        dex
-        beq .end
-        ;; shift bits in B left into carry and print '0' or '1' as needed
-        rol B
-        bcs .print_one
-        lda #'0'
-        bra .print
-.print_one:
-        lda #'1'
-.print:
-        jsr serial_send_byte
-        bra .loop
-
-.end:
-        pulx
-        pul b
-        rts
-
 ;; Send the string pointed to by X. The string must be null terminated.
 serial_send_string:
         psh a
