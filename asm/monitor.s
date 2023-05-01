@@ -5,6 +5,7 @@
         include include/macros
         include include/map
         include include/registers
+        include include/random
         include include/stdio
         include include/timer
 
@@ -97,12 +98,12 @@ start:
         lds #MONITOR_STACK_START ; Set stack to monitor stack location
         sts monitor_stack_ptr
 
+        jsr random_init
         jsr stdio_init          ; Initializes serial, keyboard & graphics
+        jsr timer_init
 
         ldx #0
         stx user_stack_ptr
-
-        jsr timer_init
 
         cli                     ; Enable interrupts
 
