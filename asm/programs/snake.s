@@ -5,7 +5,7 @@
         SECTION snake
         PUBLIC snake_start
 
-WIDTH = 80
+WIDTH = 40
 HEIGHT = 39
 
 ESC = $1b
@@ -34,11 +34,7 @@ cursor_to_score:
         byt ";38H\0"
 snake_header:
         ;    1...5...10...15...20...25...30...35...40
-        byt "~~SNAKE~~~~~~~~~~~~~~~~~~~~~ Score:     \n\0"
-snake_wall_h
-        byt "########################################\n\0"
-snake_wall_v
-        byt "#                                      #\n\0"
+        byt "~~TERMINAL SNEK~~~~~~~~~~~~~ Score:     \n\0"
 
         zp_var head_ptr,2
         zp_var head_row,1
@@ -47,6 +43,8 @@ snake_wall_v
         zp_var tail_row,1
         zp_var tail_col,1
         zp_var last_key,1
+        zp_var cur_key,1
+        zp_var score,1
         reserve_memory field,WIDTH*HEIGHT
 FIELD_END = field + WIDTH*HEIGHT-1
 
@@ -74,9 +72,8 @@ snake_start:
         jsr init_field
 
         jsr draw_game_field
-        jsr draw_initial_snake
 
-        lda #0
+        clr score
         jsr draw_score
 
         jsr game_loop
@@ -89,12 +86,27 @@ game_loop:
         jsr draw_game_state
         ldx #cursor_parked
         jsr serial_send_string
+        jsr draw_score
+        clr timer_ticks
+        lda last_key
+        sta cur_key
 
 .key_wait:
         jsr getchar
-        beq .key_wait
+        bne .got_key
+        lda timer_ticks
+        cmp a,#1
+        bhi .run
+        bra .key_wait
 
+.got_key:
+        cmp a,#127
+        bls .key_wait           ; Ignore non-control characters
+        sta cur_key
+        bra .key_wait
 
+.run:
+        lda cur_key
         cmp a,#KEY_UP
         bne +
 
@@ -148,7 +160,7 @@ game_loop:
 
         ldb last_key
         cmp b,#KEY_RIGHT
-        beq game_loop
+        beq .game_loop_jmp
         sta last_key
 
         ldx head_ptr
@@ -199,12 +211,25 @@ adjust_and_readraw_snake:
         bit a,#WALL
         bne .game_over
 
-        ; Draw the new head, and erase the current tail.
+        ; Draw the new head
+        tab
         jsr draw_head
-        jsr erase_tail
+        tba
 
+        ; Food collision
+        bit a,#FOOD
+        beq .no_food_found
+
+        ; Hit food! Increase score, etc.
+        and a,#$ff-FOOD         ; Clear the food bit
+        sta 0,x
+        inc score
+        bra .end
+
+.no_food_found:
         ; Adjust the tail. Figure out which direction the next snake segment is
         ; in, move the tail_ptr there.
+        jsr erase_tail
         ldx tail_ptr
         lda 0,x
         clr 0,x
@@ -287,6 +312,12 @@ draw_game_field:
         jsr putchar
         bra .next
 +
+        bit a,#FOOD
+        beq +
+        lda #"O"
+        jsr putchar
+        bra .next
++
         lda #"?"
         jsr putchar
 
@@ -312,6 +343,7 @@ init_field:
         jsr init_v_walls
         jsr init_h_wall
         jsr place_initial_snake
+        jsr place_food
         rts
 
 init_h_wall:
@@ -380,16 +412,10 @@ place_initial_snake:
         sta last_key
         rts
 
-draw_initial_snake:
-        jsr draw_head
-
-        lda tail_row
-        jsr set_cursor_vertical
-        lda tail_col
-        jsr set_cursor_horizontal
-        lda #"X"
-        jsr serial_send_byte
-
+place_food:
+        ldx #field + WIDTH*(HEIGHT/2) + 3*WIDTH/4
+        lda #FOOD
+        sta 0,x
         rts
 
 ; Draw the snake head.
@@ -412,13 +438,12 @@ erase_tail:
         jsr serial_send_byte
         rts
 
-; Puts the score in A onto the screen
+; Puts the score onto the screen
 draw_score:
-        pshx
         ldx #cursor_to_score
         jsr serial_send_string
+        lda score
         jsr putchar_dec
-        pulx
         rts
 
 draw_game_state:
