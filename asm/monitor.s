@@ -6,6 +6,7 @@
         include include/map
         include include/registers
         include include/stdio
+        include include/timer
 
         SECTION monitor
 
@@ -100,6 +101,8 @@ start:
 
         ldx #0
         stx user_stack_ptr
+
+        jsr timer_init
 
         cli                     ; Enable interrupts
 
@@ -384,10 +387,11 @@ invoke_monitor:
         jsr print
         jmp line_start
 
+
         org $fff0
 vectors:
         adr start               ; SCI
-        adr start               ; Timer overflow
+        adr timer_irq           ; Timer overflow
         adr start               ; Timer output compare
         adr start               ; Timer input capture
         adr irq                 ; IRQ1
