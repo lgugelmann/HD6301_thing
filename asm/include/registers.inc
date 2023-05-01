@@ -1,16 +1,23 @@
         ifndef __registers_inc
 __registers_inc = 1
 
-DDR1  = $0000                   ; Port 1 Data Direction Register
-DDR2  = $0001                   ; Port 2 Data Direction Register
-PORT1 = $0002                   ; Port 1 address
-PORT2 = $0003                   ; Port 2 address
+DDR1  = $00                     ; Port 1 Data Direction Register
+DDR2  = $01                     ; Port 2 Data Direction Register
+PORT1 = $02                     ; Port 1 address
+PORT2 = $03                     ; Port 2 address
 
-TRMCR = $0010                   ; Transfer Rate / Mode Control Register
-TRCSR = $0011                   ; Transmit / Receive Control Status Register
-RDR   = $0012                   ; Receive Data Register
-TDR   = $0013                   ; Transmit Data Register
-RAMCR = $0014                   ; RAM Control Register
+TCSR  = $08                     ; Timer Control and Status Register
+TCH   = $09                     ; Timer counter high
+TCL   = $0A                     ; Timer counter low
+
+TCSR_ETOI  = %00000100          ; Enable Timer Overflow Interrupt
+TCSR_TOF   = %00100000          ; Timer counter Overflow Flag
+
+TRMCR = $10                     ; Transfer Rate / Mode Control Register
+TRCSR = $11                     ; Transmit / Receive Control Status Register
+RDR   = $12                     ; Receive Data Register
+TDR   = $13                     ; Transmit Data Register
+RAMCR = $14                     ; RAM Control Register
 
 TRMCR_CC0  = %00000100          ; CC0 bit (low bit of clock source settings)
 
