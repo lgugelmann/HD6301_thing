@@ -27,9 +27,14 @@ program_registry:
         byt "snake\0"
         adr snake_start
 +
+        adr +
+        byt "random\0"
+        adr random_start
++
         adr $0000               ; End marker
 
         include programs/hello.s
+        include programs/random.s
         include programs/sci_echo.s
         include programs/snake.s
         include programs/test.s
