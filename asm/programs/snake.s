@@ -6,7 +6,12 @@
         PUBLIC snake_start
 
 WIDTH = 40
-HEIGHT = 39
+HEIGHT = 20
+FIELD_SIZE = WIDTH*HEIGHT
+; To generate random field positions it's useful to know how many bits from the
+; RNG we can truncate to.
+WIDTH_MASK = 2^LASTBIT(WIDTH)-1
+HEIGHT_MASK = 2^LASTBIT(HEIGHT)-1
 
 ESC = $1b
 CSI = "\x1b["
@@ -26,15 +31,32 @@ hide_cursor:
 cursor_top_left:
         byt CSI
         byt "1;1H\0"
-cursor_parked:
-        byt CSI
-        byt "41;H\0"
 cursor_to_score:
         byt CSI
         byt ";38H\0"
 snake_header:
         ;    1...5...10...15...20...25...30...35...40
         byt "~~TERMINAL SNEK~~~~~~~~~~~~~ Score:     \n\0"
+game_over_string:
+        byt CSI
+        byt "6;10H"
+        byt "$$$$$$$$$$$$$$$$$$$$\n"
+        byt CSI
+        byt "7;10H"
+        byt "$                  $\n"
+        byt CSI
+        byt "8;10H"
+        byt "$    Game Over!!   $\n"
+        byt CSI
+        byt "9;10H"
+        byt "$                  $\n"
+        byt CSI
+        byt "10;10H"
+        byt "$$$$$$$$$$$$$$$$$$$$\n"
+        ; Intentionally leaving out 'byt 0' here to also append cursor_parked
+cursor_parked:
+        byt CSI
+        byt "41;H\0"
 
         zp_var head_ptr,2
         zp_var head_row,1
@@ -45,9 +67,14 @@ snake_header:
         zp_var last_key,1
         zp_var cur_key,1
         zp_var score,1
-        reserve_memory field,WIDTH*HEIGHT
-FIELD_END = field + WIDTH*HEIGHT-1
+        reserve_memory field,FIELD_SIZE
+FIELD_END = field + FIELD_SIZE-1
 
+; The values in the game field above. The top 3 bits describe the type of item
+; that's there. The bottom 4 are only set on 'SNAKE' fields and give the
+; direction of where the next bit of snake is. This lets us drag the tail in the
+; right direction without having to store large pointers. The head has no
+; direction marker.
 EMPTY      = %00000000
 WALL       = %10000000
 SNAKE      = %01000000
@@ -58,150 +85,193 @@ NEXT_LEFT  = %00000010
 NEXT_RIGHT = %00000001
 DIR_MASK   = %00001111
 
+FOOD_SYMBOL  = "o"
+WALL_SYMBOL  = "#"
+SNAKE_SYMBOL = "x"
 
 snake_start:
         clr GRAPHICS_CLEAR
         ldx #save_terminal_state
         jsr serial_send_string
 
+        ; TODO: this does not seem to do anything
         ldx #hide_cursor
         jsr serial_send_string
 
+        ; Seed random number generator with low counter byte
+        lda TCL
+        jsr random_srand
+
         jsr serial_clear_screen
 
+.warm_start:
         jsr init_field
-
         jsr draw_game_field
 
         clr score
         jsr draw_score
 
+        ; Wait for the press of any button to start the game
+.wait_start:
+        jsr getchar
+        beq .wait_start
+
         jsr game_loop
+
+        ; Wait 200ms and drain leftover keypresses from the heat of the game.
+        clr timer_ticks
+.wait:
+        jsr getchar
+        lda timer_ticks
+        cmp a,#4
+        bmi .wait
+
+        ; Now wait for an actual keypress
+.wait_end:
+        jsr getchar
+        beq .wait_end
+
+        ; Start another game if 'r' was pressed, quit otherwise
+        cmp a,#"r"
+        beq .warm_start
+
+        jsr serial_clear_screen
 
         ldx #restore_terminal_state
         jsr serial_send_string
         rts
 
 game_loop:
+        jsr draw_score
         jsr draw_game_state
+
+        ; Make sure the cursor is out of the way
         ldx #cursor_parked
         jsr serial_send_string
-        jsr draw_score
+
+        ; Zero out the timer
         clr timer_ticks
+
+        ; If no key is pressed we want to continue in the previous direction
         lda last_key
         sta cur_key
 
-.key_wait:
-        jsr getchar
-        bne .got_key
+.tick_wait:
+        jsr get_keypress
         lda timer_ticks
-        cmp a,#1
-        bhi .run
-        bra .key_wait
-
-.got_key:
-        cmp a,#127
-        bls .key_wait           ; Ignore non-control characters
-        sta cur_key
-        bra .key_wait
+        cmp a,#2
+        bmi .tick_wait
 
 .run:
+        ldx head_ptr            ; Prepare X with the current head
+
         lda cur_key
+        sta last_key
+
         cmp a,#KEY_UP
         bne +
 
-        ; If the last key was down, we ignore an up as we can't go backward.
-        ldb last_key
-        cmp b,#KEY_DOWN
-        beq game_loop
-        sta last_key
-
-        ; Mark on the current head where the next snake piece is going to be.
-        ldx head_ptr
+        ; Mark on the current head position where the new head is going to be.
         oim #NEXT_UP,0,x
-        ; Move the snake head in the new direction.
-        ldd head_ptr
-        subd #WIDTH
-        std head_ptr
-        ; Mark the new location as a snake piece.
-        xgdx
-        oim #SNAKE,0,x
-        ; Adjust the location in row/col space too.
-        dec head_row
-        ; Validate that the new position is valid, drag the tail along, etc.
-        jsr adjust_and_readraw_snake
-        bcc game_loop
-        bra .end
+        lda head_row
+        dec a                   ; Moving up, so lower in number of rows
+        sta head_row
+        ldb head_col
+        bra .move_snake
 +
         cmp a,#KEY_DOWN
         bne +
 
-        ldb last_key
-        cmp b,#KEY_UP
-        beq game_loop
-        sta last_key
-
-        ldx head_ptr
         oim #NEXT_DOWN,0,x
-        ldd head_ptr
-        addd #WIDTH
-        std head_ptr
-        xgdx
-        oim #SNAKE,0,x
-        inc head_row
-        jsr adjust_and_readraw_snake
-        bcc game_loop
-        bra .end
-.game_loop_jmp:
-        bra game_loop
+        lda head_row
+        inc a                   ; Moving down, so higher in number of rows
+        sta head_row
+        ldb head_col
+        bra .move_snake
 +
         cmp a,#KEY_LEFT
         bne +
 
-        ldb last_key
-        cmp b,#KEY_RIGHT
-        beq .game_loop_jmp
-        sta last_key
-
-        ldx head_ptr
         oim #NEXT_LEFT,0,x
-        dex
-        stx head_ptr
-        oim #SNAKE,0,x
-        dec head_col
-        jsr adjust_and_readraw_snake
-        bcc .game_loop_jmp
-        bra .end
+        lda head_row
+        ldb head_col
+        dec b                   ; Moving left, so lower in number of columns
+        stb head_col
+        bra .move_snake
 +
         cmp a,#KEY_RIGHT
         bne +
 
-        ldb last_key
-        cmp b,#KEY_LEFT
-        beq .game_loop_jmp
-        sta last_key
-
-        ldx head_ptr
         oim #NEXT_RIGHT,0,x
-        inx
+        lda head_row
+        ldb head_col
+        inc b                   ; Moving right, so higher in number of columns
+        stb head_col
+
+.move_snake:
+        ; Turn row/col into a pointer into field in X
+        jsr row_col_to_field_ptr
         stx head_ptr
+        ; Mark the new head location as a piece of the snake
         oim #SNAKE,0,x
-        inc head_col
+        ; Validate that the new position is valid, drag the tail along, etc.
         jsr adjust_and_readraw_snake
-        bcc .game_loop_jmp
-        bra .end
-+
-        cmp a,"x"
-        bne .game_loop_jmp
+        bcc game_loop           ; Carry is clear unless the game is over
+.end:
+        rts
+
+; Collect key presses, validate them, and store them in cur_key if valid.
+get_keypress:
+        jsr getchar
+        beq .end                ; No keypress, return
+
+        cmp a,#127
+        bls .end                ; Ignore non-control characters
+
+        ; We want to ignore keys that go 'backward' vs the current direction. So
+        ; if we're going up, then 'down' is not allowed. Instead of doing 4
+        ; cases we're doing a bit of trickery to convert a key to its 'inverse'
+        ; by exploiting the values they have. UP=$82, DOWN=$83, LEFT=$80,
+        ; RIGHT=$81 - so increment even numbers, decrement odd ones.
+        tab                     ; Tuck away the non-modified version
+        bit a,#$01
+        bne .odd_key_value
+        inc a
+        bra .compare
+.odd_key_value:
+        dec a
+
+.compare:
+        cmp a,last_key
+        beq .end
+        tba                     ; Get the unmodified key back
+        sta cur_key
 
 .end:
         rts
+
+; Takes row in A, column in B, and computes the corresponding pointer into
+; 'field' which is returned in X.
+row_col_to_field_ptr:
+        dec a                   ; row is 1-based
+        dec a                   ; ...and we have a header to take into account
+        dec b                   ; col is 1-based
+
+        psh b                   ; Store the column
+        ldb #WIDTH
+        mul                     ; A*B -> (A|B)
+        addd #field             ; make it a pointer into field
+        xgdx                    ; Move D into X
+        pul b
+        abx                     ; Add B to X
+        rts
+
 
 ; head_ptr was moved to a new location. We need to figure out whether that has
 ; any consequences and drag the tail along. If the game is over sets C.
 adjust_and_readraw_snake:
         ; Detect self collision: the new head already has a bit saying where the
-        ; next segment is.
+        ; next segment is. Heads are not supposed to have direction bits.
         ldx head_ptr
         lda 0,x
         bit a,#DIR_MASK
@@ -224,16 +294,19 @@ adjust_and_readraw_snake:
         and a,#$ff-FOOD         ; Clear the food bit
         sta 0,x
         inc score
+        jsr place_and_draw_food
         bra .end
 
 .no_food_found:
         ; Adjust the tail. Figure out which direction the next snake segment is
         ; in, move the tail_ptr there.
-        jsr erase_tail
+        jsr erase_tail          ; This takes care of the drawing
         ldx tail_ptr
         lda 0,x
-        clr 0,x
+        clr 0,x                 ; Clear the tail position from 'field' too
 
+        ; Follow from the current tail to where the next one will be and adjust
+        ; row/col/ptr.
         bit a,#NEXT_RIGHT
         beq +
         ldd tail_ptr
@@ -265,21 +338,14 @@ adjust_and_readraw_snake:
         std tail_ptr
         inc tail_row
         bra .end
-.oops:
-        byt "impossible!\0"
-+
-        ldx #.oops
-        jsr serial_send_string
 
-.game_over_string:
-        byt "Game Over!\0"
 .game_over:
-        ldx #.game_over_string
+        ldx #game_over_string
         jsr serial_send_string
         sec                     ; Indicate game over through setting C
-.end:                           ; Branching here directly keeps C clear. None of
-                                ; the sums / subtractions is expected to
-                                ; overflow.
+.end:
+        ; Branching here directly keeps C clear. None of the sums / subtractions
+        ; is expected to overflow.
         rts
 
 ; Draws the header line and the walls.
@@ -302,19 +368,19 @@ draw_game_field:
 +
         bit a,#WALL
         beq +
-        lda #"#"
+        lda #WALL_SYMBOL
         jsr putchar
         bra .next
 +
         bit a,#SNAKE
         beq +
-        lda #"x"
+        lda #SNAKE_SYMBOL
         jsr putchar
         bra .next
 +
         bit a,#FOOD
         beq +
-        lda #"O"
+        lda #FOOD_SYMBOL
         jsr putchar
         bra .next
 +
@@ -343,7 +409,7 @@ init_field:
         jsr init_v_walls
         jsr init_h_wall
         jsr place_initial_snake
-        jsr place_food
+        jsr place_and_draw_food
         rts
 
 init_h_wall:
@@ -387,35 +453,76 @@ init_v_walls:
         rts
 
 place_initial_snake:
-        ; Want the snake to be pointing right, about 1/4 of the way
-        ; horizontally, and in the middle vertically. It has length 2.
-        ldx #field + WIDTH*(HEIGHT/2) + WIDTH/4
-        stx head_ptr
-        lda #SNAKE
-        sta 0,x
-        dex
-        stx tail_ptr
-        ora #NEXT_RIGHT
-        sta 0,x
-
         ; +1 because rows are 1-based, and another +1 for the header row
         lda #HEIGHT/2 + 1 + 1
         sta head_row
         sta tail_row
 
-        lda #WIDTH/4 + 1
-        sta head_col
-        dec a
-        sta tail_col
+        ldb #WIDTH/4 + 1
+        stb head_col
+        dec b
+        stb tail_col
 
+        jsr row_col_to_field_ptr
+        stx tail_ptr
+
+        lda #SNAKE + NEXT_RIGHT
+        sta 0,x
+
+        inx                     ; Head is one position ahead of the tail
+        stx head_ptr
+        lda a,#SNAKE
+        sta 0,x
+
+        ; The snake head is to the right of its tail, so it's moving right.
         lda #KEY_RIGHT
         sta last_key
         rts
 
-place_food:
-        ldx #field + WIDTH*(HEIGHT/2) + 3*WIDTH/4
+; Place food in a random empty spot. TODO: verify that this actually mostly
+; works even for tight fields.
+place_and_draw_food:
+        bra .column
+.restart:
+        ins                     ; We need to get rid of that psh a, psh b
+        ins
+.column:
+        jsr random_byte
+        and a,#WIDTH_MASK
+        cmp a,#WIDTH-1
+        bhi .column
+        inc a                   ; columns are 1-based
+        tab
+.row:
+        jsr random_byte
+        and a,#HEIGHT_MASK
+        cmp a,#HEIGHT-1
+        bhi .row
+        inc a
+        inc a                   ; rows are 1-based and we need to count the
+                                ; header too.
+
+        psh a                   ; Store row, column
+        psh b
+
+        ; Check whether we got an empty field - if not we retry.
+        jsr row_col_to_field_ptr
+        lda 0,x
+        bne .restart
+
+        ; Found an empty spot. Make it food.
         lda #FOOD
         sta 0,x
+
+        ; Draw the food
+        pul a                   ; Get the column back
+        jsr set_cursor_horizontal
+        pul a                   ; Get the row back
+        jsr set_cursor_vertical
+
+        lda #FOOD_SYMBOL
+        jsr putchar
+
         rts
 
 ; Draw the snake head.
@@ -424,7 +531,7 @@ draw_head:
         jsr set_cursor_vertical
         lda head_col
         jsr set_cursor_horizontal
-        lda #"x"
+        lda #SNAKE_SYMBOL
         jsr serial_send_byte
         rts
 
