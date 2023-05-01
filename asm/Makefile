@@ -8,6 +8,13 @@ P2BIN = p2bin
 
 ########################################
 
+VERBOSE?=0
+QUIET=-q
+
+ifeq ($(VERBOSE),1)
+	QUIET=
+endif
+
 .SUFFIXES:
 
 .PHONY: all monitor_prog programs_prog prog
@@ -27,10 +34,10 @@ prog: monitor_prog programs_prog
 -include $(DEP)
 
 monitor.p: monitor.s
-	$(ASL) -Werror -q -U -a -L $<
+	$(ASL) -Werror $(QUIET) -U -a -L $<
 
 programs.p: programs.s
-	$(ASL) -Werror -q -U -L $<
+	$(ASL) -Werror $(QUIET) -U -L $<
 
 %.d: %.s monitor.p
 	./depgen.py $< > $@
