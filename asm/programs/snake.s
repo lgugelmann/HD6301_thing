@@ -87,12 +87,12 @@ snake_start:
 
         jsr game_loop
 
-        ; Wait 200ms and drain leftover keypresses from the heat of the game.
+        ; Wait 300ms and drain leftover keypresses from the heat of the game.
         clr timer_ticks
 .wait:
         jsr getchar
         lda timer_ticks
-        cmp a,#4
+        cmp a,#6
         bmi .wait
 
         ; Now wait for an actual keypress
@@ -100,9 +100,9 @@ snake_start:
         jsr getchar
         beq .wait_end
 
-        ; Start another game if 'r' was pressed, quit otherwise
-        cmp a,#"r"
-        beq .warm_start
+        ; Quit if 'q' was pressed, restart otherwise
+        cmp a,#"q"
+        bne .warm_start
 
         jsr clear_screen
 
@@ -315,41 +315,36 @@ adjust_and_readraw_snake:
         rts
 
 draw_game_over_message:
-        lda #10
-        jsr set_cursor_horizontal
-        lda #6
-        jsr set_cursor_vertical
+.GAME_OVER_H = (WIDTH - 20) / 2
+.GAME_OVER_V = (HEIGHT - 6) / 2
+
+        lda #.GAME_OVER_V
         ldx #.game_over_string_0
-        jsr putstring
-
-        lda #10
-        jsr set_cursor_horizontal
-        lda #7
-        jsr set_cursor_vertical
+        jsr .put_game_over_string
         ldx #.game_over_string_1
-        jsr putstring
-
-        lda #10
-        jsr set_cursor_horizontal
-        lda #8
-        jsr set_cursor_vertical
+        jsr .put_game_over_string
         ldx #.game_over_string_2
-        jsr putstring
-
-        lda #10
-        jsr set_cursor_horizontal
-        lda #9
-        jsr set_cursor_vertical
+        jsr .put_game_over_string
+        ldx #.game_over_string_3
+        jsr .put_game_over_string
         ldx #.game_over_string_1
-        jsr putstring
-
-        lda #10
-        jsr set_cursor_horizontal
-        lda #10
-        jsr set_cursor_vertical
+        jsr .put_game_over_string
         ldx #.game_over_string_0
-        jsr putstring
+        jsr .put_game_over_string
+
         rts
+
+.put_game_over_string:
+        pshx
+        tab                     ; Store vertical position from A -> B
+        lda #.GAME_OVER_H
+        jsr set_cursor_horizontal
+        inc b                   ; Next row
+        tba
+        jsr set_cursor_vertical
+        tba                     ; set_cursor clobbers A
+        pulx
+        jmp putstring
 
 .game_over_string_0:
         byt "$$$$$$$$$$$$$$$$$$$$\0"
@@ -357,6 +352,8 @@ draw_game_over_message:
         byt "$                  $\0"
 .game_over_string_2:
         byt "$    Game Over!!   $\0"
+.game_over_string_3:
+        byt "$     q to quit    $\0"
 
 
 ; Draws the header line and the walls.
