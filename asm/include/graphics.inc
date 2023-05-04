@@ -14,6 +14,7 @@ GRAPHICS_TERMINAL_HEIGHT = 40
 
 graphics_init:
         clr GRAPHICS_CLEAR
+        clr GRAPHICS_HIDE_CURSOR
         rts
 
 ; Put the character in A on the screen. If the character is printable, print it
