@@ -8,6 +8,7 @@ __serial_inc = 1
         SECTION serial
         PUBLIC serial_init
         PUBLIC_SHARED serial_send_byte
+        PUBLIC_SHARED serial_send_byte_dec
         PUBLIC_SHARED serial_send_string
         PUBLIC_SHARED serial_clear_screen
 
@@ -60,6 +61,32 @@ serial_clear_screen:
         rts
 .serial_clear_screen_command:
         byt "\x1b[2J\0"
+
+serial_send_byte_dec:
+        psh b
+        tab
+
+        lda #"0" - 1
+.hundred_loop:
+        inc a
+        sub b,#100
+        bcc .hundred_loop
+        jsr serial_send_byte    ; Write hundreds digit
+
+        lda #"9" + 1
+.tens_loop:
+        dec a
+        add b,#10
+        bmi .tens_loop
+        jsr serial_send_byte    ; Write tens digit
+
+        add b,#"0"
+        tba
+        jsr serial_send_byte    ; Write last digit
+
+        pul b
+        rts
+
 
         ENDSECTION
 
