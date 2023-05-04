@@ -24,36 +24,9 @@ save_terminal_state:
 restore_terminal_state:
         byt CSI
         byt "u\0"
-; TODO: does not seem to be doing anything useful
-hide_cursor:
-        byt ESC
-        byt "6p"
-cursor_top_left:
-        byt CSI
-        byt "1;1H\0"
-cursor_to_score:
-        byt CSI
-        byt ";38H\0"
 snake_header:
         ;    1...5...10...15...20...25...30...35...40
         byt "~~TERMINAL SNEK~~~~~~~~~~~~~ Score:     \n\0"
-game_over_string:
-        byt CSI
-        byt "6;10H"
-        byt "$$$$$$$$$$$$$$$$$$$$\n"
-        byt CSI
-        byt "7;10H"
-        byt "$                  $\n"
-        byt CSI
-        byt "8;10H"
-        byt "$    Game Over!!   $\n"
-        byt CSI
-        byt "9;10H"
-        byt "$                  $\n"
-        byt CSI
-        byt "10;10H"
-        byt "$$$$$$$$$$$$$$$$$$$$\n"
-        ; Intentionally leaving out 'byt 0' here to also append cursor_parked
 cursor_parked:
         byt CSI
         byt "41;H\0"
@@ -90,19 +63,15 @@ WALL_SYMBOL  = "#"
 SNAKE_SYMBOL = "x"
 
 snake_start:
-        clr GRAPHICS_CLEAR
         ldx #save_terminal_state
         jsr serial_send_string
 
-        ; TODO: this does not seem to do anything
-        ldx #hide_cursor
-        jsr serial_send_string
+        jsr clear_screen
+        jsr set_cursor_hidden
 
         ; Seed random number generator with low counter byte
         lda TCL
         jsr random_srand
-
-        jsr serial_clear_screen
 
 .warm_start:
         jsr init_field
@@ -135,7 +104,7 @@ snake_start:
         cmp a,#"r"
         beq .warm_start
 
-        jsr serial_clear_screen
+        jsr clear_screen
 
         ldx #restore_terminal_state
         jsr serial_send_string
@@ -143,7 +112,6 @@ snake_start:
 
 game_loop:
         jsr draw_score
-        jsr draw_game_state
 
         ; Make sure the cursor is out of the way
         ldx #cursor_parked
@@ -332,7 +300,6 @@ adjust_and_readraw_snake:
         bra .end
 +
         bit a,#NEXT_DOWN
-        beq +
         ldd tail_ptr
         addd #WIDTH
         std tail_ptr
@@ -340,18 +307,61 @@ adjust_and_readraw_snake:
         bra .end
 
 .game_over:
-        ldx #game_over_string
-        jsr serial_send_string
+        jsr draw_game_over_message
         sec                     ; Indicate game over through setting C
 .end:
         ; Branching here directly keeps C clear. None of the sums / subtractions
         ; is expected to overflow.
         rts
 
+draw_game_over_message:
+        lda #10
+        jsr set_cursor_horizontal
+        lda #6
+        jsr set_cursor_vertical
+        ldx #.game_over_string_0
+        jsr putstring
+
+        lda #10
+        jsr set_cursor_horizontal
+        lda #7
+        jsr set_cursor_vertical
+        ldx #.game_over_string_1
+        jsr putstring
+
+        lda #10
+        jsr set_cursor_horizontal
+        lda #8
+        jsr set_cursor_vertical
+        ldx #.game_over_string_2
+        jsr putstring
+
+        lda #10
+        jsr set_cursor_horizontal
+        lda #9
+        jsr set_cursor_vertical
+        ldx #.game_over_string_1
+        jsr putstring
+
+        lda #10
+        jsr set_cursor_horizontal
+        lda #10
+        jsr set_cursor_vertical
+        ldx #.game_over_string_0
+        jsr putstring
+        rts
+
+.game_over_string_0:
+        byt "$$$$$$$$$$$$$$$$$$$$\0"
+.game_over_string_1:
+        byt "$                  $\0"
+.game_over_string_2:
+        byt "$    Game Over!!   $\0"
+
+
 ; Draws the header line and the walls.
 draw_game_field:
-        ldx #cursor_top_left
-        jsr serial_send_string
+        jsr set_cursor_top_left
 
         ldx #snake_header
         jsr putstring
@@ -532,8 +542,8 @@ draw_head:
         lda head_col
         jsr set_cursor_horizontal
         lda #SNAKE_SYMBOL
-        jsr serial_send_byte
-        rts
+        jmp putchar
+        ; rts in putchar
 
 ; Erase the tail at its current location.
 erase_tail:
@@ -542,16 +552,23 @@ erase_tail:
         lda tail_col
         jsr set_cursor_horizontal
         lda #" "
-        jsr serial_send_byte
-        rts
+        jmp putchar
+        ; rts in putchar
 
 ; Puts the score onto the screen
 draw_score:
-        ldx #cursor_to_score
+        clr GRAPHICS_SET_ROW
+        lda #37
+        sta GRAPHICS_SET_COLUMN
+        ldx #.cursor_to_score
         jsr serial_send_string
         lda score
-        jsr putchar_dec
-        rts
+        jmp putchar_dec
+        ; rts in putchar_dec
+
+.cursor_to_score:
+        byt CSI
+        byt ";38H\0"
 
 draw_game_state:
         psh a
@@ -607,21 +624,54 @@ draw_game_state:
 .state_string:
         byt "  HP  H  HC  HR   TP  T  TC  TR\n\0"
 
+set_cursor_top_left:
+        clr GRAPHICS_SET_CURSOR_HIGH
+        clr GRAPHICS_SET_CURSOR_LOW
+        ldx #.cursor_top_left
+        jmp serial_send_string
+
+.cursor_top_left:
+        byt CSI
+        byt "1;1H\0"
+
+
 ; Move the cursor to column set by A. Clobbers X.
 set_cursor_horizontal:
+        dec a                   ; Graphics row is 0-based
+        sta GRAPHICS_SET_COLUMN
+        inc a
         ldx #csi0
         jsr serial_send_string
-        jsr putchar_dec
+        jsr serial_send_byte_dec
         lda #'G'
-        jsr serial_send_byte
-        rts
+        jmp serial_send_byte
+        ; rts in serial_send_byte
 
+; Move the cursor to row set by A. Clobbers X.
 set_cursor_vertical:
+        dec a                   ; Graphics row is 0-based
+        sta GRAPHICS_SET_ROW
+        inc a
         ldx #csi0
         jsr serial_send_string
-        jsr putchar_dec
+        jsr serial_send_byte_dec
         lda #'d'
-        jsr serial_send_byte
-        rts
+        jmp serial_send_byte
+        ; rts in serial_send_byte
+
+set_cursor_hidden:
+        inc GRAPHICS_HIDE_CURSOR
+        ldx #.hide_cursor
+        jmp serial_send_string
+        ; rts in serial_send_string
+
+; TODO: does not seem to be doing anything useful
+.hide_cursor:
+        byt ESC
+        byt "6p"
+
+clear_screen:
+        clr GRAPHICS_CLEAR
+        jmp serial_clear_screen
 
         ENDSECTION
