@@ -56,6 +56,8 @@ constexpr int kCharBufSize = kNumRows * kNumCols;
 struct graphics_state {
   char charbuf[kCharBufSize] = {0};
   int cursor_pos = 0;
+  int cursor_pos_high = 0;
+  bool cursor_hidden = false;
 };
 
 graphics_state state;
@@ -69,7 +71,8 @@ static inline void prepare_scanline(const graphics_state *state, uint y) {
         font[(c - FONT_FIRST_ASCII) + (y % FONT_CHAR_HEIGHT) * FONT_N_CHARS];
   }
   uint cursor_pixel_row = (state->cursor_pos / kNumCols) * FONT_CHAR_HEIGHT;
-  if (cursor_pixel_row <= y && y < cursor_pixel_row + FONT_CHAR_HEIGHT) {
+  if (!state->cursor_hidden && cursor_pixel_row <= y &&
+      y < cursor_pixel_row + FONT_CHAR_HEIGHT) {
     // we're in the cursor row, invert the character under the cursor
     scanbuf[state->cursor_pos % kNumCols] =
         ~scanbuf[state->cursor_pos % kNumCols];
@@ -149,7 +152,33 @@ void bus_irq_callback(uint gpio, uint32_t event_mask) {
       state.charbuf[state.cursor_pos] = data & 0x7f;
       break;
     }
-
+    // Set cursor column
+    case 4: {
+      state.cursor_pos =
+          state.cursor_pos - (state.cursor_pos % kNumCols) + data % kNumCols;
+      break;
+    }
+    // Set cursor row
+    case 5: {
+      state.cursor_pos =
+          (data % kNumRows) * kNumCols + (state.cursor_pos % kNumCols);
+      break;
+    }
+    // Set cursor position high byte
+    case 6: {
+      state.cursor_pos_high = data;
+      break;
+    }
+    // Set cursor position low byte
+    case 7: {
+      state.cursor_pos = (state.cursor_pos_high << 8) + data;
+      break;
+    }
+    // Cursor visibility. 0: shown, 1: hidden
+    case 8: {
+      state.cursor_hidden = data;
+      break;
+    }
     default:
       break;
   }

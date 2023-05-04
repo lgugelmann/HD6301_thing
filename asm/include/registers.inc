@@ -33,5 +33,13 @@ GRAPHICS_SEND_CHAR     = $7fc0  ; Send one character to the graphic terminal,
 GRAPHICS_CLEAR         = $7fc1  ; Clear graphic terminal.
 GRAPHICS_MOVE_CURSOR   = $7fc2  ; Move cursor by (signed) amount.
 GRAPHICS_SEND_CHAR_RAW = $7fc3  ; Send a character, keep the cursor in place.
+GRAPHICS_SET_COLUMN    = $7fc4  ; Set the cursor row.
+GRAPHICS_SET_ROW       = $7fc5  ; Set the cursor column.  Set the cursor
+; position high / low byte. The high byte is not applied until a low byte write
+; happens.
+GRAPHICS_SET_CURSOR_HIGH = $7fc6
+GRAPHICS_SET_CURSOR_LOW  = $7fc7
+GRAPHICS_HIDE_CURSOR   = $7fc8  ; 0 = cursor visible, 1 = hidden.
+
 
         endif
