@@ -17,6 +17,8 @@ add_compile_options(-Wall)
 
 add_executable(pico_graphics
   pico_graphics.cpp
+  tmds_encode_font_2bpp.S
+  tmds_encode_font_2bpp.h
 )
 
 pico_enable_stdio_usb(pico_graphics 1)
@@ -25,7 +27,10 @@ pico_enable_stdio_uart(pico_graphics 0)
 target_compile_definitions(pico_graphics PRIVATE
   DVI_VERTICAL_REPEAT=1
   DVI_N_TMDS_BUFFERS=3
-  DVI_MONOCHROME_TMDS=1
+  DVI_MONOCHROME_TMDS=0
+  # Reduce core 1 stack size to make scratch_x large enough for the TMDS
+  # encoding tables.
+  PICO_CORE1_STACK_SIZE=0x200
 )
 
 target_link_libraries(pico_graphics

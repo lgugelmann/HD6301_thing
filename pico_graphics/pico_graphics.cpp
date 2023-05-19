@@ -17,16 +17,10 @@
 extern "C" {
 #include "dvi.h"
 #include "dvi_serialiser.h"
-#include "tmds_encode.h"
+#include "tmds_encode_font_2bpp.h"
 }
 
 #include "font.h"
-
-// Note: width has to be 8 or you need to change the logic in prepare_scanline
-#define FONT_CHAR_WIDTH 8
-#define FONT_CHAR_HEIGHT 15
-#define FONT_N_CHARS 128
-#define FONT_FIRST_ASCII 0
 
 constexpr int kLedPin = 25;
 constexpr int kLedMask = 1 << kLedPin;
@@ -49,43 +43,84 @@ struct semaphore dvi_start_sem;
 constexpr int kFrameWidth = 800;
 constexpr int kFrameHeight = 600;
 
-constexpr int kNumCols = kFrameWidth / FONT_CHAR_WIDTH;
-constexpr int kNumRows = kFrameHeight / FONT_CHAR_HEIGHT;
+constexpr int kFontCharWidth = 8;
+constexpr int kFontCharHeight = 15;
+constexpr int kFontNumChars = 128;
+
+constexpr int kNumCols = kFrameWidth / kFontCharWidth;
+constexpr int kNumRows = kFrameHeight / kFontCharHeight;
 constexpr int kCharBufSize = kNumRows * kNumCols;
 
+// Color is stored in 3 planes, one each for R, G, B. Within each plane we have
+// 4 bits per character, 2 foreground, 2 background. We can fit color for 8
+// characters into 32 bit words. We also need to have each line word-aligned so
+// we may need some extra padding at the end of each one if the number of
+// columns is not divisible by 8.
+constexpr int kColorPlaneLineWords = kNumCols / 8 + (kNumCols % 8 > 0);
+constexpr int kColorPlaneSizeWords = kColorPlaneLineWords * kNumRows;
+
 struct graphics_state {
+  // 3 color planes, one each for R, G, B
+  uint32_t colorbuf[3 * kColorPlaneSizeWords] = {0};
   char charbuf[kCharBufSize] = {0};
   int cursor_pos = 0;
   int cursor_pos_high = 0;
   bool cursor_hidden = false;
 };
 
-graphics_state state;
+graphics_state* gstate = 0;
 
-static inline void prepare_scanline(const graphics_state *state, uint y) {
-  static uint8_t scanbuf[kNumCols];
-  // First blit font into 1bpp scanline buffer, then encode scanbuf into tmdsbuf
-  for (uint i = 0; i < kNumCols; ++i) {
-    uint c = state->charbuf[i + y / FONT_CHAR_HEIGHT * kNumCols];
-    scanbuf[i] =
-        font[(c - FONT_FIRST_ASCII) + (y % FONT_CHAR_HEIGHT) * FONT_N_CHARS];
+static inline void set_color_bits(uint position, uint8_t color,
+                                  uint8_t bit_offset) {
+  if (position >= kCharBufSize) {
+    return;
   }
-  uint cursor_pixel_row = (state->cursor_pos / kNumCols) * FONT_CHAR_HEIGHT;
-  if (!state->cursor_hidden && cursor_pixel_row <= y &&
-      y < cursor_pixel_row + FONT_CHAR_HEIGHT) {
-    // we're in the cursor row, invert the character under the cursor
-    scanbuf[state->cursor_pos % kNumCols] =
-        ~scanbuf[state->cursor_pos % kNumCols];
+  // We need to account for some extra padding in the color plane vs the
+  // character buffer. With each line we may get an extra word.
+  uint line_padding = (position / kNumCols) * (kNumCols % 8);
+  uint bit_index = (position + line_padding) % 8 * 4 + bit_offset;
+  uint word_index = (position + line_padding) / 8;
+  for (int plane = 0; plane < 3; ++plane) {
+    uint32_t color_masked = color & 0x3;
+    gstate->colorbuf[word_index] =
+        (gstate->colorbuf[word_index] & ~(0x3u << bit_index)) |
+        (color_masked << bit_index);
+    color >>= 2;
+    word_index += kColorPlaneSizeWords;
   }
-  uint32_t *tmdsbuf;
+}
+
+static inline void set_fg_color(uint position, uint8_t fg) {
+  set_color_bits(position, fg, 0);
+}
+
+static inline void set_bg_color(uint position, uint8_t bg) {
+  set_color_bits(position, bg, 2);
+}
+
+static inline void set_color(uint position, uint8_t fg, uint8_t bg) {
+  set_fg_color(position, fg);
+  set_bg_color(position, bg);
+}
+
+static inline void prepare_scanline(const graphics_state* state, uint y) {
+  uint32_t* tmdsbuf;
   queue_remove_blocking(&dvi0.q_tmds_free, &tmdsbuf);
-  tmds_encode_1bpp((const uint32_t *)scanbuf, tmdsbuf, kFrameWidth);
+
+  for (int plane = 0; plane < 3; ++plane) {
+    tmds_encode_font_2bpp(
+        (uint8_t*)&state->charbuf[(y / kFontCharHeight) * kNumCols],
+        &state->colorbuf[(y / kFontCharHeight) * kColorPlaneLineWords] +
+            plane * kColorPlaneSizeWords,
+        tmdsbuf + plane * (kFrameWidth / DVI_SYMBOLS_PER_WORD), kFrameWidth,
+        &font[(y % kFontCharHeight) * kFontNumChars]);
+  }
   queue_add_blocking(&dvi0.q_tmds_valid, &tmdsbuf);
 }
 
 void __not_in_flash("main") core1_scanline_callback() {
   static uint y = 1;
-  prepare_scanline(&state, y);
+  prepare_scanline(gstate, y);
   y = (y + 1) % kFrameHeight;
 }
 
@@ -94,44 +129,74 @@ void __not_in_flash("main") core1_main() {
   sem_acquire_blocking(&dvi_start_sem);
   dvi_start(&dvi0);
 
-  // The text display is completely IRQ driven (takes up around 30% of cycles @
-  // VGA). We could do something useful, or we could just take a nice nap
   while (true) {
     __wfi();
   }
   __builtin_unreachable();
 }
 
-void bus_irq_callback(uint gpio, uint32_t event_mask) {
-  uint32_t gpio_state = gpio_get_all();
-  // Data and address are laid out backside-front on the board
-  uint8_t data = __rev((gpio_state & kDMask) >> kD7Pin) >> 24;
-  uint8_t command = __rev((gpio_state & kAMask) >> kA5Pin) >> 26;
+// Flips fg/bg color at the cursor if needed
+void cursor_color_flip(graphics_state* state) {
+  if (state->cursor_hidden) {
+    return;
+  }
+
+  uint line_padding = (state->cursor_pos / kNumCols) * (kNumCols % 8);
+  uint word_index = (state->cursor_pos + line_padding) / 8;
+  uint bit_index = (state->cursor_pos + line_padding) % 8 * 4;
+
+  for (uint plane = 0; plane < 3; ++plane) {
+    uint32_t& color =
+        state->colorbuf[word_index + plane * kColorPlaneSizeWords];
+    uint32_t bg = (color & (0xcu << bit_index)) >> 2;
+    uint32_t fg = (color & (0x3u << bit_index)) << 2;
+    color = (color & ~(0xfu << bit_index)) | bg | fg;
+  }
+}
+
+void run_command(uint8_t command, uint8_t data) {
   switch (command) {
     // Write character, advance cursor
     case 0: {
-      state.charbuf[state.cursor_pos] = data & 0x7f;
-      state.cursor_pos = (state.cursor_pos + 1) % kCharBufSize;
+      gstate->charbuf[gstate->cursor_pos] = data & 0x7f;
+      cursor_color_flip(gstate);
+      gstate->cursor_pos = (gstate->cursor_pos + 1) % kCharBufSize;
+      cursor_color_flip(gstate);
       break;
     }
     // Clear commands
     case 1: {
       switch (data) {
-        case 0: {  // Clear full screen, reset cursor to 0
-          memset(state.charbuf, ' ', kCharBufSize);
-          state.cursor_pos = 0;
+        case 0: {  // Clear full screen, reset cursor to 0, colors to white on
+                   // black
+          memset(gstate->charbuf, ' ', kCharBufSize);
+          memset(gstate->colorbuf, 0x33,
+                 3 * kColorPlaneSizeWords * sizeof(uint32_t));
+          gstate->cursor_pos = 0;
+          cursor_color_flip(gstate);
           break;
         }
         case 1: {  // Clear current row, reset cursor to row start
-          state.cursor_pos -= (state.cursor_pos % kNumCols);
-          memset(state.charbuf + state.cursor_pos, ' ', kNumCols);
+          gstate->cursor_pos -= (gstate->cursor_pos % kNumCols);
+          memset(gstate->charbuf + gstate->cursor_pos, ' ', kNumCols);
+          for (int position = gstate->cursor_pos;
+               position < gstate->cursor_pos + kNumCols; ++position) {
+            set_color(position, 0xff, 0);
+          }
+          cursor_color_flip(gstate);
           break;
         }
         case 2: {  // Clear next row, reset cursor to next row start
-          state.cursor_pos =
-              (state.cursor_pos - (state.cursor_pos % kNumCols) + kNumCols) %
-              kCharBufSize;
-          memset(state.charbuf + state.cursor_pos, ' ', kNumCols);
+          cursor_color_flip(gstate);
+          gstate->cursor_pos = (gstate->cursor_pos -
+                                (gstate->cursor_pos % kNumCols) + kNumCols) %
+                               kCharBufSize;
+          memset(gstate->charbuf + gstate->cursor_pos, ' ', kNumCols);
+          for (int position = gstate->cursor_pos;
+               position < gstate->cursor_pos + kNumCols; ++position) {
+            set_color(position, 0xff, 0);
+          }
+          cursor_color_flip(gstate);
           break;
         }
       }
@@ -140,43 +205,56 @@ void bus_irq_callback(uint gpio, uint32_t event_mask) {
     // Cursor position delta commands. Data contains signed delta to cursor
     // position.
     case 2: {
-      int new_position = (state.cursor_pos + (signed char)data) % kCharBufSize;
+      int new_position =
+          (gstate->cursor_pos + (signed char)data) % kCharBufSize;
       if (new_position < 0) {
         new_position += kCharBufSize;
       }
-      state.cursor_pos = new_position;
+      cursor_color_flip(gstate);
+      gstate->cursor_pos = new_position;
+      cursor_color_flip(gstate);
       break;
     }
     // Same as 0 but doesn't advance cursor
     case 3: {
-      state.charbuf[state.cursor_pos] = data & 0x7f;
+      gstate->charbuf[gstate->cursor_pos] = data & 0x7f;
       break;
     }
     // Set cursor column
     case 4: {
-      state.cursor_pos =
-          state.cursor_pos - (state.cursor_pos % kNumCols) + data % kNumCols;
+      cursor_color_flip(gstate);
+      gstate->cursor_pos = gstate->cursor_pos -
+                           (gstate->cursor_pos % kNumCols) + data % kNumCols;
+      cursor_color_flip(gstate);
       break;
     }
     // Set cursor row
     case 5: {
-      state.cursor_pos =
-          (data % kNumRows) * kNumCols + (state.cursor_pos % kNumCols);
+      cursor_color_flip(gstate);
+      gstate->cursor_pos =
+          (data % kNumRows) * kNumCols + (gstate->cursor_pos % kNumCols);
+      cursor_color_flip(gstate);
       break;
     }
     // Set cursor position high byte
     case 6: {
-      state.cursor_pos_high = data;
+      gstate->cursor_pos_high = data;
       break;
     }
     // Set cursor position low byte
     case 7: {
-      state.cursor_pos = (state.cursor_pos_high << 8) + data;
+      cursor_color_flip(gstate);
+      gstate->cursor_pos = (gstate->cursor_pos_high << 8) + data;
+      cursor_color_flip(gstate);
       break;
     }
     // Cursor visibility. 0: shown, 1: hidden
     case 8: {
-      state.cursor_hidden = data;
+      // If the hidden status changed only one of the flips will be done, if it
+      // hasn't we flip 0 or two times. In all cases we get the right result.
+      cursor_color_flip(gstate);
+      gstate->cursor_hidden = data;
+      cursor_color_flip(gstate);
       break;
     }
     default:
@@ -184,20 +262,31 @@ void bus_irq_callback(uint gpio, uint32_t event_mask) {
   }
 }
 
+void bus_irq_callback(uint gpio, uint32_t event_mask) {
+  uint32_t gpio_state = gpio_get_all();
+  // Data and address are laid out backside-front on the board
+  uint8_t data = __rev((gpio_state & kDMask) >> kD7Pin) >> 24;
+  uint8_t command = __rev((gpio_state & kAMask) >> kA5Pin) >> 26;
+  run_command(command, data);
+}
+
 int __not_in_flash("main") main() {
   vreg_set_voltage(VREG_VOLTAGE_1_30);
   sleep_ms(10);
 
   // Run system at TMDS bit clock
-  const auto *dvi_timing = &dvi_timing_800x600p_60hz;
+  const auto* dvi_timing = &dvi_timing_800x600p_60hz;
   set_sys_clock_khz(dvi_timing->bit_clk_khz, true);
 
   stdio_init_all();
 
-  // Fill character buffer with space characters
-  for (int i = 0; i < kNumRows * kNumCols; ++i) {
-    state.charbuf[i] = ' ';
-  }
+  gstate = new graphics_state;
+
+  printf("rows: %u, cols: %u charbuf_size: %d\n", kNumRows, kNumCols,
+         kCharBufSize);
+
+  // Clears the screen
+  run_command(1, 0);
 
   // Bus I/O & IRQ init
   gpio_init_mask(kAllPinMask);  // Sets pins in the mask to input
@@ -222,7 +311,7 @@ int __not_in_flash("main") main() {
 
   dvi_init(&dvi0, next_striped_spin_lock_num(), next_striped_spin_lock_num());
 
-  prepare_scanline(&state, 0);
+  prepare_scanline(gstate, 0);
 
   sem_init(&dvi_start_sem, 0, 1);
   hw_set_bits(&bus_ctrl_hw->priority, BUSCTRL_BUS_PRIORITY_PROC1_BITS);
