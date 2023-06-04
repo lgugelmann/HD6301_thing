@@ -11,6 +11,7 @@ __serial_inc = 1
         PUBLIC_SHARED serial_send_byte_dec
         PUBLIC_SHARED serial_send_string
         PUBLIC_SHARED serial_clear_screen
+        PUBLIC_SHARED serial_read_byte_blocking
 
 ;; Initialize Serial Communication Interface
 serial_init:
