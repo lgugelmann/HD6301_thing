@@ -31,10 +31,15 @@ program_registry:
         byt "random\0"
         adr random_start
 +
+        adr +
+        byt "serial_opl3\0"
+        adr serial_opl3_start
++
         adr $0000               ; End marker
 
         include programs/hello.s
         include programs/random.s
         include programs/sci_echo.s
+        include programs/serial_opl3.s
         include programs/snake.s
         include programs/test.s
