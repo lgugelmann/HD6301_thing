@@ -116,7 +116,7 @@ def play_command(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Opl3 player')
-    parser.add_argument('--port', default='/dev/ttyACM0')
+    parser.add_argument('--port', default='/dev/ttyACM1')
     subparsers = parser.add_subparsers()
 
     write_parser = subparsers.add_parser('write')
