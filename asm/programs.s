@@ -3,12 +3,17 @@
         org $8000
 
 ; Program registry structure:
+; - autorun address (run this on reset, 0 starts the monitor instead)
 ; - for each program:
 ;   - 2 bytes pointing at the next entry
 ;   - zero-terminated string with program name
 ;   - 2 bytes address for its entry point
 ; - after that a last entry with just a $0000 where the next entry address
 ;   would go
+
+; Set to 0 to start in the monitor, otherwise runs this program at startup.
+program_registry_autorun:
+        adr serial_opl3_start
 
 program_registry:
         adr +

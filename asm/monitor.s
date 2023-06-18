@@ -108,6 +108,10 @@ start:
 
         cli                     ; Enable interrupts
 
+        ldx $8000               ; Autorun program address
+        beq line_start          ; 0 in the autorun address, start in the monitor
+        jsr run_program_in_x
+
 line_start:
         ldx #terminal_string
         jsr putstring
@@ -204,18 +208,32 @@ exec:
         rts
 
 ; Run the program named in the first parameter. The valid program names are
-; listed in the program registry at $8000.
+; listed in the program registry at $8002+.
 run:
         ldx input_buffer_param0_ptr
         pshx
-        ldx #$8000
+        ldx #$8002
         jsr map_find
         bcc .unknown_program_error
 
         ldx 0,x                 ; X is at the location of the start address
         ins                     ; Discard the 2 byte return value on the stack
         ins
+        bra run_program_in_x
 
+.unknown_program_error_string:
+        byt "Error: unknown program '\0"
+
+.unknown_program_error:
+        ldx #.unknown_program_error_string
+        jsr putstring
+        ldx input_buffer_param0_ptr
+        jsr putstring
+        lda #"'"
+        jsr putchar
+        rts
+
+run_program_in_x:
         sts monitor_stack_ptr
         lds #USER_STACK_START
         ; jsr and not jmp so the user program can rts back to the monitor.
@@ -228,18 +246,6 @@ run:
         ldx #0
         stx user_stack_ptr
 
-        rts
-
-.unknown_program_error_string:
-        byt "Error: unknown program '\0"
-
-.unknown_program_error:
-        ldx #.unknown_program_error_string
-        jsr putstring
-        ldx input_buffer_param0_ptr
-        jsr putstring
-        lda #"'"
-        jsr putchar
         rts
 
 ; Resume the currently running user program by 'rti' from the user stack.
@@ -328,7 +334,7 @@ print:
 ls_command:
 
         ; Program registry is at the start of ROM.
-        ldx #$8000
+        ldx #$8002
 .loop:
         ldd 0,x                 ; Load next entry pointer in (A|B)
         beq .end                ; If it's 0 we're done
