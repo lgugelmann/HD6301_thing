@@ -40,9 +40,14 @@ program_registry:
         byt "serial_opl3\0"
         adr serial_opl3_start
 +
+        adr +
+        byt "opl3_test\0"
+        adr opl3_test_start
++
         adr $0000               ; End marker
 
         include programs/hello.s
+        include programs/opl3_test.s
         include programs/random.s
         include programs/sci_echo.s
         include programs/serial_opl3.s
