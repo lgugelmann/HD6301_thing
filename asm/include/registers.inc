@@ -39,6 +39,11 @@ OPL3_STATUS_READ    = $7f80     ; Same memory location as address write
 OPL3_ADDRESS_ARRAY1 = $7f82     ; A0 = 0, A1 = 1
 OPL3_DATA_WRITE     = $7f81     ; A0 = 1, A1 = 0 (A1 could be arbitrary)
 
+;; Constants for register addresses in OPL3 itself, not part of the memory map.
+OPL3_TIMER1        = $02
+OPL3_TIMER2        = $03
+OPL3_TIMER_CONTROL = $04
+
 ;;
 ;; Pico Graphics registers
 ;;

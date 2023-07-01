@@ -6,6 +6,7 @@
         include include/map
         include include/registers
         include include/random
+        include include/sound
         include include/stdio
         include include/timer
 
@@ -100,6 +101,7 @@ start:
         sts monitor_stack_ptr
 
         jsr random_init
+        jsr sound_init
         jsr stdio_init          ; Initializes serial, keyboard & graphics
         jsr timer_init
 
@@ -373,8 +375,16 @@ irq:
         ; The 6301 puts stack pointer, accumulators, register flags etc on the
         ; stack before entering an interrupt routine. We don't need to take
         ; precautions to preserve them.
+
+        ; OPL3 timer IRQ go first. If we don't handle them within 80uS there is
+        ; a chance of dropping timer events. See sound.inc for details.
+        jsr sound_irq
+        bcs .handled            ; IRQ handlers set C if they handled their IRQ
+
         jsr keyboard_irq
         bvs invoke_monitor      ; keyboard IRQ sets V if 'break' key is pressed
+
+.handled:
         rti
 
 invoke_monitor:
