@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<GPDProject version="25" oldestCompatibleVersion="25" GPDVersion="6.32.002" lastChange="04/06/2023 17:34">
+<GPDProject version="25" oldestCompatibleVersion="25" GPDVersion="6.32.002" lastChange="02/07/2023 12:37">
     <generalProjectSettings/>
     <chip family="04" type="06" friendlyName="GreenPAK 6" partNumber="36" package="16">
-        <nvmData registerLenght="2048">D 0 0 0 0 0 0 0 0 0 80 24 CA 20 1C B D3 18 5 1 0 0 70 55 94 5 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 34 0 0 0 0 0 0 A7 3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 80 30 0 30 30 30 30 0 0 80 80 30 0 30 30 30 70 30 70 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 14 22 30 C 0 0 0 0 0 0 0 5 0 0 0 0 0 80 80 4 40 0 0 0 0 0 0 0 FF 7F 20 0 1 0 0 0 2 1 0 0 2 0 1 0 0 2 1 0 0 2 0 1 0 0 2 1 0 0 2 0 1 0 0 2 0 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 A5</nvmData>
+        <nvmData registerLenght="2048">D 0 0 0 0 0 0 0 0 0 80 24 CA 20 1C B D3 18 5 1 0 0 70 55 94 5 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 34 0 0 0 0 0 0 A7 3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 80 30 0 30 30 30 30 0 0 80 80 30 0 30 30 30 70 30 70 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 14 22 30 C 0 0 0 0 0 0 0 5 0 0 0 0 0 80 80 44 40 0 0 0 0 0 0 0 FF 7F 20 0 1 0 0 0 2 1 0 0 2 0 1 0 0 2 1 0 0 2 0 1 0 0 2 1 0 0 2 0 1 0 0 2 0 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 A5</nvmData>
         <eepromData id="0">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</eepromData>
-        <checksum crc32="0x26D3D0C7" version="7"/>
+        <checksum crc32="0xA98BFFD4" version="7"/>
         <VDDItem id="0">
             <item id="0" caption="VDD (PIN 20)">
                 <graphics pos="(-590.00,30.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
@@ -420,12 +420,12 @@
         <wire output="157" input="493" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="7" wireText="NET7" wireState="0">
             <points>(-340.00,-75.00); (-74.92,-75.00); (-74.92,-114.00); (69.00,-114.00)</points>
         </wire>
-        <textLabel pos="(-544.10,191.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">Memory map:
+        <textLabel pos="(-548.99,191.00)" angle="0.00" textColor="#ffff00ff" backgroundColor="#14141464">Memory map:
 Selected when
 A15 = 0
 A14...A7 = 1
 A6 = 0
-R/W = 0
+R/W = (anything)
 CLK = 1</textLabel>
     </chip>
     <emulatorConfiguration version="4" oldestCompatibleVersion="4">
