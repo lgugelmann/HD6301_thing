@@ -3,12 +3,15 @@ __sound_inc = 1
 
         include macros
         include registers
+        include sound_frequency_tables
 
         SECTION sound
         PUBLIC sound_init
         PUBLIC sound_irq
 
         PUBLIC_SHARED sound_load_instrument
+        PUBLIC_SHARED sound_play_note
+        PUBLIC_SHARED sound_stop_note
         PUBLIC_SHARED sound_timer1_callback
         PUBLIC_SHARED sound_timer2_callback
 
@@ -180,6 +183,53 @@ sound_load_instrument:
 
         pul b
 
+        rts
+
+; Sets the channel in A to the MIDI note number in B and plays it. Does not
+; require the note to be stopped before. The note needs to be between 21 and 105
+; inclusive.
+sound_play_note:
+        pshx
+        psh a
+        add a,#($B0-1)          ; KON/BLOCK/FNUM(H) register for a given channel
+        psh a
+
+        ; Stop the note that's playing
+        sta OPL3_ADDRESS_ARRAY0
+        clr OPL3_DATA_WRITE
+
+        ;; Set up FNUM(L) first
+        sub a,#$10              ; FNUM(L) register is $10 below KON/...
+        sta OPL3_ADDRESS_ARRAY0
+
+	; Get the value for FNUM(L)
+        ldx #sound_midi_to_fnuml
+        abx
+        lda 0,x
+        sta OPL3_DATA_WRITE
+
+        ;; Set up KON/... register
+        pul a                   ; Back to KON/... register
+        sta OPL3_ADDRESS_ARRAY0
+
+        ldx #sound_midi_to_kbfh
+        abx
+        lda 0,x
+        sta OPL3_DATA_WRITE
+
+        pul a
+        pulx
+
+        rts
+
+
+; Stops playing the note on the channel in A
+sound_stop_note:
+        psh a
+        add a,#($B0-1)          ; KON/BLOCK/FNUM(H) register for a given channel
+        sta OPL3_ADDRESS_ARRAY0
+        clr OPL3_DATA_WRITE
+        pul a
         rts
 
         ENDSECTION sound
