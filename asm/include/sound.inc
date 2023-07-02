@@ -8,6 +8,7 @@ __sound_inc = 1
         PUBLIC sound_init
         PUBLIC sound_irq
 
+        PUBLIC_SHARED sound_load_instrument
         PUBLIC_SHARED sound_timer1_callback
         PUBLIC_SHARED sound_timer2_callback
 
@@ -25,8 +26,13 @@ sound_init:
         std sound_timer1_callback
         std sound_timer2_callback
 
-        rts
+        ; Enable OPL3 mode globally
+        lda #$05
+        sta OPL3_ADDRESS_ARRAY1
+        lda #$01
+        sta OPL3_DATA_WRITE
 
+        rts
 
 ; The YMF262 datasheet does not specify whether the two timers are on the same
 ; clock, just that T2 increments every 320uS and T1 every 80uS.  If they can be
@@ -77,6 +83,103 @@ sound_irq:
 .handled:
         sec                     ; Set C to indicate we handled the IRQ
 .done:
+        rts
+
+; Takes in a 2-op channel number 1..9 in A, and rewrites A to contain the
+; corresponding OP1 base address
+channel_to_op1_offset:
+        cmp a,#3
+        ble .low
+
+        cmp a,#6
+        ble .mid
+
+        ; Channels are organized in 3 groups of 3, within a group they differ by
+        ; one, across groups by the offsets below.
+        add a,#($30-$28-3)
+.mid:
+        add a,#($28-$20-3)
+.low:
+        add a,#($20-1)
+        rts
+
+; Sets up an instrument on a given channel 1..9. Parameters:
+; - X is the address to an 11-byte instrument definition
+; - A contains the channel number
+; Keeps all registers intact
+sound_load_instrument:
+        psh b
+        psh a
+        jsr channel_to_op1_offset
+
+         ; OP1 AM/VIB/EGT/...
+        ldb 0,x
+        sta OPL3_ADDRESS_ARRAY0
+        stb OPL3_DATA_WRITE
+
+        ; OP2 AM/VIB/EGT/...
+        add a,#3                ; OP2 slot is always offset by 3 from OP1
+        ldb 5,x
+        sta OPL3_ADDRESS_ARRAY0
+        stb OPL3_DATA_WRITE
+
+        ; OP1 KS/TL
+        add a,#($20 - $03)      ; Offset between register banks is $20
+        ldb 1,x
+        sta OPL3_ADDRESS_ARRAY0
+        stb OPL3_DATA_WRITE
+
+	; OP2 KS/TL
+        add a,#3
+        ldb 6,x
+        sta OPL3_ADDRESS_ARRAY0
+        stb OPL3_DATA_WRITE
+
+        ; OP1 AR/DR
+        add a,#($20 - $03)
+        ldb 2,x
+        sta OPL3_ADDRESS_ARRAY0
+        stb OPL3_DATA_WRITE
+
+        ; OP2 AR/DR
+        add a,#3
+        ldb 7,x
+        sta OPL3_ADDRESS_ARRAY0
+        stb OPL3_DATA_WRITE
+
+        ; OP1 SL/RR
+        add a,#($20 - $03)
+        ldb 3,x
+        sta OPL3_ADDRESS_ARRAY0
+        stb OPL3_DATA_WRITE
+
+        ; OP2 SL/RR
+        add a,#3
+        ldb 8,x
+        sta OPL3_ADDRESS_ARRAY0
+        stb OPL3_DATA_WRITE
+
+	; OP1 WS
+        add a,#($60 - $03)      ; SL/RR is at $80+, WS at $E0+ -> delta $60
+        ldb 4,x
+        sta OPL3_ADDRESS_ARRAY0
+        stb OPL3_DATA_WRITE
+
+	; OP2 WS
+        add a,#3
+        ldb 9,x
+        sta OPL3_ADDRESS_ARRAY0
+        stb OPL3_DATA_WRITE
+
+        pul a                   ; A contains the channel number again
+        tab                     ; Use B to preserve A
+        add b,#($C0-1)
+        stb OPL3_ADDRESS_ARRAY0
+        ldb 10,x
+        stb OPL3_DATA_WRITE
+
+        pul b
+
         rts
 
         ENDSECTION sound
