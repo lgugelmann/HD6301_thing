@@ -316,7 +316,26 @@ def instrument_test_command(args):
     channel_off(1)
     channel_off(2)
 
+# Print lookup tables for MIDI to OPL3 FNUM/KON registers in 6800 assembly
+def print_lookup_command(args):
+    by = 12
+    note_min = 21
+    note_max = 105
+
+    print('sound_midi_to_fnuml:')
+    print(f'        dc.b [{note_min}]$00        ; padding bytes')
+    print(f'        ;    {",".join([f"{m: 3d}" for m in range(by)])}')
+    for n in range(note_min,note_max,by):
+        print(f'        .byt {",".join([f"${midi_to_freq(n+m)[0]:x}" for m in range(by)])}')
+    print()
+    print('sound_midi_to_kbfh:')
+    print(f'        dc.b [{note_min}]$00        ; padding bytes')
+    print(f'        ;    {",".join([f"{m: 3d}" for m in range(by)])}')
+    for n in range(note_min,note_max,by):
+        print(f'        .byt {",".join([f"${midi_to_freq(n+m)[1] + 32:x}" for m in range(by)])}')
+
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser(description='Opl3 player')
     parser.add_argument('--port', default='/dev/ttyACM1')
     subparsers = parser.add_subparsers()
@@ -335,6 +354,9 @@ if __name__ == '__main__':
 
     instrument_parser = subparsers.add_parser('instrument')
     instrument_parser.set_defaults(func=instrument_test_command)
+
+    print_lookup_parser = subparsers.add_parser('print_lookup')
+    print_lookup_parser.set_defaults(func=print_lookup_command)
 
     arguments = parser.parse_args()
     if not hasattr(arguments, 'func'):
