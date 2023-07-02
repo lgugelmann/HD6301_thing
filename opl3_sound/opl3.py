@@ -255,7 +255,7 @@ def midi_to_freq(midi):
 
     # Midi 69 is A4 = 440Hz
     freq = freqs[(midi - 9) % 12]
-    block = (midi - 21) // 12
+    block = (midi - 9) // 12
 
     return [freq[0], freq[1] + (block << 2)]
 
