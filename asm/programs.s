@@ -13,7 +13,7 @@
 
 ; Set to 0 to start in the monitor, otherwise runs this program at startup.
 program_registry_autorun:
-        adr serial_opl3_start
+        adr opl3_test_start
 
 program_registry:
         adr +

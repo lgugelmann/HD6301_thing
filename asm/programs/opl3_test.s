@@ -6,61 +6,13 @@
         PUBLIC opl3_test_start
 
 opl3_test_start:
-        ; Enable OPL3 mode
-        lda #$05
-        sta OPL3_ADDRESS_ARRAY1
-        lda #$01
-        sta OPL3_DATA_WRITE
-
-        lda #$20
-        sta OPL3_ADDRESS_ARRAY0
-        lda #$21
-        sta OPL3_DATA_WRITE
-
-        lda #$40
-        sta OPL3_ADDRESS_ARRAY0
-        lda #$8f
-        sta OPL3_DATA_WRITE
-
-        lda #$60
-        sta OPL3_ADDRESS_ARRAY0
-        lda #$f2
-        sta OPL3_DATA_WRITE
-
-        lda #$80
-        sta OPL3_ADDRESS_ARRAY0
-        lda #$45
-        sta OPL3_DATA_WRITE
-
-        lda #$23
-        sta OPL3_ADDRESS_ARRAY0
-        lda #$21
-        sta OPL3_DATA_WRITE
-
-        lda #$43
-        sta OPL3_ADDRESS_ARRAY0
-        lda #$00
-        sta OPL3_DATA_WRITE
-
-        lda #$63
-        sta OPL3_ADDRESS_ARRAY0
-        lda #$f2
-        sta OPL3_DATA_WRITE
-
-        lda #$83
-        sta OPL3_ADDRESS_ARRAY0
-        lda #$76
-        sta OPL3_DATA_WRITE
-
-        lda #$a0
-        sta OPL3_ADDRESS_ARRAY0
-        lda #$ae
-        sta OPL3_DATA_WRITE
-
-        lda #$b0
-        sta OPL3_ADDRESS_ARRAY0
-        lda #$00
-        sta OPL3_DATA_WRITE
+        ; Set up a piano on channels 1..9
+        ldx #instruments_piano
+        lda #9
+.loop:
+        jsr sound_load_instrument
+        dec a
+        bne .loop
 
 .read_loop:
         jsr getchar
@@ -69,19 +21,41 @@ opl3_test_start:
         cmp a,#'a'
         bne +
 
-        ldb #$b0
-        stb OPL3_ADDRESS_ARRAY0
-        ldb #$2e                ; Play note
-        stb OPL3_DATA_WRITE
+        ; Play an A chord
+        lda #1                  ; Channel
+        ldb #69                 ; Note number
+        jsr sound_play_note
+        lda #2                  ; Channel
+        ldb #73                 ; Note number
+        jsr sound_play_note
+        lda #3                  ; Channel
+        ldb #76                 ; Note number
+        jsr sound_play_note
+        bra .read_loop
++
+        cmp a,#'b'
+        bne +
+
+        ; Play an Am chord
+        lda #4                  ; Channel
+        ldb #69                 ; Note number
+        jsr sound_play_note
+        lda #5                  ; Channel
+        ldb #72                 ; Note number
+        jsr sound_play_note
+        lda #6                  ; Channel
+        ldb #76                 ; Note number
+        jsr sound_play_note
         bra .read_loop
 +
         cmp a,#'s'
         bne +
 
-        ldb #$b0
-        stb OPL3_ADDRESS_ARRAY0
-        ldb #$00                ; Stop note
-        stb OPL3_DATA_WRITE
+        lda #9
+.stop_loop:
+        jsr sound_stop_note
+        dec a
+        bne .stop_loop
         bra .read_loop
 +
         ; Enable timer 1
@@ -103,7 +77,7 @@ opl3_test_start:
         bne +
 
         jsr disable_timer
-        bra .read_loop
+        jmp .read_loop
 +
         ; Enable timer 2
         cmp a,#'r'
@@ -117,20 +91,20 @@ opl3_test_start:
         ldd #timer2_callback
         std sound_timer2_callback
         jsr enable_timer2
-        bra .read_loop
+        jmp .read_loop
 +
         ; Disable timer 2
         cmp a,#'R'
         bne +
 
         jsr disable_timer
-        bra .read_loop
+        jmp .read_loop
 +
         cmp a,#'x'
         bne +
         rts                     ; Quit program, return to monitor
 +
-        bra .read_loop
+        jmp .read_loop
 
 enable_timer1:
         sei                     ; mask interrupts to avoid register ops
