@@ -6,13 +6,21 @@
         PUBLIC opl3_test_start
 
 opl3_test_start:
-        ; Set up a piano on channels 1..9
+        ; Set up a piano on channels 1..6
         ldx #instruments_piano
-        lda #9
+        lda #6
 .loop:
         jsr sound_load_instrument
         dec a
         bne .loop
+
+        lda #7
+        ldx #instruments_tsch
+        jsr sound_load_instrument
+
+        lda #8
+        ldx #instruments_tunk
+        jsr sound_load_instrument
 
 .read_loop:
         jsr getchar
@@ -47,6 +55,24 @@ opl3_test_start:
         ldb #76                 ; Note number
         jsr sound_play_note
         bra .read_loop
++
+        cmp a,#'z'
+        bne +
+
+        ; Play a tsch sound
+        lda #7                  ; Channel
+        ldb #80                 ; Note number
+        jsr sound_play_note
+        jmp .read_loop
++
+        cmp a,#'x'
+        bne +
+
+        ; Play a tunk sound
+        lda #8                  ; Channel
+        ldb #55                 ; Note number
+        jsr sound_play_note
+        jmp .read_loop
 +
         cmp a,#'s'
         bne +
