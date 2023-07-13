@@ -70,6 +70,19 @@ reserve_system_memory_addr[] set reserve_system_memory_addr[] + size
         orgrestore
         endm
 
+nop10   macro
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        endm
+
 PUBLIC_SHARED macro name
         PUBLIC name
         SHARED name
