@@ -4,6 +4,8 @@ __instruments_inc = 1
         SECTION instruments
         PUBLIC instruments_piano
         PUBLIC instruments_organ
+        PUBLIC instruments_tsch
+        PUBLIC instruments_tunk
 
 am_vib_egt_ksr_mult function am,vib,egt,ksr,mult, am<<7 + vib<<6 + egt<<5 + ksr<<4 + mult
 ; TL (total level) is inverted so higher numbers = louder
@@ -23,7 +25,7 @@ instruments_piano:
         byt ws(0)
 ; OP2
         byt am_vib_egt_ksr_mult(0,0,1,0,1)
-        byt ksl_tl(0, 57)
+        byt ksl_tl(0, 45)
         byt ar_dr(15, 2)
         byt sl_rr(7, 6)
         byt ws(0)
@@ -39,12 +41,45 @@ instruments_organ:
         byt ws(1)
 ; OP2
         byt am_vib_egt_ksr_mult(1,0,1,1,1)
-        byt ksl_tl(2, 63)
+        byt ksl_tl(2, 43)
         byt ar_dr(15, 5)
         byt sl_rr(15, 4)
         byt ws(0)
 ; global
         byt ch_fb_cnt(3, 0, 0)
+
+instruments_tsch:
+; OP1
+        byt am_vib_egt_ksr_mult(0,0,1,0,0)
+        byt ksl_tl(0, 63)
+        byt ar_dr(15, 0)
+        byt sl_rr(0, 15)
+        byt ws(0)
+; OP2
+        byt am_vib_egt_ksr_mult(0,0,1,0,1)
+        byt ksl_tl(0, 63)
+        byt ar_dr(15, 7)
+        byt sl_rr(0, 15)
+        byt ws(6)
+; global
+        byt ch_fb_cnt(3, 7, 0)
+
+instruments_tunk:
+; OP1
+        byt am_vib_egt_ksr_mult(0,0,1,0,0)
+        byt ksl_tl(0, 10)
+        byt ar_dr(15, 0)
+        byt sl_rr(0, 15)
+        byt ws(0)
+; OP2
+        byt am_vib_egt_ksr_mult(0,0,0,0,0)
+        byt ksl_tl(0, 63)
+        byt ar_dr(15, 7)
+        byt sl_rr(0, 9)
+        byt ws(5)
+; global
+        byt ch_fb_cnt(3, 7, 0)
+
 
         ENDSECTION instruments
 
