@@ -64,6 +64,7 @@ serial_clear_screen:
         byt "\x1b[2J\0"
 
 serial_send_byte_dec:
+        psh a
         psh b
         tab
 
@@ -86,6 +87,7 @@ serial_send_byte_dec:
         jsr serial_send_byte    ; Write last digit
 
         pul b
+        pul a
         rts
 
 
