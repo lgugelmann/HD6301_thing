@@ -2,10 +2,27 @@
 ; Seq, a super-simple sequencer
 ;
 ; Keybindings:
-; * <- / -> navigate through notes
+; * left / right / up /down navigate through notes
 ; * a-f, 1-8 to set note and octave
 ; * ',' flat '.' natural '/' sharp
+; * 'x' to clear note
 ; * space to start playing
+
+; TODOs / Improvement ideas:
+; - use color to highlight notes for more screen density: no '-'!
+; - General UI niceties: title, keybinding on screen etc.
+; - Selectable tempo
+; - More channels
+; - Selectable instruments
+; - Per-channel volume
+; - Per-channel play cursor + 'r'epeat + 's'top markers
+; - Play cursor indicated by color to save space
+; - Per-channel mute
+; - More bars per channel (wrapping or scrolling)
+; - Load / save support
+; - Instrument editor
+; - Different amount of notes per bar
+; - Selectable number of bars
 
         cpu 6301
 
