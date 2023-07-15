@@ -136,7 +136,7 @@ void __not_in_flash("main") core1_main() {
 }
 
 // Flips fg/bg color at the cursor if needed
-void cursor_color_flip(graphics_state* state) {
+void __not_in_flash("main") cursor_color_flip(graphics_state* state) {
   if (state->cursor_hidden) {
     return;
   }
@@ -154,7 +154,7 @@ void cursor_color_flip(graphics_state* state) {
   }
 }
 
-void run_command(uint8_t command, uint8_t data) {
+void __not_in_flash("main") run_command(uint8_t command, uint8_t data) {
   switch (command) {
     // Write character, advance cursor
     case 0: {
@@ -262,7 +262,7 @@ void run_command(uint8_t command, uint8_t data) {
   }
 }
 
-void bus_irq_callback(uint gpio, uint32_t event_mask) {
+void __not_in_flash("main") bus_irq_callback(uint gpio, uint32_t event_mask) {
   uint32_t gpio_state = gpio_get_all();
   // Data and address are laid out backside-front on the board
   uint8_t data = __rev((gpio_state & kDMask) >> kD7Pin) >> 24;
