@@ -58,7 +58,9 @@ GRAPHICS_SET_ROW       = $7fc5  ; Set the cursor column.  Set the cursor
 ; happens.
 GRAPHICS_SET_CURSOR_HIGH = $7fc6
 GRAPHICS_SET_CURSOR_LOW  = $7fc7
-GRAPHICS_HIDE_CURSOR   = $7fc8  ; 0 = cursor visible, 1 = hidden.
+GRAPHICS_HIDE_CURSOR     = $7fc8  ; 0 = cursor visible, 1 = hidden.
+; Format is CCRRGGBB where CC=0 is foreground, CC=1 is background, CC=2 is both
+GRAPHICS_SET_COLOR       = $7fc9
 
 
         endif
