@@ -17,6 +17,10 @@ program_registry_autorun:
 
 program_registry:
         adr +
+        byt "graphics_test\0"
+        adr graphics_test_start
++
+        adr +
         byt "hello\0"
         adr hello_start
 +
@@ -50,6 +54,7 @@ program_registry:
 +
         adr $0000               ; End marker
 
+        include programs/graphics_test.s
         include programs/hello.s
         include programs/opl3_test.s
         include programs/random.s
