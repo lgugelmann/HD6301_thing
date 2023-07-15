@@ -257,6 +257,24 @@ void __not_in_flash("main") run_command(uint8_t command, uint8_t data) {
       cursor_color_flip(gstate);
       break;
     }
+    // Set color at cursor position. Bit format is (MSB first) CCRRGGBB where CC
+    // is either 0 for foreground or 1 for background. RR/GG/BB are 2-bit Red,
+    // Green, Blue channel colors.
+    case 9: {
+      cursor_color_flip(gstate);
+      if ((data & 0xc0) == 0) {
+        // foreground
+        set_fg_color(gstate->cursor_pos, data & 0x3f);
+      } else if ((data & 0xc0) == 0x40) {
+        // background
+        set_bg_color(gstate->cursor_pos, data & 0x3f);
+      } else if ((data & 0xc0) == 0x80) {
+        // both fg & bg
+        set_color(gstate->cursor_pos, data & 0x3f, data & 0x3f);
+      }
+      cursor_color_flip(gstate);
+      break;
+    }
     default:
       break;
   }
