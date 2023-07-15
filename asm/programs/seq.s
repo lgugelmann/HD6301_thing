@@ -6,10 +6,9 @@
 ; * a-f, 1-8 to set note and octave
 ; * ',' flat '.' natural '/' sharp
 ; * 'x' to clear note
-; * space to start playing
+; * space to start / stop playing
 
 ; TODOs / Improvement ideas:
-; - use color to highlight notes for more screen density: no '-'!
 ; - General UI niceties: title, keybinding on screen etc.
 ; - Selectable tempo
 ; - More channels
@@ -31,14 +30,39 @@
         SECTION seq
         PUBLIC seq_start
 
-NOTE_LENGTH = 98                ; How many characters a 'notes' line is
-LAST_NOTE = 93                  ; Position of the first char of the last note
-TICK_INTERVAL = 4
-CHANNELS = 4
-PLAY_CURSOR_ROW = CHANNELS
 
-        reserve_memory notes, NOTE_LENGTH*CHANNELS
-        zp_var play_pos, 1      ; Offset into 'notes' for the next note
+TICK_INTERVAL = 4               ; How many timer ticks between notes
+CHANNELS = 4                    ; How many channels we have
+
+BARS = 8                        ; Number of bars in a line on screen
+NOTES_PER_BAR = 4               ; Number of notes per bar
+CHARS_PER_NOTE = 3              ; The number of characters between 2 notes
+FIRST_NOTE_OFFSET = 1           ; The offset into 'notes' for the first note
+; The offset into 'notes' for the last note
+LAST_NOTE_OFFSET = FIRST_NOTE_OFFSET + (BARS*NOTES_PER_BAR-1)*CHARS_PER_NOTE
+; The length in characters of a 'notes' line +1 for the 0 byte at the end
+NOTES_LENGTH = FIRST_NOTE_OFFSET+BARS*NOTES_PER_BAR*CHARS_PER_NOTE+1
+
+; The screen column at which we start drawing 'notes' strings
+NOTES_COLUMN = 1
+; The screen column for the first note
+FIRST_NOTE_COLUMN = NOTES_COLUMN + FIRST_NOTE_OFFSET
+; The screen column for the last note
+LAST_NOTE_COLUMN = NOTES_COLUMN + LAST_NOTE_OFFSET
+
+FIRST_NOTES_ROW = 3              ; The first row we display notes in
+PLAY_CURSOR_ROW = FIRST_NOTES_ROW + CHANNELS
+
+        if FIRST_NOTE_COLUMN + NOTES_LENGTH > 100
+          error "This won't fit on the screen!"
+        endif
+
+        ; One notes buffer per channel to store the notes to play. It does
+        ; double-duty as both the on-scren string and the buffer we play from.
+        reserve_memory notes, NOTES_LENGTH*CHANNELS
+        ; The color for each character of one channel in 'notes'
+        reserve_memory note_colors, NOTES_LENGTH
+        zp_var play_pos, 1      ; Offset in a 'notes' channel for the next note
         zp_var cursor_row, 1    ; Edit cursor row position
         zp_var cursor_column, 1 ; Edit cursor column position
         zp_var playing, 1       ; 0 not playing, 1 playing
@@ -46,19 +70,16 @@ PLAY_CURSOR_ROW = CHANNELS
 seq_start:
         clr GRAPHICS_CLEAR
         clr playing
-        clr cursor_row
-        clr cursor_column
+        lda #FIRST_NOTE_COLUMN
+        sta cursor_column
+        lda #FIRST_NOTES_ROW
+        sta cursor_row
 
         jsr init_instrument
-
-        ldx #notes
-        lda #CHANNELS
-        ldb #NOTE_LENGTH
-.loop:
         jsr init_notes
-        abx                     ; move to next 'notes' line
-        dec a
-        bne .loop
+        jsr init_note_colors
+
+        jsr draw_notes          ; Draws text & colors
 
         jsr edit_loop
         rts
@@ -85,31 +106,29 @@ init_instrument:
         jsr sound_stop_note
         rts
 
-; Init the notes buffer in X
+; Init the notes buffers
 init_notes:
-        pshx
-        psh a
+        ldx #notes
+
+        ldb #CHANNELS
+.channel_loop:
         psh b
 
-        lda #6
-
+        lda #'|'
+        sta 0,x
         inx
+
+        lda #BARS
 .bar_loop:
-        dex
-        ldb #'|'
-        stb 0,x
-        inx
-
         psh a
-        lda #4
+        lda #NOTES_PER_BAR
 .note_loop:
         ldb #'x'
         stb 0,x
+        ldb #'-'
         stb 1,x
         stb 2,x
-        ldb #'-'
-        stb 3,x
-        ldb #4
+        ldb #CHARS_PER_NOTE
         abx
         dec a
         bne .note_loop
@@ -117,46 +136,93 @@ init_notes:
         dec a
         bne .bar_loop
 
-        dex
-        lda #'|'
-        sta 0,x
-        clr 1,x
+        clr 0,x                 ; Put a 0 at the end of the buffer
 
+        inx                     ; We're now in the next channel buffer
         pul b
-        pul a
-        pulx
+        dec b
+        bne .channel_loop
+
         rts
 
-; Redraw the notes string on the screen
-refresh_notes:
-        pshx
-
-        clr a
-        ldx #notes
+; Initialize the note_colors string
+init_note_colors:
+        ; Init everything with black at first
+        ldx #note_colors
+        lda #COLOR_BLACK | COLOR_BG
 .loop:
-        clr b
-        stb GRAPHICS_SET_COLUMN
-        sta GRAPHICS_SET_ROW
-
-        ldb #1
-        stb GRAPHICS_HIDE_CURSOR ; Cursor off to make putstring look better
-        jsr putstring            ; X now points to the 0 at the end of 'notesX'
-        clr GRAPHICS_HIDE_CURSOR ; Cursor back on
-
-        ; Set X to the start of the next 'notes' string
+        sta 0,x
         inx
-
-        inc a
-        cmp a,#CHANNELS
+        cpx #note_colors + NOTES_LENGTH - 1
         bne .loop
 
-        ; Set cursor to the edit row / column
-        lda cursor_row
-        sta GRAPHICS_SET_ROW
-        lda cursor_column
-        sta GRAPHICS_SET_COLUMN
+        ; 0-terminate the string. Every other entry has the BG bit set so this
+        ; is the only 0 in the string.
+        clr a
+        sta 0,x
 
-        pulx
+        ; Color the column before the first note in a bar
+        ldx #note_colors
+        lda #COLOR_LIGHT_GREY | COLOR_BG
+        ldb #NOTES_PER_BAR*CHARS_PER_NOTE
+.bar_loop:
+        sta 0,x
+        abx
+        cpx #note_colors + NOTES_LENGTH - 1
+        blt .bar_loop
+
+        rts
+
+; Draws the notes strings and set the background as well
+draw_notes:
+        ldx #notes
+        lda #FIRST_NOTES_ROW
+.notes_loop:
+        sta GRAPHICS_SET_ROW
+        ldb #NOTES_COLUMN
+        stb GRAPHICS_SET_COLUMN
+        jsr putstring           ; Post: x is at buffer-terminating 0
+        inx                     ; Move to next notes buffer
+        inc a
+        cmp a,#FIRST_NOTES_ROW + CHANNELS
+        bne .notes_loop
+
+        ldb #FIRST_NOTES_ROW
+.color_loop:
+        stb GRAPHICS_SET_ROW
+        psh b
+        ldb #NOTES_COLUMN
+        stb GRAPHICS_SET_COLUMN
+        ldx #note_colors
+        ldb #1
+        lda 0,x
+.loop:
+        sta GRAPHICS_SET_COLOR
+        stb GRAPHICS_MOVE_CURSOR
+        inx
+        lda 0,x
+        bne .loop               ; note_colors is 0-terminated
+
+        pul b
+        inc b
+        cmp b,#FIRST_NOTES_ROW + CHANNELS
+        bne .color_loop
+
+        rts
+
+; Redraw the piece of the notes string that could just have changed
+refresh_notes:
+        ; If anything changed, it's in the NOTES_LENGTH many characters to the
+        ; right of X. The cursor not necessarily already in the right place so
+        ; we need to set that too.
+        lda 0,x
+        sta GRAPHICS_SEND_CHAR
+        lda 1,x
+        sta GRAPHICS_SEND_CHAR
+        lda 2,x
+        sta GRAPHICS_SEND_CHAR
+        lda #-3
+        sta GRAPHICS_MOVE_CURSOR
         rts
 
 ; If a note goes from unset to something, set default values. X points to the
@@ -169,14 +235,14 @@ update_defaults:
         sta 0,x
 .sharps:
         lda 1,x
-        cmp a,#'x'
+        cmp a,#'-'
         bne .octave
         lda #'_'                ; sharp/flat is unset, use '_' as default
         sta 1,x
 
 .octave:
         lda 2,x
-        cmp a,#'x'
+        cmp a,#'-'
         bne .end
         lda #'4'                ; octave is unset, use 4 as default
         sta 2,x
@@ -186,12 +252,21 @@ update_defaults:
 
 edit_loop:
         ; Place the cursor at the first note and point X there too
-        lda #1
-        sta cursor_column
-        sta GRAPHICS_SET_COLUMN
-        ldx #notes+1
+        lda #FIRST_NOTES_ROW
+        sta cursor_row
 
-.next:
+        lda #FIRST_NOTE_COLUMN
+        sta cursor_column
+
+        ldx #notes + FIRST_NOTE_OFFSET
+
+.refresh_cursor:
+        lda cursor_row
+        sta GRAPHICS_SET_ROW
+        lda cursor_column
+        sta GRAPHICS_SET_COLUMN
+        bra .charloop
+.refresh_notes:
         jsr refresh_notes
 .charloop:
         lda playing
@@ -208,9 +283,10 @@ edit_loop:
         cmp a,#'x'
         bne +
         sta 0,x
+        lda #'-'
         sta 1,x
         sta 2,x
-        bra .next
+        bra .refresh_notes
 +
         cmp a,#'a'
         blt +                   ; below 'a'
@@ -219,7 +295,7 @@ edit_loop:
 
         sta 0,x
         jsr update_defaults
-        bra .next
+        bra .refresh_notes
 +
         cmp a,#'1'
         blt +                   ; below '1'
@@ -228,85 +304,83 @@ edit_loop:
 
         sta 2,x
         jsr update_defaults
-        bra .next
+        bra .refresh_notes
 +
         cmp a,#','              ; Command for 'flat'
         bne +
         lda #'b'
         sta 1,x
         jsr update_defaults
-        bra .next
+        bra .refresh_notes
 +
         cmp a,#'.'              ; Command for 'natural'
         bne +
         lda #'_'
         sta 1,x
         jsr update_defaults
-        bra .next
+        bra .refresh_notes
 +
         cmp a,#'/'              ; Command for 'sharp'
         bne +
         lda #'#'
         sta 1,x
         jsr update_defaults
-        bra .next
+        bra .refresh_notes
 +
         cmp a,#KEY_RIGHT
         bne +
         lda cursor_column
-        cmp a,#LAST_NOTE        ; Are we all the way at the right?
-        beq .next               ; yes, ignore
-        ldb #4
+        cmp a,#LAST_NOTE_COLUMN ; Are we all the way at the right?
+        beq .charloop           ; yes, ignore
+        ldb #CHARS_PER_NOTE
         abx
         aba
         sta cursor_column
-        jmp .next
+        jmp .refresh_cursor
+
+.charloop_jmp:                  ; workaround for jump distance too big
+        jmp .charloop
+
 +
         cmp a,#KEY_LEFT
         bne +
         ldb cursor_column
-        cmp b,#1                ; Are we all the way at the left?
-        beq .next2              ; if yes, ignore
-        dex
-        dex
-        dex
-        dex
-        sub b,#4
+        cmp b,#FIRST_NOTE_COLUMN ; Are we all the way at the left?
+        beq .charloop_jmp        ; if yes, ignore
+        xgdx                     ; X has no sub instruction, go via D
+        subd #CHARS_PER_NOTE
+        xgdx
+        sub b,#CHARS_PER_NOTE
         stb cursor_column
-        jmp .next
+        jmp .refresh_cursor
 +
         cmp a,#KEY_UP
         bne +
         lda cursor_row
-        beq .next2              ; If 0, nothing to do
+        cmp a,#FIRST_NOTES_ROW
+        beq .charloop_jmp       ; Branch if already at the first row
         dec a
         sta cursor_row
-        ; We don't have a way to decrement X easily, so we need to sum up
-        ldx #notes
-        ldb cursor_column
-        abx
-        ldb #NOTE_LENGTH
-.key_up_add_loop:
-        tst a
-        beq .next2
-        abx
-        dec a
-        bra .key_up_add_loop
+        ; There is no decrement for X, so we need to do it in D
+        xgdx
+        subd #NOTES_LENGTH
+        xgdx
+        jmp .refresh_cursor
 +
         cmp a,#KEY_DOWN
         bne +
         lda cursor_row
-        cmp a,#CHANNELS-1
-        beq .next2              ; If at the last row already, nothing to do
+        cmp a,#FIRST_NOTES_ROW+CHANNELS-1
+        beq .charloop_jmp       ; If at the last row already, nothing to do
         inc a
         sta cursor_row
-        ldb #NOTE_LENGTH
+        ldb #NOTES_LENGTH
         abx
-        jmp .next
+        jmp .refresh_cursor
 +
         cmp a,#' '
-        bne .next2
-        lda #1                  ; Reset playing position
+        bne .charloop_jmp
+        lda #FIRST_NOTE_OFFSET  ; Reset playing position
         sta play_pos
         clr timer_ticks
         eim #1,playing          ; Start / stop playing
@@ -314,8 +388,8 @@ edit_loop:
         jmp .charloop
 .stop_playing:
         jsr stop
-.next2:
-        jmp .next
+        jmp .charloop
+
         rts
 
 ; When called play the note corresponding to the 3 note characters at 'play_pos'
@@ -337,6 +411,8 @@ play_next:
         sta GRAPHICS_SET_ROW
         ldb play_pos
         stb GRAPHICS_SET_COLUMN
+        lda #FIRST_NOTE_COLUMN
+        sta GRAPHICS_MOVE_CURSOR
 
         lda #'^'
         sta GRAPHICS_SEND_CHAR_RAW
@@ -354,7 +430,7 @@ play_next:
 .channel_loop:
         jsr play_next_channel
 
-        ldb #NOTE_LENGTH
+        ldb #NOTES_LENGTH
         abx                     ; Move to the next notes string
 
         inc a
@@ -362,10 +438,10 @@ play_next:
         bne .channel_loop
 
         ldb play_pos
-        add b,#4
-        cmp b,#LAST_NOTE
+        add b,#CHARS_PER_NOTE
+        cmp b,#LAST_NOTE_OFFSET
         ble .end2               ; branch if not past the end
-        ldb #1
+        ldb #FIRST_NOTE_OFFSET
 .end2:
         stb play_pos
 
@@ -444,6 +520,7 @@ play_next_channel:
 .end2:
         rts
 
+; Stop playing notes on all channels and clear the play cursor
 stop:
         psh a
         lda #CHANNELS
