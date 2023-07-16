@@ -27,12 +27,14 @@ graphics_putchar:
         sta GRAPHICS_MOVE_CURSOR
         lda #' '
         sta GRAPHICS_SEND_CHAR_RAW
+        lda #KEY_DELETE
         bra .end
 +
         cmp a,#KEY_ENTER
         bne +
         lda #2
         sta GRAPHICS_CLEAR
+        lda #KEY_ENTER
         bra .end
 +
         bit a,#$80              ; Ignore control characters >127
