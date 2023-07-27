@@ -37,7 +37,7 @@ CHANNELS = 4                    ; How many channels we have
 BARS = 8                        ; Number of bars in a line on screen
 NOTES_PER_BAR = 4               ; Number of notes per bar
 CHARS_PER_NOTE = 3              ; The number of characters between 2 notes
-FIRST_NOTE_OFFSET = 1           ; The offset into 'notes' for the first note
+FIRST_NOTE_OFFSET = 2           ; The offset into 'notes' for the first note
 ; The offset into 'notes' for the last note
 LAST_NOTE_OFFSET = FIRST_NOTE_OFFSET + (BARS*NOTES_PER_BAR-1)*CHARS_PER_NOTE
 ; The length in characters of a 'notes' line +1 for the 0 byte at the end
@@ -50,12 +50,16 @@ FIRST_NOTE_COLUMN = NOTES_COLUMN + FIRST_NOTE_OFFSET
 ; The screen column for the last note
 LAST_NOTE_COLUMN = NOTES_COLUMN + LAST_NOTE_OFFSET
 
-FIRST_NOTES_ROW = 3              ; The first row we display notes in
+FIRST_NOTES_ROW = 9              ; The first row we display notes in
 PLAY_CURSOR_ROW = FIRST_NOTES_ROW + CHANNELS
 
-        if FIRST_NOTE_COLUMN + NOTES_LENGTH > 100
+        if NOTES_COLUMN + NOTES_LENGTH > 100
           error "This won't fit on the screen!"
         endif
+
+seq_logo:
+        BINCLUDE seq_logo.txt
+        byt $00                 ; Terminating 0, it's not in the .txt file
 
         ; One notes buffer per channel to store the notes to play. It does
         ; double-duty as both the on-scren string and the buffer we play from.
@@ -68,6 +72,16 @@ PLAY_CURSOR_ROW = FIRST_NOTES_ROW + CHANNELS
         zp_var playing, 1       ; 0 not playing, 1 playing
 
 seq_start:
+        ;; DEBUG - write something deterministic into memory
+        ldx #notes
+        lda #$9a
+.loop:
+        sta 0,x
+        inx
+        cpx #notes + 8192
+        bne .loop
+        ;; DEBUG END
+
         clr GRAPHICS_CLEAR
         clr playing
         lda #FIRST_NOTE_COLUMN
@@ -79,6 +93,7 @@ seq_start:
         jsr init_notes
         jsr init_note_colors
 
+        jsr draw_logo
         jsr draw_notes          ; Draws text & colors
 
         jsr edit_loop
@@ -110,9 +125,15 @@ init_instrument:
 init_notes:
         ldx #notes
 
-        ldb #CHANNELS
+        ldb #1
 .channel_loop:
         psh b
+
+        ; Channel number
+        tba
+        add a,#'0'
+        sta 0,x
+        inx
 
         lda #'|'
         sta 0,x
@@ -140,7 +161,8 @@ init_notes:
 
         inx                     ; We're now in the next channel buffer
         pul b
-        dec b
+        inc b
+        cmp b,#CHANNELS+1
         bne .channel_loop
 
         rts
@@ -149,7 +171,7 @@ init_notes:
 init_note_colors:
         ; Init everything with black at first
         ldx #note_colors
-        lda #COLOR_BLACK | COLOR_BG
+        lda #COLOR_BLACK | COLOR_BG | COLOR_ADVANCE
 .loop:
         sta 0,x
         inx
@@ -162,14 +184,36 @@ init_note_colors:
         sta 0,x
 
         ; Color the column before the first note in a bar
-        ldx #note_colors
-        lda #COLOR_LIGHT_GREY | COLOR_BG
+        ldx #note_colors + FIRST_NOTE_OFFSET - 1
+        lda #COLOR_LIGHT_GREY | COLOR_BG | COLOR_ADVANCE
         ldb #NOTES_PER_BAR*CHARS_PER_NOTE
 .bar_loop:
         sta 0,x
         abx
         cpx #note_colors + NOTES_LENGTH - 1
         blt .bar_loop
+
+        rts
+
+draw_logo:
+        ldx #seq_logo
+        jsr putstring
+
+        ldx #40
+        ldb #0
+.line_loop:
+        stb GRAPHICS_SET_ROW
+        clr GRAPHICS_SET_COLUMN
+.color_loop:
+        lda #COLOR_CYAN | COLOR_ADVANCE
+        sta GRAPHICS_SET_COLOR
+        dex
+        bne .color_loop
+
+        ldx #40
+        inc b
+        cmp b,#8
+        bne .line_loop
 
         rts
 
@@ -198,7 +242,6 @@ draw_notes:
         lda 0,x
 .loop:
         sta GRAPHICS_SET_COLOR
-        stb GRAPHICS_MOVE_CURSOR
         inx
         lda 0,x
         bne .loop               ; note_colors is 0-terminated
