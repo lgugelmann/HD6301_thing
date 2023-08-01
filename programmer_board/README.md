@@ -1,14 +1,15 @@
 # Pi Pico programmer board
 
-WARNING: the 1.0 version of the board is buggy. At a minimum it requires adding
-pullups on all OE pins. The Pico does not start quickly enough to put them into
-a good state. The resulting bus contention uses enough power to render the Pico
-unable to start. For any sane current limit the '5V' rail gets drawn down to
-less than the ~1.8V needed for the Pico boost converter to start working. The
-Schematic & PCB have not been updated to fix this bug yet. It's not hard to fix
-the v1.0 board by reworking some extra resistors onto it.
+> ***WARNING***
+> the 1.0 version of the board is buggy. At a minimum it requires adding
+> pullups on all OE pins. The Pico does not start quickly enough to put them into
+> a good state. The resulting bus contention uses enough power to render the Pico
+> unable to start. For any sane current limit the '5V' rail gets drawn down to
+> less than the ~1.8V needed for the Pico boost converter to start working. The
+> Schematic & PCB have not been updated to fix this bug yet. It's not hard to fix
+> the v1.0 board by reworking some extra resistors onto it.
 
-An common way to program ROMs for 8-bit hobby projects are ZIF sockets. Take ROM
+A common way to program ROMs for 8-bit hobby projects are ZIF sockets. Take ROM
 out, put it into programmer, program it, put it back into the ZIF socket,
 run. That works, but it gets tedious _really fast_. It's also getting harder and
 harder to find parallel ROMs in DIP packages at reasonable prices. The solution
