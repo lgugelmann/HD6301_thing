@@ -6,6 +6,13 @@ be launched from the monitor.
 The include/ directory contains a number of utilities like keyboard handling,
 ps2 decoding, code to talk to the serial or graphical terminal and more.
 
+## Assembler
+
+The code and Makefiles here are written to use the
+[AS](http://john.ccac.rwth-aachen.de:8000/as/) assembler. It's very
+feature-packed, in active development, and one of the few that also supports the
+4 extra instructions that the HD6301 introduced.
+
 ## Monitor
 
 See `monitor.s`. It runs at startup and has a simple command line interface
@@ -48,9 +55,9 @@ The user programs are put at the start of the ROM with the program registry at
 `$8000` and the user programs after that.
 
 You only need to issue one of `make monitor_prog` or `make programs_prog`
-depending on which code you changed.
-
-To program both ROM and monitor at once use `make prog`.
+depending on which code you changed. If you intend to run programs besides the
+monitor after changing the monitor you need to reprogram both as the library
+addresses will have moved around. To program both at once use `make prog`.
 
 ## TODOs and ideas for improvements
 
@@ -59,15 +66,9 @@ To program both ROM and monitor at once use `make prog`.
  * Add graphics save / restore commands to pico graphics to use for
    entering/exiting the monitor without interfering with user programs.
  * Hexdump for memory in the monitor.
- * Utility to print a number in decimal.
  * A `help` command for the monitor.
  * Make the memory map more explict and document it to avoid monitor / user
    program conflicts. The `include/macros.inc` macros don't help anymore as
    monitor and user programs are assembled separately.
    * Get the keyboard buffer away from user RAM.
    * Make it clear which zeropage addresses are system vs user usable.
- * `zp_var` should be smarter to allow different programs to reuse the same
-   addresses. Probably a case of being careful with offset definitions, global
-   variables, and sections.
- * Make the programmer able to flash at non-4k boundaries to speed up monitor
-   flashing a tiny bit.

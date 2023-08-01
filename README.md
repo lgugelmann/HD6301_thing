@@ -1,146 +1,147 @@
 # Exploring the HD6301V1
 
-I recently received a Hitachi `HD6301V1` in a DIP-40 package to play around
-with. It's an 8bit MPU that's a Motorola 6801 derivative with a few extra
+I recently received a few samples of a Hitachi `HD6301V1` in a DIP-40
+package. It's a 1MHz 8bit CPU derived from the Motorola 6801 with a few extra
 instructions. It has an onboard mask-programmed 4k ROM, 128 bytes RAM, and 4 I/O
-ports that can be used as some combination of data or address bus, or I/O lines.
+ports that can be used as some combination of data or address bus, or I/O
+lines. It also comes with an onboard serial interface. Overall it's a really
+neat chip!
 
-It's a really neat chip and comes with an onboard serial interface too.
+- The datasheet for the HD6301v1 can be found
+e.g. [here](https://pdf1.alldatasheet.com/datasheet-pdf/view/87402/HITACHI/HD6301V1.html).
+- An _extensive_ handbook for the entire Hitachi 6301/6303 series of CPUs,
+including copies of all datasheets, can be found on
+[archive.org](https://archive.org/details/bitsavers_hitachidateriesHandbook1989_54281821).
 
-Datasheets can be found
-e.g. [here](https://pdf1.alldatasheet.com/datasheet-pdf/view/87402/HITACHI/HD6301V1.html). Also
-interesting is this _extensive_ handbook for the entire Hitachi 6301/6303 series
-of MCUs found
-[here](https://www.jaapsch.net/psion/pdffiles/hd6301-3_handbook.pdf).
+This repository contains schematics and code to build a retro-inspired computer
+around this chip. The idea is to build this off of modular components and a
+shared bus so we can start small and build up piece by piece.
 
-## Hardware
+Currently I have a working device with Arduino-like ease of programmability, PS2
+keyboard input, HDMI video output. It's complete enough for a working 'Snake'
+clone that can be played over both serial console and video out.
 
-### Getting the MCU up and running
+## Getting started on a breadboard
 
-You can find a schematic for how to add external RAM/ROM and get started with
-this chip in the 'board' folder. It works nicely on a breadboard.
+The architecture is quite simple and similar to other 8-bit CPUs like
+the 6502. There is one 16-bit address bus, one 8-bit data bus, a clock line, a
+read/write line, and an interrupt line.
 
-NOTE: I found reset to be a bit finicky. The datasheet says the reset line must
-be held low for at least 20ms at power-on time. That's probably wise. Without
-the wait time the MCU seems to start working a hair before the power rail
-reaches 3V. You'll get `E` and the data / address lines at that voltage too,
-trying to reach a 5V ROM that might not even have powered up yet.  I ended up
-making a little reset circuit out of a button and a Diodes Inc. `APX811-46` that I
-had lying around. That keeps reset low after power-up for 100-200ms.
-Alternatively, the datasheet seems to suggest that the reset line has a
-Schmitt-trigger input. That would make an RC circuit with a long time constant
-also workable. Have not tried that.
+One way in which this chip departs from e.g. a 6502 is that it has several
+different 'modes' that affect the memory layout and external buses. Mode
+selection is done at startup using the first 3 lines of port 2. After startup
+these lines can be reused for other purposes if desired. Mode 1
+(non-multiplexed) breaks out all 16 address and 8 data lines. Mode 5 reduces the
+external address bus to 8 lines. Mode 0/2/4/6 multiplex the data bus: at the
+beginning of the cycle the 8 low address bits are presented, then an address
+latch signal fires, then the 8 data bits are set. This frees up one 8-bit port
+for I/O. Mode 7 has no external buses at all. Mode 0/5/6/7 map the internal ROM
+to the top of the address space. It's inaccessible in 1/2/4. Mode 0 ('test
+mode') has a special handling for the first read of the startup vector addresses
+at $FFFE/$FFFF: instead of reading them from ROM (as it would in any subsequent
+read) they are read over the external bus. This allows one to override the
+ROM-interal startup vector while still keeping it accessible otherwise.
 
-NOTE: Existing the standby mode also requires holding reset low for a bit longer
-than STBY.
+By selecting mode 1 at startup it's easy to get this chip to work on a
+breadboard by just adding some external parallel RAM / ROM with a bit of address
+decoding to select which one to access.
 
-## In-circuit programming via USB
+The chip has an internal 4x clock-divider. To get it to run at the max 1MHz you
+need a 4MHz oscillator. I had no stability issues on a breadboard even at max
+frequency.
 
-Beyond getting the HD6301 up and running another goal is to have proper
-in-circuit programming via USB to make development as easy as possible.
+The chip requires a minimum 100kHz to run (400kHz oscillator). Going below makes
+it unstable.
 
-It would be nice to get to fully self-hosted development, but on the road to get
-there, using a modern PC is _much_ nicer.
+## Random hardware notes
 
-I have a ZIF socket on my 6502 SBC. Nice enough, but the cycle of ROM out, ROM
-into programmer, program ROM, ROM back into ZIF is tedious.
+This is a collection of random notes about the hardware that are either
+well-hidden in the datasheet or not documented at all.
 
-Here the goal is to get away from needing a ZIF socket or having to pre-program
-any ROMs. As a bonus this makes it possible to use non-DIP packages for the ROM
-which are a) much cheaper, and b) actually available at the moment.
+- The IRQ line is not specified to be open-drain. It's likely not.
+- The reset and standby pins are drawn with Schmitt-trigger inputs in the
+  datasheet.
+- The datasheet recommends 74'373 chips to latch the address bits in multiplexed
+  mode. The '573 is probably a better choice for layout reasons as it has the
+  same functionality but instead of having in/out pins next to each other it has
+  all 8 inputs on one side and the 8 outputs on the other.
+- P21 is not a general purpose I/O pin (even after mode selection). It is either
+  a general input, or timer output.
+- The mode selection / P2 multiplexing circuit in the datasheet would probably
+  not work with a modern '4053 chip. The one in the datasheet has minimum
+  switching times higher than the required hold times on the mode selection
+  pins. Modern '4053 are faster.
+- Reset and power-up are a bit finicky. The datasheet says reset must be held
+  low for at least 20ms at power-on time. That's good advice. Without the wait
+  time the MCU seems to start working a hair before the power rail reaches
+  3V. The clock and data / address lines have their 'high' bits at that voltage
+  too. At that point in time a typical 5V ROM might not even have powered up yet
+  and you get all sorts of fun non-deterministic behavior. Something like a
+  Diodes Inc. `APX811-46` is a great way to satisfy that requirement as it keeps
+  reset low after power-up for 100-200ms.  Alternatively, the datasheet seems to
+  suggest that the reset line has a Schmitt-trigger input. That would make an RC
+  circuit with a long time constant also workable. Have not tried that.
+- Exiting the standby mode requires holding reset low 20ms longer than STBY.
 
-### FT231x solution
+## The mask-programmed ROM
 
-At first I explored using an FTDI FT231x. It's 5V compatible and conveniently
-also gets us USB serial. It has an 8-pin bitbang mode and 4 additional 'CBUS'
-lines. Those can be programmed to be GPIOs, write strobes, and more.
+The samples I have come mask-programmed with some unknown code. The
+`internal_rom` folder contains a dump of that ROM, some very preliminary
+disassembly, and details on how to do such a dump using the 'test mode' of the
+chip.
 
-The first solution was to use the 8bit GPIOs for data and CBUS for control
-lines. Unfortunately the CBUS GPIO mode can't be used concurrently with the
-bitbang mode and switching between bitbang and CBUS takes a _long_ time (think
-hundreds of ms). Switching between the two for every byte makes things
-unworkably slow.
+The ROM configures the data direction registers of all 4 I/O ports to a
+combination of inputs/outputs. This suggests that it was meant to work in
+single-chip mode. The MC6801 was popular in automotive applications - maybe this
+one was meant to go into a car too.
 
-Next up I turned to putting glue logic on a GreenPAK chip and using the
-write-strobe mode. This works really nicely: first write puts the chip in
-standby, subsequent writes latch data, address low, address high onto '74xx573
-latches, and after that the GreenPAK automatically strobes clock & R/W. After a
-few hundred ms without activity everything resets and the 6301 wakes back up.
+## Contents of the repository
 
-This works really nicelay for write-only in-circuit programmer and there is a
-tested working python-based programmer, and greenpak glue logic in this repo. I
-didn't push for performance but got to ~15 seconds to write a 32K ROM.
+### Hardware modules
 
-Next up I tried to figure out how to implement a read-mode as well. In theory it
-should be easy: put a 74'245 on the data bus, do the same latching trick as
-before, but instead at the end bring OE low on the '245 and read the FT231x I/O
-pins. A CBUS line can be used to put the GreenPAK into a read-mode with
-different strobes / timings, but because that needs to be done only once at the
-start it should be fast enough.
+On the hardware side the repository contains
+- The main CPU board. This can be used as a fully functional standalone
+  single-board computer with 32kB RAM and ROM.
+- A programming board to make programming the main CPU board as easy as
+  programming an Arduino. This is a Raspberry Pi Pico-based board for USB
+  connectivity to a host computer. It can put the main CPU into standby, take
+  over the bus, and read or write to RAM/ROM as needed.
+- A "video chip" board with HDMI output. This is another Pi Pico-based board
+  that implements various graphical modes like a 100x40 or 100x75 text terminal
+  with 6-bit color for each foreground and background. On the HDMI side it's
+  800x600 pixel. On the bus it presents 64 write-only registers that implement
+  various commands like setting characters, colors, or doing cursor moves.
 
-I got this to work - but it's sloooow because of USB latency, se below for
-why. Tl;dr: switching between reading / writing on the FT231x for every byte
-takes >1ms each time. This means 1 minute to read the whole address space at a
-minimum. The fastest I could manage is ~3ms per byte before I gave up.
+Currently in progress are:
+- An audio board based around the OPL3 FM synthesis chips.
 
-There could be possible solutions that do not require switching between reading
-and writing at each byte. One option is to use a CBUS line for a read strobe and
-discrete logic to increment an address counter at each strobe. You could set up
-the counter at the start, then put the chip into read mode, and stream the data
-back. This starts to get a bit silly and would also require futzing around with
-the FT231x read buffers which seem to be particularly tricky to synchronize to
-anything.
+### Software
 
-Another option is to use a synchronous bit-bang mode where a read is done on
-every write and streamed back. The catch here is that you have to decide ahead
-of time which pins are inputs and which are outputs. I could split the 8 bits
-into 4 in / 4 out but that would also require extra glue logic that I didn't
-feel like building.
+#### HD6301 programs
 
-### USB latency ruins the party
+The 'asm' folder contains software to run on the HD6301. There is a monitor
+program for debugging, running other programs, and to provide some basic
+libraries for PS2 keyboard handling and more.
 
-USB communication (before 3.0) is _always_ host-initiated. No usb device can
-just decide to send data. It needs to be asked by the host whether there is
-anything that it might want to send first. The fastest polling rate available
-from the host side is 1ms.
+There are also various test programs as well as a 'Snake' clone and a simple
+audio sequencer.
 
-This means that if switching between reading and writing requires a control
-packet there is a mandatory 1ms latency hit: 1 packet with the writes (which can
-be all sent bunched up into one), then a second packet with the command to
-switch from read to write, then another packet to poll for the read data. On the
-ft231x that's 2ms latency / byte at a minimum as we need to wait out the polling
-interval twice.
+See the docs in the 'asm' folder for more details.
 
-### Pi Pico programmer
+#### Supporting software
 
-To avoid USB latency I need something capable of receiving a "read x bytes
-starting at address y" command and then stream the data back. I have a spare Pi
-Pico laying around so I went with that. It has enough I/O, has support for
-multiple UARTs (so one for programming, one for comms with the HD6301), and
-comes with both 5V and 3.3V rail which can be convenient. Downside: not 5V
-tolerant.
-
-The 5V issue is easy to solve: for the data output from the pico I use
-TTL-compatible '74xxT573 latches, for the data input to the pico 3.3V '74LVHC245
-buffers which are 5V tolerant. For the control lines I make use of the dual
-supply feature of the _really really cool_ SLG46826 GreenPAK to have 3.3V I/O on
-the pico side and tri-state 5V I/O on the HD6301 bus side.
-
-### Internal ROM
-
-The samples I have come mask-programmed with some mystery code. The
-`internal_rom` folder contains a ROM dump and details on how I got it.
-
-## Software
-
-The asm folder contains some demo programs to get started.
-
-### Assembler
-
-It seems that the [AS](http://john.ccac.rwth-aachen.de:8000/as/) is a popular
-choice that also supports the 4 extra instructions that the HD6301 introduced.
+- Much of the glue logic (address decoding, PS2 serial/parallel decoding, etc.)
+  is implemented with GreenPAK SLG46826 programmable logic chips (see
+  below). The 'greenpak' folder contains a simple python script to program these
+  chips via i2c using an FTDI232h breakout board.
+- The 'pico\_programmer' and 'pico\_graphics' folders contain the respective
+  software for those those chips. The pico programmer has two parts: one to go
+  onto the Pi Pico and a Python program to interface with it via serial port to
+  do the actual programming.
 
 ## Bus documentation
+
+All modules communicate over the following shared bus.
 
 | Pin number | Function            | Notes                                                                        |
 |------------|---------------------|------------------------------------------------------------------------------|
@@ -178,6 +179,10 @@ Pins are all push-pull unless stated otherwise. Any shared use needs to be
 coordinated.
 
 Logic levels are assumed 5V CMOS.
+
+This is not how one designs for signal integrity - but it works well enough for
+me. The user-friendliness of getting a ribbon cable to a breadboard to prototype
+the next module is the overriding concern here.
 
 ### Bus details for HD6301 board
 
