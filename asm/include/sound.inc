@@ -186,7 +186,7 @@ sound_load_instrument:
         rts
 
 ; Sets the channel in A to the MIDI note number in B and plays it. Does not
-; require the note to be stopped before. The note needs to be between 21 and 105
+; require the note to be stopped before. The note needs to be between 21 and 104
 ; inclusive.
 sound_play_note:
         pshx
