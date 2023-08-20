@@ -1,0 +1,36 @@
+ ________  _______    __
+/  _____/ /  ____ \  |  |            OPL3 Instrument Editor
+| /____   | |    \ \ |  |
+| ____/   | |    | | |  |
+| |______ | |___/ /  |  |
+|_______/ |______/   |_/
+---------------------------------------------------------------------------------------------------
+      Note to play:
+---------------------------------------------------------------------------------------------------
+OPERATOR 1                                     | OPERATOR 2
+---------------------------------------------------------------------------------------------------
+           Tremolo:                            |            Tremolo:
+           Vibrato:                            |            Vibrato:
+          Envelope:                            |           Envelope:
+ Attack/Decay rate:                            |  Attack/Decay rate:
+   Freq multiplier:                            |    Freq multiplier:
+  Volume vs octave:                            |   Volume vs octave:
+ Total attenuation:                            |  Total attenuation:
+       Attack rate:                            |        Attack rate:
+        Decay rate:                            |         Decay rate:
+   Sustained level:                            |    Sustained level:
+      Release rate:                            |       Release rate:
+          Waveform:                            |           Waveform:
+          Feedback:                            |
+---------------------------------------------------------------------------------------------------
+                         _______________
+                        |               |
+                        v     _____     ^     _____
+                 p1 --> + -->| OP1 |--> + -->| OP2 |--> Out
+                              -----     ^     -----
+                                        |
+                                        p2
+
+  Up / Down: Select value to edit                Left / Right: Edit value
+        Tab: Switch between OP1 / OP2                   Space: Toggle playing note on edit
+          n: Switch between note and OPx                    q: Quit

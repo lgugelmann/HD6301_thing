@@ -13,9 +13,13 @@
 
 ; Set to 0 to start in the monitor, otherwise runs this program at startup.
 program_registry_autorun:
-        adr seq_start
+        adr edi_start
 
 program_registry:
+        adr +
+        byt "edi\0"
+        adr edi_start
++
         adr +
         byt "graphics_test\0"
         adr graphics_test_start
@@ -54,6 +58,7 @@ program_registry:
 +
         adr $0000               ; End marker
 
+        include programs/edi.s
         include programs/graphics_test.s
         include programs/hello.s
         include programs/opl3_test.s
