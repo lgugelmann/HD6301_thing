@@ -70,6 +70,7 @@ putchar_bin:
 
 ; Output the (unsigned) byte in A as 3 decimal digits.
 putchar_dec:
+        psh a
         psh b
         tab
 
@@ -92,6 +93,7 @@ putchar_dec:
         jsr putchar             ; Write last digit
 
         pul b
+        pul a
         rts
 
 ; Output the byte in A as two hexadecimal characters
