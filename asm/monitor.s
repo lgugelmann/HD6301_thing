@@ -91,6 +91,11 @@ commands:
         byt $00
         adr ls_command
 +
+        adr +
+        byt "clear\0"
+        byt $00
+        adr clear_command
++
         adr $0000
 
 start:
@@ -369,6 +374,11 @@ ls_command:
         bra .loop
 
 .end:
+        rts
+
+; Clear the screen, reset the cursor to the top.
+clear_command:
+        clr GRAPHICS_CLEAR
         rts
 
 irq:
