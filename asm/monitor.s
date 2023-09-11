@@ -124,7 +124,7 @@ line_start:
         jsr putstring
         ; Put a string-terminating 0 at the start of the input buffer
         clr input_buffer
-        ldx #input_buffer
+        ldx #input_buffer       ; Track current position in input buffer
 
 .keyboard_in:
         jsr getchar
@@ -134,18 +134,31 @@ line_start:
         bhi .keyboard_in        ; Ignore control characters
 
         cmp a,#KEY_BACKSPACE
-        beq .keyboard_in
+        beq .backspace
         cmp a,#KEY_DELETE
-        beq .keyboard_in        ; Ignore delete for now, not supported
+        bne .not_backspace
 
+.backspace
+        ; Nothing to do for empty input buffer.
+        cpx #input_buffer
+        beq .keyboard_in
+        ; Overwrite last character in buffer with 0.
+        dex
+        clr 0,x
+        ; Expect output routines to draw BACKSPACE correctly.
+        lda #KEY_BACKSPACE
+        jsr putchar
+        bra .keyboard_in
+
+.not_backspace:
         cmp a,#KEY_ENTER
-        bne .not_enter
+        bne .printable_char
 
         jsr putchar             ; Put enter on the screen
         jsr exec
         bra line_start
 
-.not_enter:
+.printable_char:
         ; Make sure not to overflow the input buffer
         cpx #(input_buffer + INPUT_BUFFER_SIZE - 1)
         bhi line_start

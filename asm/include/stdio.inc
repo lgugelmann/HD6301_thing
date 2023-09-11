@@ -42,14 +42,23 @@ getchar:
 ; Output the character in A on both graphical and serial terminal
 putchar:
         jsr serial_send_byte
+        ; If that was a backspace, also clear the deleted character.
+        cmp a,#KEY_BACKSPACE
+        bne .no_backspace
 
-        cmp a,#KEY_ENTER         ; LF, need to send a CR for serial
-        bne .no_lf
+        lda #' '
+        jsr serial_send_byte
+        lda #KEY_BACKSPACE
+        jsr serial_send_byte
+        jmp .serial_handled
+.no_backspace:
+        cmp a,#KEY_ENTER        ; LF, need to send a CR for serial
+        bne .serial_handled
 
         lda #$0d                ; CR
         jsr serial_send_byte
         lda #KEY_ENTER
-.no_lf:
+.serial_handled:
         jmp graphics_putchar
         ; rts in graphics_putchar
 
