@@ -126,17 +126,17 @@ line_start:
         clr input_buffer
         ldx #input_buffer
 
-keyboard_in:
+.keyboard_in:
         jsr getchar
-        beq keyboard_in
+        beq .keyboard_in
 
         cmp a,#127
-        bhi keyboard_in         ; Ignore control characters
+        bhi .keyboard_in        ; Ignore control characters
 
         cmp a,#KEY_BACKSPACE
-        beq keyboard_in
+        beq .keyboard_in
         cmp a,#KEY_DELETE
-        beq keyboard_in         ; Ignore delete for now, not supported
+        beq .keyboard_in        ; Ignore delete for now, not supported
 
         cmp a,#KEY_ENTER
         bne .not_enter
@@ -154,7 +154,7 @@ keyboard_in:
         jsr putchar             ; Put it on the screen
         inx
         clr 0,x                 ; Put a 0 at the new buffer end
-        bra keyboard_in
+        bra .keyboard_in
 
 ; Figure out what command we intend to run and run it.
 exec:
