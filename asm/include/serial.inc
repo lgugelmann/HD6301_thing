@@ -11,6 +11,7 @@ __serial_inc = 1
         PUBLIC_SHARED serial_send_byte_dec
         PUBLIC_SHARED serial_send_string
         PUBLIC_SHARED serial_clear_screen
+        PUBLIC_SHARED serial_read_byte
         PUBLIC_SHARED serial_read_byte_blocking
 
 ;; Initialize Serial Communication Interface
@@ -20,6 +21,17 @@ serial_init:
 
         lda #TRCSR_TE|TRCSR_RE  ; Enable read / transmit
         sta TRCSR
+        rts
+
+;; Read the next character on the serial line into A, non-blocking.
+serial_read_byte
+        lda TRCSR
+        bit A,#TRCSR_RDRF       ; receive register full -> nonzero result here
+        beq .no_byte
+        lda RDR
+        rts
+.no_byte:
+        clr a
         rts
 
 ;; Read the next character on the serial line into A, blocking.
