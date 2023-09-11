@@ -27,7 +27,17 @@ stdio_init:
 ; Input one character from the keyboard in A. Returns 0 if no character is
 ; available.
 getchar:
-        jmp keyboard_getchar
+        jsr serial_read_byte
+        beq .read_keyboard
+        cmp a,#13
+        bne .end
+        lda #KEY_ENTER
+        rts
+.read_keyboard:
+        jsr keyboard_getchar
+.end:
+        rts
+
 
 ; Output the character in A on both graphical and serial terminal
 putchar:
