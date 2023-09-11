@@ -21,13 +21,16 @@ graphics_init:
 ; and advance the cursor. For non-printable characters delete, move cursor
 ; etc. as appropriate. Clobbers A.
 graphics_putchar:
+        cmp a,#KEY_BACKSPACE
+        beq .backspace
         cmp a,#KEY_DELETE
         bne +
+.backspace
         lda #-1
         sta GRAPHICS_MOVE_CURSOR
         lda #' '
         sta GRAPHICS_SEND_CHAR_RAW
-        lda #KEY_DELETE
+        lda #KEY_BACKSPACE
         bra .end
 +
         cmp a,#KEY_ENTER

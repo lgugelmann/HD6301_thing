@@ -133,6 +133,8 @@ keyboard_in:
         cmp a,#127
         bhi keyboard_in         ; Ignore control characters
 
+        cmp a,#KEY_BACKSPACE
+        beq keyboard_in
         cmp a,#KEY_DELETE
         beq keyboard_in         ; Ignore delete for now, not supported
 
