@@ -379,6 +379,7 @@ ls_command:
 ; Clear the screen, reset the cursor to the top.
 clear_command:
         clr GRAPHICS_CLEAR
+        jsr serial_clear_screen
         rts
 
 irq:
