@@ -6,3 +6,22 @@
          \ \ | |         | |     | |
  ________/ / | |________ \ \_____\ \__
 /_________/  |_________/  \__________/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Space: play / stop      , : flat            up: change channel up
+ a..g: set note         . : natural       down: change channel down
+ 1..6: set octave       / : sharp         left: move cursor left
+    x: clear note                        right: move cursor right
+    s: save tab         l : load tab from console
