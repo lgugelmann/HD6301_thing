@@ -3,6 +3,9 @@ __instruments_inc = 1
 
         SECTION instruments
         PUBLIC instruments_piano
+        PUBLIC instruments_piano_left
+        PUBLIC instruments_piano_right
+        PUBLIC instruments_piano_nochannel
         PUBLIC instruments_organ
         PUBLIC instruments_tsch
         PUBLIC instruments_tunk
@@ -31,6 +34,54 @@ instruments_piano:
         byt ws(0)
 ; global
         byt ch_fb_cnt(3, 4, 0)
+
+instruments_piano_left:
+; OP1
+        byt am_vib_egt_ksr_mult(0,0,1,0,1)
+        byt ksl_tl(2, 48)
+        byt ar_dr(15, 2)
+        byt sl_rr(4, 5)
+        byt ws(0)
+; OP2
+        byt am_vib_egt_ksr_mult(0,0,1,0,1)
+        byt ksl_tl(0, 45)
+        byt ar_dr(15, 2)
+        byt sl_rr(7, 6)
+        byt ws(0)
+; global
+        byt ch_fb_cnt(1, 4, 0)
+
+instruments_piano_right:
+; OP1
+        byt am_vib_egt_ksr_mult(0,0,1,0,1)
+        byt ksl_tl(2, 48)
+        byt ar_dr(15, 2)
+        byt sl_rr(4, 5)
+        byt ws(0)
+; OP2
+        byt am_vib_egt_ksr_mult(0,0,1,0,1)
+        byt ksl_tl(0, 45)
+        byt ar_dr(15, 2)
+        byt sl_rr(7, 6)
+        byt ws(0)
+; global
+        byt ch_fb_cnt(2, 4, 0)
+
+instruments_piano_nochannel:
+; OP1
+        byt am_vib_egt_ksr_mult(0,0,1,0,1)
+        byt ksl_tl(2, 48)
+        byt ar_dr(15, 2)
+        byt sl_rr(4, 5)
+        byt ws(0)
+; OP2
+        byt am_vib_egt_ksr_mult(0,0,1,0,1)
+        byt ksl_tl(0, 45)
+        byt ar_dr(15, 2)
+        byt sl_rr(7, 6)
+        byt ws(0)
+; global
+        byt ch_fb_cnt(0, 4, 0)
 
 instruments_organ:
 ; OP1

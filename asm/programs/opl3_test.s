@@ -8,11 +8,23 @@
 opl3_test_start:
         ; Set up a piano on channels 1..6
         ldx #instruments_piano
-        lda #6
+        lda #3
 .loop:
         jsr sound_load_instrument
         dec a
         bne .loop
+
+        lda #4
+        ldx #instruments_piano_nochannel
+        jsr sound_load_instrument
+
+        lda #5
+        ldx #instruments_piano_left
+        jsr sound_load_instrument
+
+        lda #6
+        ldx #instruments_piano_right
+        jsr sound_load_instrument
 
         lda #7
         ldx #instruments_tsch
@@ -45,16 +57,37 @@ opl3_test_start:
         bne +
 
         ; Play an Am chord
-        lda #4                  ; Channel
+        lda #1                  ; Channel
         ldb #69                 ; Note number
         jsr sound_play_note
-        lda #5                  ; Channel
+        lda #2                  ; Channel
         ldb #72                 ; Note number
         jsr sound_play_note
-        lda #6                  ; Channel
+        lda #3                  ; Channel
         ldb #76                 ; Note number
         jsr sound_play_note
         bra .read_loop
++
+        cmp a,#'l'
+        bne +
+        lda #5
+        ldb #69
+        jsr sound_play_note
+        jmp .read_loop
++
+        cmp a,#'r'
+        bne +
+        lda #6
+        ldb #69
+        jsr sound_play_note
+        jmp .read_loop
++
+        cmp a,#'n'
+        bne +
+        lda #4
+        ldb #69
+        jsr sound_play_note
+        jmp .read_loop
 +
         cmp a,#'z'
         bne +
@@ -82,7 +115,7 @@ opl3_test_start:
         jsr sound_stop_note
         dec a
         bne .stop_loop
-        bra .read_loop
+        jmp .read_loop
 +
         ; Enable timer 1
         cmp a,#'t'
@@ -96,7 +129,7 @@ opl3_test_start:
         ldd #timer1_callback
         std sound_timer1_callback
         jsr enable_timer1
-        bra .read_loop
+        jmp .read_loop
 +
         ; Disable timer 1
         cmp a,#'T'
