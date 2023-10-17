@@ -9,7 +9,6 @@
 ; * space to start / stop playing
 
 ; TODOs / Improvement ideas:
-; - General UI niceties: title, keybinding on screen etc.
 ; - Selectable tempo
 ; - More channels
 ; - Selectable instruments
@@ -19,7 +18,7 @@
 ; - Per-channel mute
 ; - More bars per channel (wrapping or scrolling)
 ; - Load / save support
-; - Instrument editor
+; - Instrument editor integration
 ; - Different amount of notes per bar
 ; - Selectable number of bars
 
@@ -256,8 +255,8 @@ draw_notes:
 ; Redraw the piece of the notes string that could just have changed
 refresh_notes:
         ; If anything changed, it's in the NOTES_LENGTH many characters to the
-        ; right of X. The cursor not necessarily already in the right place so
-        ; we need to set that too.
+        ; right of X. The cursor is not necessarily already in the right place
+        ; so we need to set that too.
         lda 0,x
         sta GRAPHICS_SEND_CHAR
         lda 1,x
