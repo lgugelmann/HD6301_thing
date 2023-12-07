@@ -6,10 +6,10 @@
         PUBLIC opl3_test_start
 
 opl3_test_start:
-        ; Set up a piano on channels 1..6
-        ldx #instruments_piano
-        lda #3
+        ; Set up a piano on channels 1..18
+        lda #18
 .loop:
+        ldx #general_midi_instruments + 11*10
         jsr sound_load_instrument
         dec a
         bne .loop
@@ -57,13 +57,13 @@ opl3_test_start:
         bne +
 
         ; Play an Am chord
-        lda #1                  ; Channel
+        lda #13                 ; Channel
         ldb #69                 ; Note number
         jsr sound_play_note
-        lda #2                  ; Channel
+        lda #14                 ; Channel
         ldb #72                 ; Note number
         jsr sound_play_note
-        lda #3                  ; Channel
+        lda #15                 ; Channel
         ldb #76                 ; Note number
         jsr sound_play_note
         bra .read_loop
@@ -107,10 +107,52 @@ opl3_test_start:
         jsr sound_play_note
         jmp .read_loop
 +
-        cmp a,#'s'
+        cmp a,#'1'
         bne +
+        ldb #0
+        lsr b
+        eor b,#63
+        bra .set_volume
++
+        cmp a,#'2'
+        bne +
+        ldb #31
+        lsr b
+        eor b,#63
+        bra .set_volume
++
+        cmp a,#'3'
+        bne +
+        ldb #63
+        lsr b
+        eor b,#63
+        bra .set_volume
++
+        cmp a,#'4'
+        bne +
+        ldb #95
+        lsr b
+        eor b,#63
+        bra .set_volume
++
+        cmp a,#'5'
+        bne +
+        ldb #127
+        lsr b
+        eor b,#63
+        bra .set_volume
 
-        lda #9
+.set_volume:
+        lda #3
+        jsr sound_set_attenuation
+        lda #2
+        jsr sound_set_attenuation
+        lda #1
+        jsr sound_set_attenuation
+        jmp .read_loop
++
+        cmp a,#'s'
+        lda #18
 .stop_loop:
         jsr sound_stop_note
         dec a
@@ -139,7 +181,7 @@ opl3_test_start:
         jmp .read_loop
 +
         ; Enable timer 2
-        cmp a,#'r'
+        cmp a,#'e'
         bne +
 
         ldb #OPL3_TIMER2
@@ -153,7 +195,7 @@ opl3_test_start:
         jmp .read_loop
 +
         ; Disable timer 2
-        cmp a,#'R'
+        cmp a,#'E'
         bne +
 
         jsr disable_timer
