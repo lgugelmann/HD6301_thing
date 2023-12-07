@@ -111,10 +111,14 @@ channel_to_op1_offset:
 ; - A contains the channel number
 ; Keeps all registers intact
 sound_load_instrument:
+        cmp a,#9
+        bgt .sound_load_instrument_a1
+
+.sound_load_instrument_a0:
         psh b
         psh a
-        jsr channel_to_op1_offset
 
+        jsr channel_to_op1_offset
          ; OP1 AM/VIB/EGT/...
         ldb 0,x
         sta OPL3_ADDRESS_ARRAY0
@@ -185,10 +189,91 @@ sound_load_instrument:
 
         rts
 
+.sound_load_instrument_a1:
+        psh b
+        psh a
+
+        sub a,#9
+        jsr channel_to_op1_offset
+         ; OP1 AM/VIB/EGT/...
+        ldb 0,x
+        sta OPL3_ADDRESS_ARRAY1
+        stb OPL3_DATA_WRITE
+
+        ; OP2 AM/VIB/EGT/...
+        add a,#3                ; OP2 slot is always offset by 3 from OP1
+        ldb 5,x
+        sta OPL3_ADDRESS_ARRAY1
+        stb OPL3_DATA_WRITE
+
+        ; OP1 KS/TL
+        add a,#($20 - $03)      ; Offset between register banks is $20
+        ldb 1,x
+        sta OPL3_ADDRESS_ARRAY1
+        stb OPL3_DATA_WRITE
+
+	; OP2 KS/TL
+        add a,#3
+        ldb 6,x
+        sta OPL3_ADDRESS_ARRAY1
+        stb OPL3_DATA_WRITE
+
+        ; OP1 AR/DR
+        add a,#($20 - $03)
+        ldb 2,x
+        sta OPL3_ADDRESS_ARRAY1
+        stb OPL3_DATA_WRITE
+
+        ; OP2 AR/DR
+        add a,#3
+        ldb 7,x
+        sta OPL3_ADDRESS_ARRAY1
+        stb OPL3_DATA_WRITE
+
+        ; OP1 SL/RR
+        add a,#($20 - $03)
+        ldb 3,x
+        sta OPL3_ADDRESS_ARRAY1
+        stb OPL3_DATA_WRITE
+
+        ; OP2 SL/RR
+        add a,#3
+        ldb 8,x
+        sta OPL3_ADDRESS_ARRAY1
+        stb OPL3_DATA_WRITE
+
+	; OP1 WS
+        add a,#($60 - $03)      ; SL/RR is at $80+, WS at $E0+ -> delta $60
+        ldb 4,x
+        sta OPL3_ADDRESS_ARRAY1
+        stb OPL3_DATA_WRITE
+
+	; OP2 WS
+        add a,#3
+        ldb 9,x
+        sta OPL3_ADDRESS_ARRAY1
+        stb OPL3_DATA_WRITE
+
+        pul a                   ; A contains the channel number again
+        tab                     ; Use B to preserve A
+        add b,#($C0-1)
+        stb OPL3_ADDRESS_ARRAY1
+        ldb 10,x
+        stb OPL3_DATA_WRITE
+
+        pul b
+
+        rts
+
+
 ; Sets the channel in A to the MIDI note number in B and plays it. Does not
 ; require the note to be stopped before. The note needs to be between 21 and 104
 ; inclusive.
 sound_play_note:
+        cmp a,#9
+        bgt .sound_play_note_a1
+
+.sound_play_note_a0:
         pshx
         psh a
         add a,#($B0-1)          ; KON/BLOCK/FNUM(H) register for a given channel
@@ -222,12 +307,56 @@ sound_play_note:
 
         rts
 
+.sound_play_note_a1:
+        pshx
+        psh a
+        add a,#($B0-10)         ; KON/BLOCK/FNUM(H) register for a given channel
+        psh a
+
+        ; Stop the note that's playing
+        sta OPL3_ADDRESS_ARRAY1
+        clr OPL3_DATA_WRITE
+
+        ;; Set up FNUM(L) first
+        sub a,#$10              ; FNUM(L) register is $10 below KON/...
+        sta OPL3_ADDRESS_ARRAY1
+
+	; Get the value for FNUM(L)
+        ldx #sound_midi_to_fnuml
+        abx
+        lda 0,x
+        sta OPL3_DATA_WRITE
+
+        ;; Set up KON/... register
+        pul a                   ; Back to KON/... register
+        sta OPL3_ADDRESS_ARRAY1
+
+        ldx #sound_midi_to_kbfh
+        abx
+        lda 0,x
+        sta OPL3_DATA_WRITE
+
+        pul a
+        pulx
+
+        rts
 
 ; Stops playing the note on the channel in A
 sound_stop_note:
+        cmp a,#9
+        bgt .sound_stop_note_a1
+.sound_stop_note_a0:
         psh a
         add a,#($B0-1)          ; KON/BLOCK/FNUM(H) register for a given channel
         sta OPL3_ADDRESS_ARRAY0
+        clr OPL3_DATA_WRITE
+        pul a
+        rts
+
+.sound_stop_note_a1:
+        psh a
+        add a,#($B0-10)         ; KON/BLOCK/FNUM(H) register for a given channel
+        sta OPL3_ADDRESS_ARRAY1
         clr OPL3_DATA_WRITE
         pul a
         rts
