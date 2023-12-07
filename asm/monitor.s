@@ -434,7 +434,7 @@ invoke_monitor:
 
         org $fff0
 vectors:
-        adr start               ; SCI
+        adr serial_irq          ; SCI
         adr timer_irq           ; Timer overflow
         adr start               ; Timer output compare
         adr start               ; Timer input capture

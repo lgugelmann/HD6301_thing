@@ -7,6 +7,7 @@ __serial_inc = 1
 
         SECTION serial
         PUBLIC serial_init
+        PUBLIC serial_irq
         PUBLIC_SHARED serial_send_byte
         PUBLIC_SHARED serial_send_byte_dec
         PUBLIC_SHARED serial_send_string
@@ -14,33 +15,72 @@ __serial_inc = 1
         PUBLIC_SHARED serial_read_byte
         PUBLIC_SHARED serial_read_byte_blocking
 
+        ;; Reserve 256 bytes of serial input buffer
+        reserve_page serial_in_buffer
+        ;; Pointers into the above buffer
+        zp_var rd_ptr,1         ; Where to read next
+        zp_var wr_ptr,1         ; Where to write next
+
 ;; Initialize Serial Communication Interface
 serial_init:
+        clr wr_ptr
+        clr rd_ptr
+
         lda #TRMCR_CC0
         sta TRMCR               ; Set clock source to internal and rate to E/16
 
-        lda #TRCSR_TE|TRCSR_RE  ; Enable read / transmit
+        ;; Enable receive + interrupts / transmit
+        lda #TRCSR_TE | TRCSR_RE | TRCSR_RIE
         sta TRCSR
         rts
 
-;; Read the next character on the serial line into A, non-blocking.
-serial_read_byte
+;; Handle SCI read interrupts. Pushes the new data onto the serial receive
+;; buffer and advances the relevant pointers. These are the internal serial
+;; interrupts which have their own vector.
+serial_irq:
         lda TRCSR
         bit A,#TRCSR_RDRF       ; receive register full -> nonzero result here
-        beq .no_byte
-        lda RDR
+        bne .got_byte
+        clc
         rts
-.no_byte:
+.got_byte:
+        lda RDR
+        ldx #serial_in_buffer
+        ldb wr_ptr
+        abx
+        sta 0,x
+        inc b
+        stb wr_ptr
+        rti
+
+;; Read the next character on the serial line into A, non-blocking.
+serial_read_byte
         clr a
+        psh b
+        ldb rd_ptr
+        cmp b,wr_ptr
+        beq _serial_read_buffer_end
+
+_serial_read_buffer:
+        pshx
+        ldx #serial_in_buffer
+        abx
+        lda 0,x
+        inc b
+        stb rd_ptr
+        pulx
+_serial_read_buffer_end:
+        pul b
         rts
 
 ;; Read the next character on the serial line into A, blocking.
 serial_read_byte_blocking:
-        lda TRCSR
-        bit A,#TRCSR_RDRF       ; receive register full -> nonzero result here
-        beq serial_read_byte_blocking
-        lda RDR
-        rts
+        psh b
+.read_loop:
+        ldb rd_ptr
+        cmp b,wr_ptr
+        beq .read_loop
+        bra _serial_read_buffer
 
 ;; Send the byte in A over serial
 serial_send_byte:
