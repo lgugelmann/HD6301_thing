@@ -11,6 +11,7 @@ __sound_inc = 1
 
         PUBLIC_SHARED sound_load_instrument
         PUBLIC_SHARED sound_play_note
+        PUBLIC_SHARED sound_set_attenuation
         PUBLIC_SHARED sound_stop_note
         PUBLIC_SHARED sound_timer1_callback
         PUBLIC_SHARED sound_timer2_callback
@@ -345,6 +346,43 @@ sound_play_note:
         pul a
         pulx
 
+        rts
+
+; Sets the attenuation of the channel in A to the value in B.
+; TODO: fix not clobbering KSL.
+sound_set_attenuation:
+        cmp a,#9
+        bgt .sound_set_attenuation_a1
+.sound_set_attenuation_a0:
+        psh a
+        add a,#($B0-1)         ; KON/BLOCK/FNUM(H) register for a given channel
+        ; Stop the note that's playing
+        sta OPL3_ADDRESS_ARRAY0
+        clr OPL3_DATA_WRITE
+        pul a
+
+        ; returns OP1 offset for AM/VIB/... register
+        jsr channel_to_op1_offset
+        add a,#$23              ; Need OP2 KSL/TL which is $20+$3 above
+        sta OPL3_ADDRESS_ARRAY0
+        stb OPL3_DATA_WRITE
+        rts
+
+.sound_set_attenuation_a1:
+        sub a,#9
+
+        psh a
+        add a,#($B0-1)         ; KON/BLOCK/FNUM(H) register for a given channel
+        ; Stop the note that's playing
+        sta OPL3_ADDRESS_ARRAY0
+        clr OPL3_DATA_WRITE
+        pul a
+
+        ; returns OP1 offset for AM/VIB/... register
+        jsr channel_to_op1_offset
+        add a,#$23              ; Need OP2 KSL/TL which is $20+$3 above
+        sta OPL3_ADDRESS_ARRAY1
+        stb OPL3_DATA_WRITE
         rts
 
 ; Stops playing the note on the channel in A
