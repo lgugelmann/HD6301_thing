@@ -25,7 +25,8 @@ TCSR_ETOI  = %00000100          ; Enable Timer Overflow Interrupt
 TCSR_TOF   = %00100000          ; Timer counter Overflow Flag
 
 TRCSR_TE   = %00000010          ; Transmit Enable
-TRCSR_RE   = %00001000          ; Read Enable
+TRCSR_RE   = %00001000          ; Receive Enable
+TRCSR_RIE  = %00010000          ; Receive Interrupt Enable
 TRCSR_TDRE = %00100000          ; Transmit Data Register Empty
 TRCSR_RDRF = %10000000          ; Receive Data Register Full
 
