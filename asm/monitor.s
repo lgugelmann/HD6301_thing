@@ -409,7 +409,10 @@ irq:
 
         jsr keyboard_irq
         bvs invoke_monitor      ; keyboard IRQ sets V if 'break' key is pressed
+        bcs .handled
 
+        ; Invoke the monitor on an unexpected unhandled interrupt
+        bra invoke_monitor
 .handled:
         rti
 
