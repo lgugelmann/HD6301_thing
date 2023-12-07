@@ -35,6 +35,12 @@ sound_init:
         lda #$01
         sta OPL3_DATA_WRITE
 
+        lda #18
+.silence_loop:
+        jsr sound_stop_note
+        dec a
+        bne .silence_loop
+
         rts
 
 ; The YMF262 datasheet does not specify whether the two timers are on the same
