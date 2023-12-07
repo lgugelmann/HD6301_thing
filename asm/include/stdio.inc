@@ -118,6 +118,7 @@ putchar_dec:
 ; Output the byte in A as two hexadecimal characters
 putchar_hex:
         psh a
+        psh a
         ; High nibble
         lsr a
         lsr a
@@ -135,9 +136,12 @@ putchar_hex:
         and a,#$0f
         add a,#"0"
         cmp a,#"9"
-        bls putchar             ; rts in putchar
+        bls .end
         add a,#("A" - "0" - 10)
-        bra putchar             ; rts in putchar
+.end:
+        jsr putchar
+        pul a
+        rts
 
 ; Output the two bytes in X as hexadecimal characters
 putx_hex:
