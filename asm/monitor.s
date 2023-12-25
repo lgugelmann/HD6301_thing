@@ -23,9 +23,10 @@ MONITOR_STACK_START = $7eff
 ;  100-7dff  Program memory, with stack at 7dff growing down
 ; 7e00-7eff  Monitor memory, with stack at 7eff growing down
 ; 7f00-7fff  I/O space, of which:
-;   00-  6f  [unused]
-;   80-  bf  OPL3 sound
-;   c0-  ff  Graphics registers
+;   00-  3f  [unused]
+;   40-  7f  MIDI / UART          0111 1111 01xx xxxx
+;   80-  bf  OPL3 sound           0111 1111 10xx xxxx
+;   c0-  ff  Graphics registers   0111 1111 11xx xxxx
 ; 8000-ffff  ROM
 
         ; Input buffer, holds one line
