@@ -35,7 +35,7 @@ midi_synth_start:
         rts                     ; Back to the monitor
 
 midi_synth:
-        jsr serial_read_byte_blocking
+        jsr midi_uart_read_byte_blocking
         tab                     ; Updates status register, N is top bit state
         bpl .unexpected_data    ; N=1 command byte, N=0 data byte
 
@@ -47,10 +47,10 @@ midi_synth:
         bne +
 
         ; Read the MIDI note number
-        jsr serial_read_byte_blocking
+        jsr midi_uart_read_byte_blocking
         tab
         ; Read the third byte - amplitude
-        jsr serial_read_byte_blocking
+        jsr midi_uart_read_byte_blocking
         jsr set_volume
         jsr play_note
         bra midi_synth
@@ -58,25 +58,25 @@ midi_synth:
         cmp a,#MIDI_STOP_NOTE
         bne +
         ; Read the note to stop
-        jsr serial_read_byte_blocking
+        jsr midi_uart_read_byte_blocking
         tab
         ; Discard the third byte
-        jsr serial_read_byte_blocking
+        jsr midi_uart_read_byte_blocking
         jsr stop_note
         bra midi_synth
 +
         cmp a,#MIDI_POLYPHONIC_AFTERTOUCH
         bne +
-        jsr serial_read_byte_blocking
-        jsr serial_read_byte_blocking
+        jsr midi_uart_read_byte_blocking
+        jsr midi_uart_read_byte_blocking
         bra midi_synth
 +
         cmp a,#MIDI_CONTROL_CHANGE
         bne +
         jsr putchar_hex
-        jsr serial_read_byte_blocking
+        jsr midi_uart_read_byte_blocking
         jsr putchar_hex
-        jsr serial_read_byte_blocking
+        jsr midi_uart_read_byte_blocking
         jsr putchar_hex
         lda #KEY_ENTER
         jsr putchar
@@ -84,19 +84,19 @@ midi_synth:
 +
         cmp a,#MIDI_PROGRAM_CHANGE
         bne +
-        jsr serial_read_byte_blocking
+        jsr midi_uart_read_byte_blocking
         jsr set_instrument
         bra midi_synth
 +
         cmp a,#MIDI_CHANNEL_AFTERTOUCH
         bne +
-        jsr serial_read_byte_blocking
+        jsr midi_uart_read_byte_blocking
         bra midi_synth
 +
         cmp a,#MIDI_PITCH_BEND
         bne +
-        jsr serial_read_byte_blocking
-        jsr serial_read_byte_blocking
+        jsr midi_uart_read_byte_blocking
+        jsr midi_uart_read_byte_blocking
         bra midi_synth
 +
         ; 'tab' updates status registers. We can use this to test the top bit:
