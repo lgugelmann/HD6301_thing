@@ -63,5 +63,32 @@ GRAPHICS_HIDE_CURSOR     = $7fc8  ; 0 = cursor visible, 1 = hidden.
 ; Format is CCRRGGBB where CC=0 is foreground, CC=1 is background, CC=2 is both
 GRAPHICS_SET_COLOR       = $7fc9
 
+UART_BASE = $7f40
+UART_RBR_A  = UART_BASE         ; Reciever Buffer, read only
+UART_THR_A  = UART_BASE         ; Transmitter Holding, write only
+UART_IER_A  = UART_BASE + 1     ; Interrupt Enable
+UART_IIR_A  = UART_BASE + 2     ; Interrupt Ident, read only
+UART_FCR_A  = UART_BASE + 2     ; FIFO Control, write only
+UART_LCR_A  = UART_BASE + 3     ; Line Control
+UART_MCR_A  = UART_BASE + 4     ; Modem Control
+UART_LSR_A  = UART_BASE + 5     ; Line Status
+UART_MSR_A  = UART_BASE + 6     ; Modem Status
+UART_SCR_A  = UART_BASE + 7     ; SCratch Register
+; Divisor latch registers LSB/MSB. Set bit 7 in LCR to access.
+UART_DLL_A  = UART_BASE         ; Divisor Latch LSB
+UART_DLM_A  = UART_BASE + 1     ; Divisor Latch MSB
+
+UART_RBR_B  = UART_BASE + 8     ; Reciever Buffer, read only
+UART_THR_B  = UART_BASE + 8     ; Transmitter Holding, write only
+UART_IER_B  = UART_BASE + 9     ; Interrupt Enable
+UART_IIR_B  = UART_BASE + 10    ; Interrupt Ident, read only
+UART_FCR_B  = UART_BASE + 10    ; FIFO Control, write only
+UART_LCR_B  = UART_BASE + 11    ; Line Control
+UART_MCR_B  = UART_BASE + 12    ; Modem Control
+UART_LSR_B  = UART_BASE + 13    ; Line Status
+UART_MSR_B  = UART_BASE + 14    ; Modem Status
+UART_SCR_B  = UART_BASE + 15    ; SCratch Register
+UART_DLL_B  = UART_BASE + 8     ; Divisor Latch LSB
+UART_DLM_B  = UART_BASE + 9     ; Divisor Latch MSB
 
         endif

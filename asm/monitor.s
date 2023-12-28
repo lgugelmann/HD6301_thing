@@ -4,6 +4,7 @@
 
         include include/macros
         include include/map
+        include include/midi_uart
         include include/registers
         include include/random
         include include/sound
@@ -106,6 +107,7 @@ start:
         lds #MONITOR_STACK_START ; Set stack to monitor stack location
         sts monitor_stack_ptr
 
+        jsr midi_uart_init
         jsr random_init
         jsr sound_init
         jsr stdio_init          ; Initializes serial, keyboard & graphics
