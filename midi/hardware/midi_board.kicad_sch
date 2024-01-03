@@ -2457,11 +2457,6 @@
     (uuid fe7472b6-a6d1-4579-a656-3e2374bc8444)
   )
 
-  (text "TX pin on TL16C2550 can only drive 4mA max - MIDI requires 5mA!\nThe GreenPAK can do the required 5mA easily."
-    (at 106.68 179.705 0)
-    (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid 0fe25d24-1183-4481-b337-7f070efe9130)
-  )
   (text "The TL16C2550 TX pin supplies +-4mA at most.\nMIDI requires up to 5mA. In the event of a\ncable short we might hit 12mA (5V / 440Ohm).\nTo protect the TL16C2550 we use a buffer here."
     (at 157.48 35.56 0)
     (effects (font (size 1.27 1.27)) (justify left bottom))
@@ -2822,8 +2817,8 @@
     (property "Datasheet" "~" (at 223.52 149.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "2" (uuid 8429d564-252c-433f-8598-102c1421a1e5))
     (pin "1" (uuid 70ca1e1d-4a9c-480a-9f95-fcf353119163))
+    (pin "2" (uuid 8429d564-252c-433f-8598-102c1421a1e5))
     (instances
       (project "midi_board"
         (path "/71530f50-7894-4efa-aa4a-2cca5f8bfb76"
@@ -2904,8 +2899,8 @@
     (property "Datasheet" "~" (at 203.2 149.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "2" (uuid 16386327-8134-49be-9c68-a257e97424c4))
     (pin "1" (uuid 9fbea673-a808-4e90-a654-8542aa39df3d))
+    (pin "2" (uuid 16386327-8134-49be-9c68-a257e97424c4))
     (instances
       (project "midi_board"
         (path "/71530f50-7894-4efa-aa4a-2cca5f8bfb76"
@@ -3011,9 +3006,9 @@
     (property "Datasheet" "~" (at 177.8 101.6 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "3" (uuid 0a434079-de23-4dbb-84da-7e2a2990eab7))
     (pin "1" (uuid af44ef37-dcd5-4062-b7aa-4544f6d14153))
     (pin "2" (uuid c78a88cd-40cc-47f2-9743-15f6ff68379d))
+    (pin "3" (uuid 0a434079-de23-4dbb-84da-7e2a2990eab7))
     (instances
       (project "midi_board"
         (path "/71530f50-7894-4efa-aa4a-2cca5f8bfb76"
@@ -3093,8 +3088,8 @@
     (property "Datasheet" "~" (at 274.32 149.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "2" (uuid 40c2059e-0d65-442e-861c-a815d60bac5a))
     (pin "1" (uuid a998c5a0-a13b-4c8c-a7f9-1e1d7f5ece78))
+    (pin "2" (uuid 40c2059e-0d65-442e-861c-a815d60bac5a))
     (instances
       (project "midi_board"
         (path "/71530f50-7894-4efa-aa4a-2cca5f8bfb76"
@@ -3343,8 +3338,8 @@
     (property "Datasheet" "~" (at 274.32 127 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "2" (uuid 40ba1aa7-936d-4466-a8a9-d1481291522f))
     (pin "1" (uuid 2ca35d24-476f-4a2d-8871-317e4f4929f2))
+    (pin "2" (uuid 40ba1aa7-936d-4466-a8a9-d1481291522f))
     (instances
       (project "midi_board"
         (path "/71530f50-7894-4efa-aa4a-2cca5f8bfb76"
@@ -3569,8 +3564,8 @@
     (property "Datasheet" "~" (at 264.16 149.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "2" (uuid 23f2dca7-4c28-4699-83da-e5c4d7b821a5))
     (pin "1" (uuid 43b5cfd9-0970-4f05-a684-c77caa004713))
+    (pin "2" (uuid 23f2dca7-4c28-4699-83da-e5c4d7b821a5))
     (instances
       (project "midi_board"
         (path "/71530f50-7894-4efa-aa4a-2cca5f8bfb76"
@@ -3645,8 +3640,8 @@
     (property "Datasheet" "~" (at 254 149.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "2" (uuid ab964531-7bae-47ca-b9d0-cb4468cfb06d))
     (pin "1" (uuid 491bd6f1-922d-4a0e-9235-079d90993d7b))
+    (pin "2" (uuid ab964531-7bae-47ca-b9d0-cb4468cfb06d))
     (instances
       (project "midi_board"
         (path "/71530f50-7894-4efa-aa4a-2cca5f8bfb76"
@@ -3883,8 +3878,8 @@
     (property "Datasheet" "~" (at 172.72 50.8 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "2" (uuid 3cb12467-dde6-414b-bb1c-a26cba52160b))
     (pin "1" (uuid 93d16859-d4d9-405d-90c4-186cb8f447a4))
+    (pin "2" (uuid 3cb12467-dde6-414b-bb1c-a26cba52160b))
     (pin "3" (uuid 0e9585d8-8f3d-4347-8a2a-d9bf4342e900))
     (instances
       (project "midi_board"
@@ -3989,8 +3984,8 @@
     (property "Datasheet" "~" (at 233.68 149.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "2" (uuid 40a88176-b932-4a61-b7a2-2c3a1fedfa05))
     (pin "1" (uuid d9d990a5-12e3-4337-b451-a90c5309f457))
+    (pin "2" (uuid 40a88176-b932-4a61-b7a2-2c3a1fedfa05))
     (instances
       (project "midi_board"
         (path "/71530f50-7894-4efa-aa4a-2cca5f8bfb76"
@@ -4127,8 +4122,8 @@
     (property "Datasheet" "~" (at 213.36 149.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "2" (uuid a6e1b23b-eace-424f-83cf-dda553272225))
     (pin "1" (uuid f9ca740f-a6d9-4932-a40a-a4c284249fbd))
+    (pin "2" (uuid a6e1b23b-eace-424f-83cf-dda553272225))
     (instances
       (project "midi_board"
         (path "/71530f50-7894-4efa-aa4a-2cca5f8bfb76"
@@ -4341,8 +4336,8 @@
     (property "Datasheet" "~" (at 264.16 127 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "2" (uuid 35c96c95-3d4d-4f2e-b854-adb0e4a5790f))
     (pin "1" (uuid 95d5b032-6e94-4ba6-825f-eb4137aad10e))
+    (pin "2" (uuid 35c96c95-3d4d-4f2e-b854-adb0e4a5790f))
     (instances
       (project "midi_board"
         (path "/71530f50-7894-4efa-aa4a-2cca5f8bfb76"
@@ -4392,11 +4387,11 @@
     (property "Datasheet" "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf" (at 214.63 44.45 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "5" (uuid c12993cd-68cc-421f-a175-b6f4da7bc22d))
-    (pin "4" (uuid 3795885d-92e8-4e1f-9321-7475884c3a2e))
     (pin "1" (uuid 84c5473c-c6a2-4e0a-8839-f8dbd4574dda))
-    (pin "3" (uuid 26f60506-d43a-443c-8750-ceba8b3fe63b))
     (pin "2" (uuid be3320a5-c013-4a5e-81f2-8e5b5cfb1e12))
+    (pin "3" (uuid 26f60506-d43a-443c-8750-ceba8b3fe63b))
+    (pin "4" (uuid 3795885d-92e8-4e1f-9321-7475884c3a2e))
+    (pin "5" (uuid c12993cd-68cc-421f-a175-b6f4da7bc22d))
     (instances
       (project "midi_board"
         (path "/71530f50-7894-4efa-aa4a-2cca5f8bfb76"
@@ -4597,8 +4592,8 @@
     (property "Datasheet" "~" (at 243.84 149.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "2" (uuid 85a1dcb1-5bb7-46bd-a382-d662fef032e2))
     (pin "1" (uuid 0e8153c1-287c-43c1-a624-b245143d9ada))
+    (pin "2" (uuid 85a1dcb1-5bb7-46bd-a382-d662fef032e2))
     (instances
       (project "midi_board"
         (path "/71530f50-7894-4efa-aa4a-2cca5f8bfb76"
