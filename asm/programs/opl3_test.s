@@ -152,6 +152,7 @@ opl3_test_start:
         jmp .read_loop
 +
         cmp a,#'s'
+        bne +
         lda #18
 .stop_loop:
         jsr sound_stop_note
