@@ -51,7 +51,7 @@ midi_synth:
         tab
         ; Read the third byte - amplitude
         jsr midi_uart_read_byte_blocking
-        jsr set_volume
+        ;; jsr set_volume
         jsr play_note
         bra midi_synth
 +
@@ -73,13 +73,8 @@ midi_synth:
 +
         cmp a,#MIDI_CONTROL_CHANGE
         bne +
-        jsr putchar_hex
         jsr midi_uart_read_byte_blocking
-        jsr putchar_hex
         jsr midi_uart_read_byte_blocking
-        jsr putchar_hex
-        lda #KEY_ENTER
-        jsr putchar
         bra midi_synth
 +
         cmp a,#MIDI_PROGRAM_CHANGE
@@ -112,7 +107,7 @@ midi_synth:
 .unexpected_data:
         ; TODO: put these onto a data buffer - there are commands that can show
         ; up in-between data bytes.
-        jsr putchar_hex
+;        jsr putchar_hex
 
         jmp midi_synth
         ; rts
@@ -136,7 +131,7 @@ stop_note:
         cmp a,#NUM_CHANNELS     ; Make sure we're not playing on channels beyond
                                 ; what we support for now.
         bgt .end
-        jmp sound_stop_note     ; rts there
+        jmp sound_stop_midi_note     ; rts there
 .end:
         rts
 
@@ -167,12 +162,49 @@ set_instrument:
                                 ; what we support for now.
         bgt .end
 
+        ; MIDI channel 10 is always a rhythm channel
+        cmp a,#10
+        bne .not_rhythm
+        ldb #128
+        abx
+
+.not_rhythm:
+        jsr print_instrument
         jmp sound_load_instrument
         ; rts in sound_load_instrument
 .end:
         rts
 
+print_instrument:
+        pshx
+        psh a
+        psh b
+
+        pshx
+        ldx #.instr_header
+        jsr putstring
+        pulx
+
+        ldb #11
+.loop:
+        lda 0,x
+        jsr putchar_hex
+        lda #' '
+        jsr putchar
+        inx
+        dec b
+        bne .loop
+
+        pul b
+        pul a
+        pulx
+        rts
+.instr_header:
+        byt "\nAM KS AR SL WS AM KS AR SL WS FB\n\0"
+
+
+
 midi_synth_string:
-        byt "MIDI Synth\nUnknown commands: \0"
+        byt "MIDI Synth:\n\0"
 
         ENDSECTION
