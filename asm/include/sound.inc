@@ -13,6 +13,7 @@ __sound_inc = 1
         PUBLIC_SHARED sound_play_note
         PUBLIC_SHARED sound_set_attenuation
         PUBLIC_SHARED sound_stop_note
+        PUBLIC_SHARED sound_stop_midi_note
         PUBLIC_SHARED sound_timer1_callback
         PUBLIC_SHARED sound_timer2_callback
 
@@ -404,6 +405,73 @@ sound_stop_note:
         clr OPL3_DATA_WRITE
         pul a
         rts
+
+sound_stop_midi_note:
+        cmp a,#9
+        bgt .sound_stop_midi_note_a1
+
+.sound_stop_midi_note_a0:
+        pshx
+        psh a
+        add a,#($B0-1)          ; KON/BLOCK/FNUM(H) register for a given channel
+        psh a
+
+        ; Set up FNUM(L) first
+        sub a,#$10              ; FNUM(L) register is $10 below KON/...
+        sta OPL3_ADDRESS_ARRAY0
+
+        ; Get the value for FNUM(L)
+        ldx #sound_midi_to_fnuml
+        abx
+        lda 0,x
+        sta OPL3_DATA_WRITE
+
+        ; Set up KON/... register
+        pul a                   ; Back to KON/... register
+        sta OPL3_ADDRESS_ARRAY0
+
+        ldx #sound_midi_to_kbfh
+        abx
+        lda 0,x
+        and a,#$1f              ; Clear KON bit
+        sta OPL3_DATA_WRITE
+
+        pul a
+        pulx
+
+        rts
+
+.sound_stop_midi_note_a1:
+        pshx
+        psh a
+        add a,#($B0-10)         ; KON/BLOCK/FNUM(H) register for a given channel
+        psh a
+
+        ;; Set up FNUM(L) first
+        sub a,#$10              ; FNUM(L) register is $10 below KON/...
+        sta OPL3_ADDRESS_ARRAY1
+
+	; Get the value for FNUM(L)
+        ldx #sound_midi_to_fnuml
+        abx
+        lda 0,x
+        sta OPL3_DATA_WRITE
+
+        ;; Set up KON/... register
+        pul a                   ; Back to KON/... register
+        sta OPL3_ADDRESS_ARRAY1
+
+        ldx #sound_midi_to_kbfh
+        abx
+        lda 0,x
+        and a,#$1f
+        sta OPL3_DATA_WRITE
+
+        pul a
+        pulx
+
+        rts
+
 
         ENDSECTION sound
 
