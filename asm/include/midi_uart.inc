@@ -9,7 +9,7 @@ __midi_uart_inc = 1
         PUBLIC midi_uart_init
         PUBLIC_SHARED midi_uart_read_byte_blocking
 
-UART_CRYSTAL_FREQ = 6000000
+UART_CRYSTAL_FREQ = 24000000
 UART_BAUD_A       = 31250
 UART_BAUD_B       = 31250
 UART_DIV_A        = UART_CRYSTAL_FREQ / (UART_BAUD_A * 16)
