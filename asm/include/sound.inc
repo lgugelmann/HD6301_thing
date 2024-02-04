@@ -406,6 +406,7 @@ sound_stop_note:
         pul a
         rts
 
+; Stops playing the MIDI note in B on the OPL channel in A.
 sound_stop_midi_note:
         cmp a,#9
         bgt .sound_stop_midi_note_a1
