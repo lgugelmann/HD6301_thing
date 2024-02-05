@@ -25,6 +25,8 @@ MIDI_PITCH_BEND            = $E0
 ; MIDI channel 10 is always rhythm instruments. Set to 9 as we're using 0-based
 ; channel numbers throughout.
 MIDI_RHYTHM_CHANNEL = 9
+; The 'pitch' to play rhythm notes at
+MIDI_RHYTHM_NOTE = 40
 
 NUM_OPL_CHANNELS = 18
 NUM_MIDI_CHANNELS = 16
@@ -135,7 +137,6 @@ midi_synth:
         sta midi_note
         ; Read the third byte - amplitude
         jsr midi_uart_read_byte_blocking
-        ;; jsr set_volume
         jsr play_note
         bra midi_synth
 +
@@ -210,12 +211,14 @@ play_note:
                                  ; beyond what we support for now.
         bge .end
 
-        ; TODO: add support for rhythm
         cmp a,#MIDI_RHYTHM_CHANNEL
-        beq .end
+        bne .not_rhythm
+        jmp play_rhythm
 
+.not_rhythm:
         ; Find a free OPL3 channel to play this on. First pass we try to find a
-        ; free OPL channel mapping to the right MIDI channel.
+        ; free OPL channel mapping to the right MIDI channel (and thus set up
+        ; with the right instrument already).
         clr a                   ; A keeps track of the OPL channel number
         ldx #opl_to_midi_channel_note
 .free_channel_instrument_loop:
@@ -274,6 +277,75 @@ play_note:
 .end:
         rts
 
+; Play a rhythm 'note' received on MIDI channel 10. That channel works
+; differently: the MIDI note number is actually the percussion instrument to be
+; played.
+play_rhythm:
+        ; This works similar to play_note, however we use the MIDI note number
+        ; as 'MIDI channel' number. The lowest GM percussion instrument number
+        ; is 35 which is comfortably above the 16 MIDI channels we support so
+        ; there is no collision. We also try put percussion instruments into
+        ; high OPL3 channel numbers starting from top down to try to make
+        ; finding channel matches more efficient. play_note starts bottom up.
+
+        ; First pass we try to find a free OPL channel set up for the right
+        ; instrument number already.
+        lda #NUM_OPL_CHANNELS-1
+        ldx #opl_to_midi_channel_note + 2*(NUM_OPL_CHANNELS-1)
+.free_channel_instrument_loop:
+        ldb 0,x                 ; Load instrument number
+        cmp b,midi_note
+        beq .found_channel
+.no_match:
+        tst a
+        beq .no_channel_match
+        dec a
+        dex
+        dex
+        bra .free_channel_instrument_loop
+.found_channel:
+        ldb 1,x                  ; load note byte
+        beq .found_empty_channel ; note is 0 -> found a channel to play on
+        bra .no_match
+
+        ; Second pass: find any free OPL channel and set it up correctly
+.no_channel_match:
+        lda #NUM_OPL_CHANNELS-1
+        ldx #opl_to_midi_channel_note + 2*(NUM_OPL_CHANNELS-1)
+.free_channel_loop:
+        ldb 1,x                 ; Load note number
+        beq .load_instrument
+        tst a
+        beq .no_free_channel_error
+        dec a
+        dex
+        dex
+        bra .free_channel_loop
+
+        ; A contains the OPL channel number (0-based) to set up, X points to the
+        ; opl_to_midi_channel_note map location for the OPL channel in A.
+.load_instrument:
+        pshx
+        sta opl_channel
+        lda midi_note
+        sta 0,x                 ; Save the new MIDI 'channel' for the OPL one
+        ora #$80                ; Percussion instruments are 128 above regular ones
+        jsr set_instrument
+
+        lda opl_channel
+        pulx
+        ; Here A contains the OPL channel number (0-based) to play on, X points
+        ; to the opl_to_midi_channel_note map location for the OPL channel in A.
+.found_empty_channel:
+        inc a                   ; OPL channels are 1-based for sound_play_note
+        ldb #MIDI_RHYTHM_NOTE
+        stb 1,x
+        jmp sound_play_note     ; rts there
+
+.no_free_channel_error:
+.end:
+        rts
+
 ; Stop playing the MIDI note number in B on MIDI channel in 'midi_channel'.
 stop_note:
         lda midi_channel
@@ -281,6 +353,11 @@ stop_note:
                                  ; beyond what we support for now.
         bge .end
 
+        cmp a,#MIDI_RHYTHM_CHANNEL
+        bne .not_rhythm
+        jmp stop_rhythm
+
+.not_rhythm:
         stb midi_note
 
         clr a
@@ -312,6 +389,36 @@ stop_note:
 .error_no_channel_match:
 .end:
         rts
+
+; Stop playing the rhythm note number in B
+stop_rhythm:
+        stb midi_channel
+
+        lda #NUM_OPL_CHANNELS-1
+        ldx #opl_to_midi_channel_note + 2*(NUM_OPL_CHANNELS-1)
+.loop:
+        ldb 0,x
+        cmp b,midi_channel
+        beq .stop_note          ; We can't have more than one note per 'channel'
+.no_match:
+        tst a
+        beq .error_no_channel_match
+        dec a
+        dex
+        dex
+        bra .loop
+
+	; A counted up to the OPL channel, B contains the MIDI note, X points to
+	; the opl_to_midi_channel_note map location for the OPL channel in B.
+.stop_note:
+        clr 1,x
+        inc a                    ; sound_* use 1-based OPL channel numbers
+        jmp sound_stop_midi_note ; rts there
+
+.error_no_channel_match:
+.end:
+        rts
+
 
 ; Sets the OPL channel in 'opl_channel' to the instrument number in A. Clobbers
 ; all registers.
