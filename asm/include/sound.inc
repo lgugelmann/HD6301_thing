@@ -114,7 +114,7 @@ channel_to_op1_offset:
         add a,#($20-1)
         rts
 
-; Sets up an instrument on a given channel 1..9. Parameters:
+; Sets up an instrument on a given channel 1..18. Parameters:
 ; - X is the address to an 11-byte instrument definition
 ; - A contains the channel number
 ; Keeps all registers intact
