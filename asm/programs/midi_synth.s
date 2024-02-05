@@ -251,6 +251,7 @@ play_note:
         ; A contains the OPL channel number (0-based) to set up, X points to the
         ; opl_to_midi_channel_note map location for the OPL channel in A.
 .load_instrument:
+        pshx
         sta opl_channel
         ldb midi_channel
         stb 0,x                 ; Save the new MIDI channel for the OPL one
@@ -259,12 +260,8 @@ play_note:
         lda 0,x                 ; Load the instrument number into A
         jsr set_instrument
 
-        ldb opl_channel
-        ldx #opl_to_midi_channel_note
-        asl b                   ; Multiply B by 2, we need to skip 2 *
-                                ; opl_channel bytes
-        abx
         lda opl_channel
+        pulx
         ; Here A contains the OPL channel number (0-based) to play on, X points
         ; to the opl_to_midi_channel_note map location for the OPL channel in A.
 .found_empty_channel:
