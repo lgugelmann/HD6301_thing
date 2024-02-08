@@ -10,7 +10,6 @@
 ; TODO:
 ; - Amplitude support
 ; - Pitch bend
-; - Proper rhythm channel support
 ; - Rework the code to use 0-based MIDI and OPL channel numbers everywhere
 ; - All notes off / all sounds off
 
@@ -25,8 +24,6 @@ MIDI_PITCH_BEND            = $E0
 ; MIDI channel 10 is always rhythm instruments. Set to 9 as we're using 0-based
 ; channel numbers throughout.
 MIDI_RHYTHM_CHANNEL = 9
-; The 'pitch' to play rhythm notes at
-MIDI_RHYTHM_NOTE = 40
 
 NUM_OPL_CHANNELS = 18
 NUM_MIDI_CHANNELS = 16
@@ -288,13 +285,22 @@ play_rhythm:
         ; high OPL3 channel numbers starting from top down to try to make
         ; finding channel matches more efficient. play_note starts bottom up.
 
+        ; Store the MIDI note number as channel, and look up the actual note
+        ; number we want to use to get the right sound for the instrument.
+        ldb midi_note
+        stb midi_channel
+        ldx #general_midi_percussion_note_number
+        abx
+        ldb 0,x
+        stb midi_note
+
         ; First pass we try to find a free OPL channel set up for the right
         ; instrument number already.
         lda #NUM_OPL_CHANNELS-1
         ldx #opl_to_midi_channel_note + 2*(NUM_OPL_CHANNELS-1)
 .free_channel_instrument_loop:
         ldb 0,x                 ; Load instrument number
-        cmp b,midi_note
+        cmp b,midi_channel
         beq .found_channel
 .no_match:
         tst a
@@ -327,7 +333,7 @@ play_rhythm:
 .load_instrument:
         pshx
         sta opl_channel
-        lda midi_note
+        lda midi_channel
         sta 0,x                 ; Save the new MIDI 'channel' for the OPL one
         ora #$80                ; Percussion instruments are 128 above regular ones
         jsr set_instrument
@@ -338,7 +344,7 @@ play_rhythm:
         ; to the opl_to_midi_channel_note map location for the OPL channel in A.
 .found_empty_channel:
         inc a                   ; OPL channels are 1-based for sound_play_note
-        ldb #MIDI_RHYTHM_NOTE
+        ldb midi_note
         stb 1,x
         jmp sound_play_note     ; rts there
 
@@ -411,6 +417,7 @@ stop_rhythm:
 	; A counted up to the OPL channel, B contains the MIDI note, X points to
 	; the opl_to_midi_channel_note map location for the OPL channel in B.
 .stop_note:
+        ldb 1,x                 ; Load the actual MIDI note being played
         clr 1,x
         inc a                    ; sound_* use 1-based OPL channel numbers
         jmp sound_stop_midi_note ; rts there
