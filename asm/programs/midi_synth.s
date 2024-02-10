@@ -39,6 +39,7 @@ NUM_MIDI_CHANNELS = 16
                                 ; 0-based as in the wire format.
         zp_var midi_note,1      ; MIDI note for the current operation
         zp_var opl_channel,1    ; The OPL channel for the current operation
+        zp_var midi_volume,1    ; Global volume setting
 
         ; Map from MIDI channel to GM instrument number. Percussion bank
         ; instruments are distinguished by having their top bit set.
@@ -543,6 +544,12 @@ control_change:
         cmp b,#MIDI_CONTROL_ALL_SOUND_OFF
         bne +
         jmp stop_all_channel_notes ; jsr there
++
+        cmp b,#MIDI_CONTROL_CHANNEL_VOLUME
+        bne +
+        ; Technically this should be per channel - global only for now
+        sta midi_volume
+        rts
 +
         ; Unhandled CC message, print it out
         lda #"C"
