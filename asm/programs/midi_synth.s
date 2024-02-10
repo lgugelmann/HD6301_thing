@@ -21,6 +21,13 @@ MIDI_PROGRAM_CHANGE        = $C0
 MIDI_CHANNEL_AFTERTOUCH    = $D0
 MIDI_PITCH_BEND            = $E0
 
+; MIDI Control Change numbers
+MIDI_CONTROL_CHANNEL_VOLUME     = $07
+MIDI_CONTROL_SOUND_CONTROLLER_1 = $46
+; Channel mode messages
+MIDI_CONTROL_ALL_SOUND_OFF      = $78
+MIDI_CONTROL_ALL_NOTES_OFF      = $7B
+
 ; MIDI channel 10 is always rhythm instruments. Set to 9 as we're using 0-based
 ; channel numbers throughout.
 MIDI_RHYTHM_CHANNEL = 9
@@ -156,13 +163,9 @@ midi_synth:
         cmp a,#MIDI_CONTROL_CHANGE
         bne +
         jsr midi_uart_read_byte_blocking
-        cmp a,#70               ; Sound Controller 1, set it up as PC
-        bne .not_70
+        tab
         jsr midi_uart_read_byte_blocking
-        jsr program_change
-        bra midi_synth
-.not_70:
-        jsr midi_uart_read_byte_blocking
+        jsr control_change
         bra midi_synth
 +
         cmp a,#MIDI_PROGRAM_CHANGE
@@ -426,6 +429,49 @@ stop_rhythm:
 .end:
         rts
 
+; Stop playng all notes on the channel in 'midi_channel'
+stop_all_channel_notes:
+        lda midi_channel
+        cmp a,#MIDI_RHYTHM_CHANNEL
+        beq .stop_rhythm
+
+        lda #1                  ; Counting 1-based OPL-channel numbers here
+        ldx #opl_to_midi_channel_note
+.loop:
+        ldb 0,x
+        cmp b,midi_channel
+        bne .continue
+        ldb 1,x
+        beq .continue           ; No note playing on this OPL channel
+        clr 1,x                 ; Clear note to mark it as stopped
+        jsr sound_stop_note
+.continue:
+        inx
+        inx
+        inc a
+        cmp a,#NUM_OPL_CHANNELS
+        ble .loop
+        rts
+
+.stop_rhythm:
+        lda #1                  ; Counting 1-based OPL-channel numbers here
+        ldx #opl_to_midi_channel_note
+.rhythm_loop:
+        ldb 0,x
+        cmp b,#NUM_MIDI_CHANNELS
+        ble .rhythm_continue
+        ldb 1,x
+        beq .rhythm_continue    ; No note playing on this OPL channel
+        clr 1,x                 ; Clear note to mark it as stopped
+        jsr sound_stop_note
+.rhythm_continue:
+        inx
+        inx
+        inc a
+        cmp a,#NUM_OPL_CHANNELS
+        ble .rhythm_loop
+        rts
+
 
 ; Sets the OPL channel in 'opl_channel' to the instrument number in A. Clobbers
 ; all registers.
@@ -480,6 +526,32 @@ program_change:
 
 .error_channel_overflow:
 .end:
+        rts
+
+; Handles MIDI control change messages. The control number is passed in B, the
+; data byte in A.
+control_change:
+        ; Sound Controller 1, set it up as PC for easy instrument switching
+        cmp b,#MIDI_CONTROL_SOUND_CONTROLLER_1
+        bne +
+        jmp program_change      ; jsr there
++
+        cmp b,#MIDI_CONTROL_ALL_NOTES_OFF
+        bne +
+        jmp stop_all_channel_notes ; jsr there
++
+        cmp b,#MIDI_CONTROL_ALL_SOUND_OFF
+        bne +
+        jmp stop_all_channel_notes ; jsr there
++
+        ; Unhandled CC message, print it out
+        lda #"C"
+        jsr putchar
+        jsr putchar
+        tba
+        jsr putchar_hex
+        lda #" "
+        jsr putchar
         rts
 
 print_instrument:
