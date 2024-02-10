@@ -58,6 +58,13 @@ midi_synth_start:
         ldx #midi_synth_string
         jsr putstring
 
+        clr a
+        sta midi_channel
+        sta midi_note
+        sta opl_channel
+        lda #127
+        sta midi_volume
+
         ; Load a piano on all channels
         ldx #general_midi_instruments
         lda #NUM_OPL_CHANNELS
