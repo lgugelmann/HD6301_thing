@@ -29,7 +29,8 @@ if __name__ == '__main__':
             b = tmb_file.read(13)
             instr = [b[0], b[2], b[4], b[6], b[8],
                      b[1], b[3], b[5], b[7], b[9], b[10] + 0x30]
-            print(f"        .byt {','.join([f'${n:02x}' for n in instr])}")
+            print(f"        .byt {','.join([f'${n:02x}' for n in instr])}" \
+                  f" ; {n % 128}")
             if n > 127:
                 percussion_notes += [b[11]]
         print(PERCUSSION_HEADER)
