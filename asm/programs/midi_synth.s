@@ -561,35 +561,6 @@ control_change:
         jsr putchar
         rts
 
-print_instrument:
-        pshx
-        psh a
-        psh b
-
-        pshx
-        ldx #.instr_header
-        jsr putstring
-        pulx
-
-        ldb #11
-.loop:
-        lda 0,x
-        jsr putchar_hex
-        lda #' '
-        jsr putchar
-        inx
-        dec b
-        bne .loop
-
-        pul b
-        pul a
-        pulx
-        rts
-.instr_header:
-        byt "\nAM KS AR SL WS AM KS AR SL WS FB\n\0"
-
-
-
 midi_synth_string:
         byt "MIDI Synth:\n\0"
 

@@ -10,6 +10,7 @@ __sound_inc = 1
         PUBLIC sound_irq
 
         PUBLIC_SHARED sound_load_instrument
+        PUBLIC_SHARED sound_print_instrument
         PUBLIC_SHARED sound_play_note
         PUBLIC_SHARED sound_set_attenuation
         PUBLIC_SHARED sound_stop_note
@@ -273,6 +274,34 @@ sound_load_instrument:
 
         rts
 
+; Prints the settings for the instrument pointed to by X. Preserves all
+; registers.
+sound_print_instrument:
+        pshx
+        psh a
+        psh b
+
+        pshx
+        ldx #.instr_header
+        jsr putstring
+        pulx
+
+        ldb #11
+.loop:
+        lda 0,x
+        jsr putchar_hex
+        lda #' '
+        jsr putchar
+        inx
+        dec b
+        bne .loop
+
+        pul b
+        pul a
+        pulx
+        rts
+.instr_header:
+        byt "\nAM KS AR SL WS AM KS AR SL WS FB\n\0"
 
 ; Sets the channel in A to the MIDI note number in B and plays it. Does not
 ; require the note to be stopped before. The note needs to be between 21 and 104
