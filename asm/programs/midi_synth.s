@@ -38,6 +38,8 @@ NUM_MIDI_CHANNELS = 16
         zp_var midi_channel,1   ; MIDI channel for the current operation,
                                 ; 0-based as in the wire format.
         zp_var midi_note,1      ; MIDI note for the current operation
+        zp_var midi_velocity,1  ; MIDI note velocity for the current note
+        zp_var midi_ksl_tl,1    ; KSL/TL byte for OP2 of the current instrument
         zp_var opl_channel,1    ; The OPL channel for the current operation
         zp_var midi_volume,1    ; Global volume setting
 
@@ -45,13 +47,13 @@ NUM_MIDI_CHANNELS = 16
         ; instruments are distinguished by having their top bit set.
         zp_var midi_channel_to_instrument,NUM_MIDI_CHANNELS
 
-        ; Maps each OPL channel to the MIDI channel (first byte) and note
-        ; (second byte) it's set up for. An OPL channel is set up for a given
-        ; MIDI channel if it has the right instrument loaded. A channel not
-        ; playing anything is represented with 0 in the note byte. MIDI channel
-        ; 10 is handled by using the note number as a fake 'MIDI channel'. So
-        ; note 36 on Channel 10 is represented here as 36,NN.
-        zp_var opl_to_midi_channel_note,2*NUM_OPL_CHANNELS
+        ; Maps each OPL channel to the MIDI channel (first byte), note, and OP2
+        ; KSL/TL byte it's set up for. An OPL channel is set up for a given MIDI
+        ; channel if it has the right instrument loaded. A channel not playing
+        ; anything is represented with 0 in the note byte. MIDI channel 10 is
+        ; handled by using the note number as a fake 'MIDI channel'. So note 36
+        ; on Channel 10 is represented here as 36,NN.
+        zp_var opl_to_midi_channel_note,3*NUM_OPL_CHANNELS
 
 midi_synth_start:
         clr GRAPHICS_CLEAR      ; Clear screen
@@ -61,9 +63,11 @@ midi_synth_start:
         clr a
         sta midi_channel
         sta midi_note
+        sta midi_ksl_tl
         sta opl_channel
         lda #127
         sta midi_volume
+        sta midi_velocity
 
         ; Load a piano on all channels
         ldx #general_midi_instruments
@@ -74,24 +78,26 @@ midi_synth_start:
         bne .instrument_setup_loop
 
         ldx #midi_channel_to_instrument
-        clr a
+        lda #NUM_MIDI_CHANNELS
 .midi_channel_setup_loop:
         clr 0,x
         inx
-        inc a
-        cmp a,#NUM_MIDI_CHANNELS
-        blt .midi_channel_setup_loop
+        dec a
+        bne .midi_channel_setup_loop
 
+        ldx #general_midi_instruments
+        ldb 6,x                 ; KSL/TL byte for OP2
         ldx #opl_to_midi_channel_note
-        clr a
+        lda #NUM_OPL_CHANNELS
 .opl_channel_setup_loop:
         clr 0,x
+        clr 1,x
+        stb 2,x
         inx
-        clr 0,x
         inx
-        inc a
-        cmp a,#NUM_OPL_CHANNELS
-        blt .opl_channel_setup_loop
+        inx
+        dec a
+        bne .opl_channel_setup_loop
 
         jsr midi_synth
         rts                     ; Back to the monitor
@@ -113,6 +119,9 @@ debug_print:
         ldx #opl_to_midi_channel_note
         ldb #NUM_OPL_CHANNELS
 .opl_loop:
+        lda 0,x
+        jsr putchar_hex
+        inx
         lda 0,x
         jsr putchar_hex
         inx
@@ -147,8 +156,9 @@ midi_synth:
         ; Read the MIDI note number
         jsr midi_uart_read_byte_blocking
         sta midi_note
-        ; Read the third byte - amplitude
+        ; Read the third byte - velocity
         jsr midi_uart_read_byte_blocking
+        sta midi_velocity
         jsr play_note
         bra midi_synth
 +
@@ -239,6 +249,7 @@ play_note:
         beq .no_channel_match
         inx
         inx
+        inx
         bra .free_channel_instrument_loop
 .found_channel:
         ldb 1,x                  ; load note byte
@@ -257,6 +268,7 @@ play_note:
         beq .no_free_channel_error
         inx
         inx
+        inx
         bra .free_channel_loop
 
         ; A contains the OPL channel number (0-based) to set up, X points to the
@@ -269,14 +281,26 @@ play_note:
         ldx #midi_channel_to_instrument
         abx
         lda 0,x                 ; Load the instrument number into A
-        jsr set_instrument
-
-        lda opl_channel
+        jsr set_instrument      ; After the call X points to the instrument
+        lda 6,x                 ; OP2 KSL/TL byte
         pulx
+        sta 2,x                 ; Store the KSL/TL byte
+        lda opl_channel
+
         ; Here A contains the OPL channel number (0-based) to play on, X points
         ; to the opl_to_midi_channel_note map location for the OPL channel in A.
 .found_empty_channel:
+        sta opl_channel
+        lda 2,x
+        sta midi_ksl_tl
+        jsr compute_volume
+        tab
+        lda opl_channel
         inc a                   ; OPL channels are 1-based for sound_play_note
+        jsr sound_set_attenuation
+
+        lda opl_channel
+        inc a
         ldb midi_note
         stb 1,x
         jmp sound_play_note     ; rts there
@@ -308,7 +332,7 @@ play_rhythm:
         ; First pass we try to find a free OPL channel set up for the right
         ; instrument number already.
         lda #NUM_OPL_CHANNELS-1
-        ldx #opl_to_midi_channel_note + 2*(NUM_OPL_CHANNELS-1)
+        ldx #opl_to_midi_channel_note + 3*(NUM_OPL_CHANNELS-1)
 .free_channel_instrument_loop:
         ldb 0,x                 ; Load instrument number
         cmp b,midi_channel
@@ -317,6 +341,7 @@ play_rhythm:
         tst a
         beq .no_channel_match
         dec a
+        dex
         dex
         dex
         bra .free_channel_instrument_loop
@@ -328,13 +353,14 @@ play_rhythm:
         ; Second pass: find any free OPL channel and set it up correctly
 .no_channel_match:
         lda #NUM_OPL_CHANNELS-1
-        ldx #opl_to_midi_channel_note + 2*(NUM_OPL_CHANNELS-1)
+        ldx #opl_to_midi_channel_note + 3*(NUM_OPL_CHANNELS-1)
 .free_channel_loop:
         ldb 1,x                 ; Load note number
         beq .load_instrument
         tst a
         beq .no_free_channel_error
         dec a
+        dex
         dex
         dex
         bra .free_channel_loop
@@ -346,14 +372,26 @@ play_rhythm:
         sta opl_channel
         lda midi_channel
         sta 0,x                 ; Save the new MIDI 'channel' for the OPL one
-        ora #$80                ; Percussion instruments are 128 above regular ones
-        jsr set_instrument
-
+        ora #$80                ; Percussion instruments are 128 above regular
+                                ; ones
+        jsr set_instrument      ; After this X points to the instrument
+        ldb 6,x                 ; OP2 KSL/TL byte
         lda opl_channel
         pulx
+        stb 2,x
         ; Here A contains the OPL channel number (0-based) to play on, X points
         ; to the opl_to_midi_channel_note map location for the OPL channel in A.
 .found_empty_channel:
+        sta opl_channel
+        lda 2,x
+        sta midi_ksl_tl
+        jsr compute_volume
+        tab
+        lda opl_channel
+        inc a                   ; OPL channels are 1-based for sound_play_note
+        jsr sound_set_attenuation
+
+        lda opl_channel
         inc a                   ; OPL channels are 1-based for sound_play_note
         ldb midi_note
         stb 1,x
@@ -361,6 +399,27 @@ play_rhythm:
 
 .no_free_channel_error:
 .end:
+        rts
+
+; Compute and set the correct volume for the 'midi_note' to be played at
+; velocity 'midi_velocity' on an FM-modulated instrument with OP2 KSL/TL
+; settings at 'midi_ksl_tl'. Volume is returned in A, clobbers B.
+compute_volume:
+        ; Algorithm:
+        ; TL = 63 - ((63-patch TL)*2*(OPL3-scaled MIDI volume) / 128)
+        ; First approx: OPL3-scaled MIDI volume = MIDI / 2, so:
+        ; 63 - ((instr volume)*(midi volume) >> 7)
+        lda midi_ksl_tl
+        and a,#$3f              ; Drop the KSL bits
+        eor a,#$3f              ; 63-TL to get volume instead of attenuation.
+        ldb midi_velocity
+        mul                     ; Result is in D=A|B
+        asld                    ; (A|B >> 7) is equivalent to D << 1 and taking
+                                ; the top byte.
+        eor a,#$3f              ; 63-A
+        ldb midi_ksl_tl
+        and b,#$c0              ; Keep only the KSL bits
+        aba                     ; Put computed TL and KSL back together
         rts
 
 ; Stop playing the MIDI note number in B on MIDI channel in 'midi_channel'.
@@ -389,6 +448,7 @@ stop_note:
         beq .error_no_channel_match
         inx
         inx
+        inx
         bra .loop
 .channel_match:
         ldb 1,x
@@ -412,7 +472,7 @@ stop_rhythm:
         stb midi_channel
 
         lda #NUM_OPL_CHANNELS-1
-        ldx #opl_to_midi_channel_note + 2*(NUM_OPL_CHANNELS-1)
+        ldx #opl_to_midi_channel_note + 3*(NUM_OPL_CHANNELS-1)
 .loop:
         ldb 0,x
         cmp b,midi_channel
@@ -421,6 +481,7 @@ stop_rhythm:
         tst a
         beq .error_no_channel_match
         dec a
+        dex
         dex
         dex
         bra .loop
@@ -456,6 +517,7 @@ stop_all_channel_notes:
 .continue:
         inx
         inx
+        inx
         inc a
         cmp a,#NUM_OPL_CHANNELS
         ble .loop
@@ -475,6 +537,7 @@ stop_all_channel_notes:
 .rhythm_continue:
         inx
         inx
+        inx
         inc a
         cmp a,#NUM_OPL_CHANNELS
         ble .rhythm_loop
@@ -482,7 +545,7 @@ stop_all_channel_notes:
 
 
 ; Sets the OPL channel in 'opl_channel' to the instrument number in A. Clobbers
-; all registers.
+; A, B. X points to the instrument definition after the call.
 set_instrument:
         ldb #11                 ; Each instrument is 11 bytes
         mul                     ; instrument number * 11
@@ -514,6 +577,7 @@ program_change:
         inc a
         cmp a,#NUM_OPL_CHANNELS
         beq .end
+        inx
         inx
         inx
         bra .loop
