@@ -407,15 +407,27 @@ play_rhythm:
 compute_volume:
         ; Algorithm:
         ; TL = 63 - ((63-patch TL)*2*(OPL3-scaled MIDI volume) / 128)
-        ; First approx: OPL3-scaled MIDI volume = MIDI / 2, so:
-        ; 63 - ((instr volume)*(midi volume) >> 7)
+        ; 63 - ((instr volume)*(midi volume) >> 6)
         lda midi_ksl_tl
         and a,#$3f              ; Drop the KSL bits
         eor a,#$3f              ; 63-TL to get volume instead of attenuation.
+        ; MIDI to OPL3 volume: M 0..31: M, 32..63: 16+M/2, 64..127: 32+M/4
+        ; 32+M/4 can be decomposed as: 16 + (32 + M>>1)>>1
         ldb midi_velocity
+        cmp b,#32
+        blt .low
+        cmp b,#64
+        blt .mid
+        lsr b
+        add b,#32
+.mid:
+        lsr b
+        add b,#16
+.low:
         mul                     ; Result is in D=A|B
-        asld                    ; (A|B >> 7) is equivalent to D << 1 and taking
+        asld                    ; (A|B >> 6) is equivalent to D << 2 and taking
                                 ; the top byte.
+        asld
         eor a,#$3f              ; 63-A
         ldb midi_ksl_tl
         and b,#$c0              ; Keep only the KSL bits
