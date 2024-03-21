@@ -13,8 +13,20 @@ void Cpu6301::reset() {
 }
 
 uint8_t Cpu6301::tick() {
-  uint8_t opcode = fetch();
-  return execute(opcode);
+  if (current_opcode_ == 0) {
+    uint8_t opcode = fetch();
+    if (!instructions_.contains(opcode)) {
+      fprintf(stderr, "Invlid instruction: %02x at %04x\n", opcode, pc);
+      return -1;
+    }
+    current_opcode_ = opcode;
+    opcode_cycles_ = instructions_[opcode].cycles;
+  }
+  if (opcode_cycles_ > 0) {
+    opcode_cycles_ -= 1;
+    return 0;
+  }
+  return execute(current_opcode_);
 }
 
 void Cpu6301::print_state() {
@@ -312,30 +324,54 @@ void Cpu6301::jsr(uint16_t address) {
 }
 
 uint8_t Cpu6301::execute(uint8_t opcode) {
-  enum AddressingMode {
-    kIMM,  // 1-byte immediate
-    kIM2,  // 2-byte immediate data
-    kACA,
-    kACB,
-    kACD,
-    kDIR,
-    kEXT,
-    kIDX,
-    kIMP,
-    kREL,
-  };
+  if (!instructions_.contains(opcode)) {
+    fprintf(stderr, "Invlid instruction: %02x at %04x\n", opcode, pc);
+    return -1;
+  }
+  auto instruction = instructions_[opcode];
+  uint16_t data = 0;
+  switch (instruction.mode) {
+    case kIMM:
+      data = fetch();
+      break;
+    case kIM2:
+      data = (uint16_t)fetch() << 8 | fetch();
+      break;
+    case kACA:
+      data = a;
+      break;
+    case kACB:
+      data = b;
+      break;
+    case kACD:
+      data = (uint16_t)a << 8 | b;
+      break;
+    case kDIR:
+      data = fetch();
+      break;
+    case kEXT:
+      data = fetch16();
+      break;
+    case kIDX:
+      data = x + fetch();
+      break;
+    case kIMP:
+      break;
+    case kREL:
+      data = fetch();
+      break;
+    default:
+      fprintf(stderr, "Unhandled addressing mode");
+      return -1;
+  }
+  instruction.exec(data);
+  return 0;
+}
 
-  struct Instruction {
-    std::string name;
-    uint8_t bytes;
-    uint8_t cycles;
-    AddressingMode mode;
-    std::function<void(uint16_t)> exec;
-  };
-
+Cpu6301::Cpu6301(AddressSpace* memory) : memory_(memory) {
 #define COMMA ,
 #define OP(expr) [this](uint16_t d) { expr; }
-  static std::map<uint8_t, Instruction> instructions = {
+  instructions_ = {
       {0x01, {"nop", 1, 1, kIMP, OP()}},
       // {0x04, {"lsrd", 1, 1, kACD, [this](uint16_t d) {}}},
       // {0x05, {"asld", 1, 1, kACD, [this](uint16_t d) {}}},
@@ -612,50 +648,6 @@ uint8_t Cpu6301::execute(uint8_t opcode) {
   };
 #undef OP
 #undef COMMA
-
-  if (!instructions.contains(opcode)) {
-    printf("Invlid instruction: %02x at %04x\n", opcode, pc);
-    return -1;
-  }
-  auto instruction = instructions[opcode];
-  uint16_t data = 0;
-  switch (instruction.mode) {
-    case kIMM:
-      data = fetch();
-      break;
-    case kIM2:
-      data = (uint16_t)fetch() << 8 | fetch();
-      break;
-    case kACA:
-      data = a;
-      break;
-    case kACB:
-      data = b;
-      break;
-    case kACD:
-      data = (uint16_t)a << 8 | b;
-      break;
-    case kDIR:
-      data = fetch();
-      break;
-    case kEXT:
-      data = fetch16();
-      break;
-    case kIDX:
-      data = x + fetch();
-      break;
-    case kIMP:
-      break;
-    case kREL:
-      data = fetch();
-      break;
-    default:
-      printf("Unhandled addressing mode");
-      return -1;
-  }
-  printf("%04x: %s %04x\n", pc, instruction.name.c_str(), data);
-  instruction.exec(data);
-  return 0;
 }
 
 }  // namespace eight_bit

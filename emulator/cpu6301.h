@@ -3,6 +3,8 @@
 
 #include <cstdint>
 #include <functional>
+#include <map>
+#include <string>
 
 #include "address_space.h"
 
@@ -10,7 +12,7 @@ namespace eight_bit {
 
 class Cpu6301 {
  public:
-  Cpu6301(AddressSpace* memory) : memory_(memory) {}
+  Cpu6301(AddressSpace* memory);
 
   void reset();
 
@@ -41,6 +43,27 @@ class Cpu6301 {
     bool Z = 0;
     bool V = 0;
     bool C = 0;
+  };
+
+  enum AddressingMode {
+    kIMM,  // 1-byte immediate
+    kIM2,  // 2-byte immediate data
+    kACA,
+    kACB,
+    kACD,
+    kDIR,
+    kEXT,
+    kIDX,
+    kIMP,
+    kREL,
+  };
+
+  struct Instruction {
+    std::string name;
+    uint8_t bytes;
+    uint8_t cycles;
+    AddressingMode mode;
+    std::function<void(uint16_t)> exec;
   };
 
   //
@@ -114,7 +137,10 @@ class Cpu6301 {
   uint16_t pc = 0xfffe;
   StatusRegister sr;
 
+  uint8_t current_opcode_ = 0;
+  uint8_t opcode_cycles_ = 0;
   AddressSpace* memory_ = nullptr;
+  std::map<uint8_t, Instruction> instructions_;
 };
 
 }  // namespace eight_bit
