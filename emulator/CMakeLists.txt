@@ -5,9 +5,18 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 find_package(SDL2 REQUIRED)
+find_package(SDL2_ttf REQUIRED)
 
-add_executable(emulator emulator.cc cpu6301.cc address_space.cc)
+add_executable(${PROJECT_NAME}
+    address_space.cc
+    cpu6301.cc
+    emulator.cc
+    graphics.cc
+)
 
-target_link_libraries(emulator ${SDL2_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}
+    SDL2::SDL2
+    SDL2_ttf::SDL2_ttf
+)
 
-target_include_directories(emulator PUBLIC "${PROJECT_BINARY_DIR}")
+target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_BINARY_DIR}")
