@@ -2,6 +2,7 @@
 #define EIGHT_BIT_ADDRESS_SPACE_H
 
 #include <cstdint>
+#include <functional>
 #include <span>
 #include <vector>
 
@@ -12,6 +13,19 @@ namespace eight_bit {
 class AddressSpace {
  public:
   AddressSpace() : data_(0x10000, 0) {}
+
+  typedef std::function<uint8_t(uint16_t)> read_callback;
+  typedef std::function<void(uint16_t, uint8_t)> write_callback;
+
+  // Registers a read callback for a given address range. Returns true if
+  // successful, false if any part of the range is already registered for reads.
+  // Start and end are inclusive.
+  bool register_read(uint16_t start, uint16_t end, read_callback callback);
+
+  // Registers a write callback for a given address range. Returns true if
+  // successful, false if any part of the range is already registered for reads.
+  // Start and end are inclusive.
+  bool register_write(uint16_t start, uint16_t end, write_callback callback);
 
   // Returns the byte at address `address`.
   uint8_t get(uint16_t address);
@@ -32,6 +46,19 @@ class AddressSpace {
   void hexdump();
 
  private:
+  struct ReadAddressRange {
+    uint16_t start;
+    uint16_t end;
+    read_callback callback;
+  };
+  struct WriteAddressRange {
+    uint16_t start;
+    uint16_t end;
+    write_callback callback;
+  };
+
+  std::vector<ReadAddressRange> read_ranges_;
+  std::vector<WriteAddressRange> write_ranges_;
   std::vector<uint8_t> data_;
 };
 

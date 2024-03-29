@@ -7,9 +7,46 @@
 
 namespace eight_bit {
 
-uint8_t AddressSpace::get(uint16_t address) { return data_[address]; }
+bool AddressSpace::register_read(uint16_t start, uint16_t end,
+                                 read_callback callback) {
+  ReadAddressRange range = {start, end, callback};
+  for (const auto& r : read_ranges_) {
+    if (r.start <= range.end && r.end >= range.start) {
+      return false;
+    }
+  }
+  read_ranges_.push_back(range);
+  return true;
+}
+
+bool AddressSpace::register_write(uint16_t start, uint16_t end,
+                                  write_callback callback) {
+  WriteAddressRange range = {start, end, callback};
+  for (const auto& r : write_ranges_) {
+    if (r.start <= range.end && r.end >= range.start) {
+      return false;
+    }
+  }
+  write_ranges_.push_back(range);
+  return true;
+}
+
+uint8_t AddressSpace::get(uint16_t address) {
+  for (const auto& r : read_ranges_) {
+    if (r.start <= address && r.end >= address) {
+      return r.callback(address);
+    }
+  }
+  return data_[address];
+}
 
 uint16_t AddressSpace::get16(uint16_t address) {
+  for (const auto& r : read_ranges_) {
+    if (r.start <= address && r.end >= address + 1) {
+      return (uint16_t)r.callback(address) << 8 |
+             (uint16_t)r.callback(address + 1);
+    }
+  }
   if (address <= 0xfffe) {
     return (uint16_t)data_[address] << 8 | (uint16_t)data_[address + 1];
   }
@@ -17,10 +54,26 @@ uint16_t AddressSpace::get16(uint16_t address) {
 }
 
 void AddressSpace::set(uint16_t address, uint8_t data) {
+  for (const auto& r : write_ranges_) {
+    if (r.start <= address && address <= r.end) {
+      r.callback(address, data);
+      return;
+    }
+  }
   data_[address] = data;
 }
 
 void AddressSpace::set16(uint16_t address, uint16_t data) {
+  for (const auto& r : write_ranges_) {
+    if (r.start <= address && address + 1 <= r.end) {
+      r.callback(address, data >> 8);
+      r.callback(address + 1, data);
+      return;
+    }
+  }
+  if (address > 0xfffe) {
+    return;
+  }
   data_[address] = data >> 8;
   data_[address + 1] = data;
 }
