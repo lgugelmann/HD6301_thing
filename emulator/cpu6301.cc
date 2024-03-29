@@ -26,7 +26,9 @@ uint8_t Cpu6301::tick() {
     opcode_cycles_ -= 1;
     return 0;
   }
-  return execute(current_opcode_);
+  uint8_t opcode = current_opcode_;
+  current_opcode_ = 0;
+  return execute(opcode);
 }
 
 void Cpu6301::print_state() {
