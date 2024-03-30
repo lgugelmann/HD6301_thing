@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <SDL_ttf.h>
+#include <absl/cleanup/cleanup.h>
 
 #include <cstdint>
 #include <fstream>
@@ -33,11 +34,14 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
+  absl::Cleanup sdl_cleanup([] { SDL_Quit(); });
+
   if (TTF_Init() < 0) {
     fprintf(stderr, "Failed to initialize TTF: %s\n", TTF_GetError());
-    SDL_Quit();
     return -1;
   }
+
+  absl::Cleanup ttf_cleanup([] { TTF_Quit(); });
 
   // Avoid the SDL window turning the compositor off
   if (!SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0")) {
@@ -58,8 +62,7 @@ int main(int argc, char* argv[]) {
 
   eight_bit::Graphics graphics;
   if (graphics.initialize(0x7fc0, &address_space) != 0) {
-    TTF_Quit();
-    SDL_Quit();
+    fprintf(stderr, "Failed to initialize graphics.\n");
     return -1;
   }
 
@@ -70,8 +73,6 @@ int main(int argc, char* argv[]) {
   SDL_TimerID timerID = SDL_AddTimer(1, timer_callback, &cpu);
   if (timerID == 0) {
     fprintf(stderr, "Failed to create timer: %s\n", SDL_GetError());
-    TTF_Quit();
-    SDL_Quit();
     return -1;
   }
 
@@ -92,9 +93,6 @@ int main(int argc, char* argv[]) {
     // Roughly 30 fps. TODO: make this a timer callback.
     SDL_Delay(16);
   }
-
-  TTF_Quit();
-  SDL_Quit();
 
   return 0;
 }
