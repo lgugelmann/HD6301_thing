@@ -1,3 +1,6 @@
+#ifndef EIGHT_BIT_GRAPHICS_H_
+#define EIGHT_BIT_GRAPHICS_H_
+
 #include <SDL2/SDL.h>
 
 #include <vector>
@@ -45,3 +48,5 @@ class Graphics {
 };
 
 }  // namespace eight_bit
+
+#endif  // EIGHT_BIT_GRAPHICS_H_
