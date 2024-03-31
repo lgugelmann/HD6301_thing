@@ -165,7 +165,7 @@ PS2Keyboard::~PS2Keyboard() {}
 // Translates the SDL keyboard event into a sequence of PS/2 data bytes to be
 // put on the data port.
 void PS2Keyboard::handle_keyboard_event(SDL_KeyboardEvent event) {
-  printf("PS2Keyboard::handle_keyboard_event\n");
+  VLOG(1) << "Handling keyboard event on scancode: " << event.keysym.scancode;
   const std::vector<uint8_t>* data = nullptr;
   if (event.type == SDL_KEYDOWN) {
     auto it = sdl_to_ps2_keymap.find(event.keysym.scancode);
