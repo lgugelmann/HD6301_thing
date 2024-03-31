@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
 
   std::ifstream monitor_file("../../asm/monitor.bin", std::ios::binary);
   if (!monitor_file.is_open()) {
-    fprintf(stderr, "Failed to open monitor file.\n");
+    LOG(ERROR) << "Failed to open file: " << absl::GetFlag(FLAGS_rom_file);
     return -1;
   }
   std::vector<uint8_t> monitor(std::istreambuf_iterator<char>(monitor_file),

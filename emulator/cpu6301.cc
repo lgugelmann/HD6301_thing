@@ -1,5 +1,8 @@
 #include "cpu6301.h"
 
+#include <absl/log/log.h>
+#include <absl/strings/str_cat.h>
+
 #include <cstdio>
 #include <functional>
 #include <map>
@@ -9,14 +12,15 @@ namespace eight_bit {
 
 void Cpu6301::reset() {
   pc = memory_->get16(0xfffe);
-  printf("Reset to start at %04x\n", pc);
+  LOG(INFO) << "Reset to start at " << absl::Hex(pc, absl::kZeroPad4);
 }
 
 uint8_t Cpu6301::tick() {
   if (current_opcode_ == 0) {
     uint8_t opcode = fetch();
     if (!instructions_.contains(opcode)) {
-      fprintf(stderr, "Invlid instruction: %02x at %04x\n", opcode, pc);
+      LOG(ERROR) << "Invalid instruction: " << absl::Hex(opcode) << " at "
+                 << absl::Hex(pc, absl::kZeroPad4);
       return -1;
     }
     current_opcode_ = opcode;
@@ -327,7 +331,8 @@ void Cpu6301::jsr(uint16_t address) {
 
 uint8_t Cpu6301::execute(uint8_t opcode) {
   if (!instructions_.contains(opcode)) {
-    fprintf(stderr, "Invlid instruction: %02x at %04x\n", opcode, pc);
+    LOG(ERROR) << "Invalid instruction: " << absl::Hex(opcode) << " at "
+               << absl::Hex(pc, absl::kZeroPad4);
     return -1;
   }
   auto instruction = instructions_[opcode];
@@ -363,9 +368,11 @@ uint8_t Cpu6301::execute(uint8_t opcode) {
       data = fetch();
       break;
     default:
-      fprintf(stderr, "Unhandled addressing mode");
+      LOG(ERROR) << "Unhandled addressing mode";
       return -1;
   }
+  VLOG(3) << absl::Hex(pc, absl::kZeroPad4) << ": " << instruction.name
+          << " data " << absl::Hex(data, absl::kZeroPad4);
   instruction.exec(data);
   return 0;
 }

@@ -2,6 +2,7 @@
 
 #include <SDL2/SDL.h>
 #include <SDL_ttf.h>
+#include <absl/log/log.h>
 
 namespace eight_bit {
 
@@ -22,14 +23,14 @@ int Graphics::initialize(uint16_t base_address, AddressSpace* address_space) {
                              SDL_WINDOWPOS_UNDEFINED, frame_width_,
                              frame_height_, SDL_WINDOW_SHOWN);
   if (!window_) {
-    fprintf(stderr, "Failed to create window: %s\n", SDL_GetError());
+    LOG(ERROR) << "Failed to create window: " << SDL_GetError();
     return -1;
   }
 
   // Create a renderer
   renderer_ = SDL_CreateRenderer(window_, -1, SDL_RENDERER_ACCELERATED);
   if (!renderer_) {
-    fprintf(stderr, "Failed to create renderer: %s\n", SDL_GetError());
+    LOG(ERROR) << "Failed to create renderer: " << SDL_GetError();
     return -1;
   }
 
@@ -55,7 +56,7 @@ void Graphics::render() {
   int font_size = 15;
   TTF_Font* font = TTF_OpenFont("../font/BigBlue_TerminalPlus.TTF", font_size);
   if (!font) {
-    fprintf(stderr, "Failed to load font: %s\n", TTF_GetError());
+    LOG(ERROR) << "Failed to load font: " << TTF_GetError();
     return;
   }
 
@@ -79,14 +80,14 @@ void Graphics::render() {
         SDL_Surface* surface =
             TTF_RenderGlyph_Solid(font, character, font_color);
         if (!surface) {
-          fprintf(stderr, "Failed to render character: %s\n", TTF_GetError());
+          LOG(ERROR) << "Failed to render character: " << TTF_GetError();
           continue;
         }
 
         // Create a texture from the surface
         SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer_, surface);
         if (!texture) {
-          fprintf(stderr, "Failed to create texture: %s\n", SDL_GetError());
+          LOG(ERROR) << "Failed to create texture: " << SDL_GetError();
           SDL_FreeSurface(surface);
           continue;
         }
@@ -186,7 +187,7 @@ void Graphics::write(uint16_t address, uint8_t data) {
       state_.cursor_hidden = data;
       break;
     default:
-      printf("Unknown graphics command: %d\n", command);
+      LOG(ERROR) << "Unknown graphics command: " << command;
   }
 }
 

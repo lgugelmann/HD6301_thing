@@ -1,5 +1,8 @@
 #include "address_space.h"
 
+#include <absl/log/log.h>
+#include <absl/strings/str_format.h>
+
 #include <cstdint>
 #include <cstdio>
 #include <span>
@@ -12,6 +15,8 @@ bool AddressSpace::register_read(uint16_t start, uint16_t end,
   ReadAddressRange range = {start, end, callback};
   for (const auto& r : read_ranges_) {
     if (r.start <= range.end && r.end >= range.start) {
+      LOG(ERROR) << absl::StreamFormat(
+          "Address range %04x-%04x already registered for reads", start, end);
       return false;
     }
   }
@@ -24,6 +29,8 @@ bool AddressSpace::register_write(uint16_t start, uint16_t end,
   WriteAddressRange range = {start, end, callback};
   for (const auto& r : write_ranges_) {
     if (r.start <= range.end && r.end >= range.start) {
+      LOG(ERROR) << absl::StreamFormat(
+          "Address range %04x-%04x already registered for writes", start, end);
       return false;
     }
   }
@@ -32,6 +39,7 @@ bool AddressSpace::register_write(uint16_t start, uint16_t end,
 }
 
 uint8_t AddressSpace::get(uint16_t address) {
+  VLOG(5) << absl::StreamFormat("Reading from address %04x", address);
   for (const auto& r : read_ranges_) {
     if (r.start <= address && r.end >= address) {
       return r.callback(address);
@@ -54,6 +62,7 @@ uint16_t AddressSpace::get16(uint16_t address) {
 }
 
 void AddressSpace::set(uint16_t address, uint8_t data) {
+  VLOG(5) << absl::StreamFormat("Writing to address %04x: %02x", address, data);
   for (const auto& r : write_ranges_) {
     if (r.start <= address && address <= r.end) {
       r.callback(address, data);
