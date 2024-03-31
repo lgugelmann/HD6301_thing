@@ -443,9 +443,9 @@ Cpu6301::Cpu6301(AddressSpace* memory) : memory_(memory) {
       {0x65, {"eim", 3, 7, kIMM, OP(logic_m(x + fetch(), d, std::bit_xor()))}},
       {0x75, {"eim", 3, 6, kIMM, OP(logic_m(fetch(), d, std::bit_xor()))}},
       {0x6b,
-       {"tim", 3, 7, kIMM, OP(logic_m(x + fetch(), d, std::bit_xor(), false))}},
+       {"tim", 3, 7, kIMM, OP(logic_m(x + fetch(), d, std::bit_and(), false))}},
       {0x7b,
-       {"tim", 3, 6, kIMM, OP(logic_m(fetch(), d, std::bit_xor(), false))}},
+       {"tim", 3, 6, kIMM, OP(logic_m(fetch(), d, std::bit_and(), false))}},
       // COM (1's complement)
       {0x43, {"coma", 1, 1, kACA, OP(com(a))}},
       {0x53, {"comb", 1, 1, kACB, OP(com(b))}},
