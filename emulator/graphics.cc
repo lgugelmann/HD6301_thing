@@ -101,13 +101,14 @@ void Graphics::render_character(int position, bool reverse_colors = false) {
   const int x = col * kFontCharWidth;
   const int y = row * kFontCharHeight;
 
-  SDL_LockSurface(frame_surface_);
-  SDL_Rect rect = {x, y, kFontCharWidth, kFontCharHeight};
   uint8_t foreground_color = foreground_color_[position];
   uint8_t background_color = background_color_[position];
   if (reverse_colors) {
     std::swap(foreground_color, background_color);
   }
+
+  SDL_LockSurface(frame_surface_);
+  SDL_Rect rect = {x, y, kFontCharWidth, kFontCharHeight};
   SDL_FillRect(frame_surface_, &rect, background_color);
 
   const uint8_t character = characters_[position];
@@ -152,7 +153,9 @@ void Graphics::write(uint16_t address, uint8_t data) {
           std::fill(characters_.begin(), characters_.end(), ' ');
           std::fill(foreground_color_.begin(), foreground_color_.end(), 0x3f);
           std::fill(background_color_.begin(), background_color_.end(), 0);
+          SDL_LockSurface(frame_surface_);
           SDL_FillRect(frame_surface_, nullptr, 0);
+          SDL_UnlockSurface(frame_surface_);
           cursor_pos_ = 0;
           if (!cursor_hidden_) {
             render_character(cursor_pos_, true);
@@ -170,7 +173,9 @@ void Graphics::write(uint16_t address, uint8_t data) {
                     background_color_.begin() + cursor_pos_ + kNumColumns, 0);
           SDL_Rect rect = {0, cursor_pos_ / kNumColumns * kFontCharHeight,
                            kFrameWidth, kFontCharHeight};
+          SDL_LockSurface(frame_surface_);
           SDL_FillRect(frame_surface_, &rect, 0);
+          SDL_UnlockSurface(frame_surface_);
           if (!cursor_hidden_) {
             render_character(cursor_pos_, true);
           }
@@ -191,7 +196,9 @@ void Graphics::write(uint16_t address, uint8_t data) {
                     background_color_.begin() + cursor_pos_ + kNumColumns, 0);
           SDL_Rect rect = {0, cursor_pos_ / kNumColumns * kFontCharHeight,
                            kFrameWidth, kFontCharHeight};
+          SDL_LockSurface(frame_surface_);
           SDL_FillRect(frame_surface_, &rect, 0);
+          SDL_UnlockSurface(frame_surface_);
           if (!cursor_hidden_ && previous_cursor_pos != cursor_pos_) {
             render_character(previous_cursor_pos);
             render_character(cursor_pos_, true);
