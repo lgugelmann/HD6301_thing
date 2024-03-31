@@ -8,6 +8,10 @@
 #include <map>
 #include <string>
 
+#include "address_space.h"
+#include "interrupt.h"
+#include "ioport.h"
+
 namespace eight_bit {
 
 void Cpu6301::reset() {
@@ -17,6 +21,10 @@ void Cpu6301::reset() {
 
 uint8_t Cpu6301::tick() {
   if (current_opcode_ == 0) {
+    if (interrupt_.has_interrupt() & !sr.I) {
+      // Moves the PC to the relevant interrupt routine and masks interrupts.
+      enter_interrupt(0xfff8);
+    }
     uint8_t opcode = fetch();
     if (!instructions_.contains(opcode)) {
       LOG(ERROR) << "Invalid instruction: " << absl::Hex(opcode) << " at "
@@ -39,6 +47,12 @@ void Cpu6301::print_state() {
   printf("A: %02x B: %02x X: %04x SP: %04x PC: %04x CC: %b\n", a, b, x, sp, pc,
          sr.as_integer());
 }
+
+IOPort* Cpu6301::get_port1() { return &port1_; }
+
+IOPort* Cpu6301::get_port2() { return &port2_; }
+
+Interrupt* Cpu6301::get_irq() { return &interrupt_; }
 
 uint8_t Cpu6301::fetch() {
   uint8_t ret = get(pc);
@@ -329,6 +343,18 @@ void Cpu6301::jsr(uint16_t address) {
   pc = address;
 }
 
+void Cpu6301::enter_interrupt(uint16_t vector) {
+  VLOG(1) << "Entering interrupt";
+  psh16(pc);
+  psh16(x);
+  psh8(a);
+  psh8(b);
+  psh8(sr.as_integer());
+  // Inhibit further interrupts.
+  sr.I = 1;
+  pc = memory_->get16(vector);
+}
+
 uint8_t Cpu6301::execute(uint8_t opcode) {
   if (!instructions_.contains(opcode)) {
     LOG(ERROR) << "Invalid instruction: " << absl::Hex(opcode) << " at "
@@ -377,7 +403,38 @@ uint8_t Cpu6301::execute(uint8_t opcode) {
   return 0;
 }
 
-Cpu6301::Cpu6301(AddressSpace* memory) : memory_(memory) {
+Cpu6301::Cpu6301(AddressSpace* memory)
+    : port1_("port1"), port2_("port2"), memory_(memory) {
+  // Set up reads, writes to port 1 & port 1 DDR.
+  memory->register_read(0x0000, 0x0000, [this](uint16_t address) {
+    return port1_.get_direction();
+  });
+  memory->register_write(
+      0x0000, 0x0000,
+      [this](uint16_t address, uint8_t data) { port1_.set_direction(data); });
+  memory->register_read(0x0002, 0x0002,
+                        [this](uint16_t address) { return port1_.read(); });
+  memory->register_write(
+      0x0002, 0x0002,
+      [this](uint16_t address, uint8_t data) { port1_.write(data); });
+
+  // Set up reads, writes to port 2 & port 2 DDR.
+  memory->register_read(0x0001, 0x0001, [this](uint16_t address) {
+    return port2_.get_direction();
+  });
+  memory->register_write(
+      0x0001, 0x0001,
+      [this](uint16_t address, uint8_t data) { port2_.set_direction(data); });
+  memory->register_read(0x0003, 0x0003,
+                        [this](uint16_t address) { return port2_.read(); });
+  memory->register_write(
+      0x0003, 0x0003,
+      [this](uint16_t address, uint8_t data) { port2_.write(data); });
+
+  // Serial TRCSR: fake a ready-to-send serial port
+  memory->register_read(0x0011, 0x0011,
+                        [this](uint16_t address) { return 0x20; });
+
 #define COMMA ,
 #define OP(expr) [this](uint16_t d) { expr; }
   instructions_ = {

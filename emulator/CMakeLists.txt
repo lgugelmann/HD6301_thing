@@ -13,6 +13,7 @@ add_executable(${PROJECT_NAME}
     cpu6301.cc
     emulator.cc
     graphics.cc
+    ioport.cc
 )
 
 target_link_libraries(${PROJECT_NAME}

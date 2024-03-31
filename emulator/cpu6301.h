@@ -1,5 +1,5 @@
-#ifndef CPU6301_H
-#define CPU6301_H
+#ifndef EIGHT_BIT_CPU6301_H
+#define EIGHT_BIT_CPU6301_H
 
 #include <cstdint>
 #include <functional>
@@ -7,6 +7,8 @@
 #include <string>
 
 #include "address_space.h"
+#include "interrupt.h"
+#include "ioport.h"
 
 namespace eight_bit {
 
@@ -19,6 +21,10 @@ class Cpu6301 {
   uint8_t tick();
 
   void print_state();
+
+  IOPort* get_port1();
+  IOPort* get_port2();
+  Interrupt* get_irq();
 
  private:
   struct StatusRegister {
@@ -128,7 +134,12 @@ class Cpu6301 {
   void bsr(int8_t offset);
   void jsr(uint16_t address);
 
+  void enter_interrupt(uint16_t vector);
   uint8_t execute(uint8_t opcode);
+
+  IOPort port1_;
+  IOPort port2_;
+  Interrupt interrupt_;
 
   uint8_t a = 0;
   uint8_t b = 0;
@@ -145,4 +156,4 @@ class Cpu6301 {
 
 }  // namespace eight_bit
 
-#endif  // CPU6301_H
+#endif  // EIGHT_BIT_CPU6301_H
