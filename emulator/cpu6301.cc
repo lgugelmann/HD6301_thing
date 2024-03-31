@@ -160,6 +160,7 @@ void Cpu6301::add(uint8_t& dest, bool carry, uint8_t mem) {
   bool d7 = dest >> 7;
   bool m7 = mem >> 7;
   bool r7 = r >> 7;
+  dest = r;
   sr.H = (d3 & m3) | (m3 & !r3) | (!r3 & d3);
   sr.N = r7;
   sr.Z = r == 0;
