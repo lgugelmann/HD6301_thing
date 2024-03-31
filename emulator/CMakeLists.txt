@@ -14,6 +14,7 @@ add_executable(${PROJECT_NAME}
     emulator.cc
     graphics.cc
     ioport.cc
+    ps2_keyboard.cc
 )
 
 target_link_libraries(${PROJECT_NAME}

@@ -16,6 +16,7 @@
 #include "address_space.h"
 #include "cpu6301.h"
 #include "graphics.h"
+#include "ps2_keyboard.h"
 
 ABSL_FLAG(std::string, rom_file, "", "Path to the ROM file to load");
 ABSL_FLAG(int, ticks_per_second, 1000000, "Number of CPU ticks per second");
@@ -76,6 +77,9 @@ int main(int argc, char* argv[]) {
   eight_bit::Cpu6301 cpu(&address_space);
   cpu.reset();
 
+  eight_bit::PS2Keyboard keyboard(cpu.get_irq(), cpu.get_port1(),
+                                  cpu.get_port2());
+
   // Add a timer callback to call cpu.tick() once every millisecond
   SDL_TimerID timerID = SDL_AddTimer(1, timer_callback, &cpu);
   if (timerID == 0) {
@@ -95,6 +99,9 @@ int main(int argc, char* argv[]) {
         running = false;
       }
       // Add keyboard event handling here
+      if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
+        keyboard.handle_keyboard_event(event.key);
+      }
     }
     graphics.render();
     // Roughly 30 fps. TODO: make this a timer callback.
