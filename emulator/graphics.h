@@ -19,28 +19,32 @@ class Graphics {
   void render();
 
  private:
+  void render_character(int position, bool reverse_colors);
+
   void write(uint16_t address, uint8_t data);
 
-  struct GraphicsState {
-    GraphicsState(int buffer_size) : characters(buffer_size, 0) {}
-    std::vector<uint8_t> characters;
-    int cursor_pos = 0;
-    int cursor_pos_high = 0;
-    bool cursor_hidden = false;
-  };
+  static constexpr int kFrameWidth = 800;
+  static constexpr int kFrameHeight = 600;
 
-  const int frame_width_ = 800;
-  const int frame_height_ = 600;
+  static constexpr int kFontCharWidth = 8;
+  static constexpr int kFontCharHeight = 15;
+  static constexpr int kFontNumChars = 128;
 
-  const int font_char_width_ = 8;
-  const int font_char_height_ = 15;
-  const int font_num_chars_ = 128;
+  static constexpr int kNumColumns = kFrameWidth / kFontCharWidth;
+  static constexpr int kNumRows = kFrameHeight / kFontCharHeight;
+  static constexpr int kCharBufSize = kNumRows * kNumColumns;
+  static constexpr int kFrameSize = kFrameWidth * kFrameHeight;
 
-  const int num_columns_ = frame_width_ / font_char_width_;
-  const int num_rows_ = frame_height_ / font_char_height_;
-  const int char_buf_size_ = num_rows_ * num_columns_;
+  int cursor_pos_ = 0;
+  int cursor_pos_high_ = 0;
+  bool cursor_hidden_ = false;
 
-  GraphicsState state_{char_buf_size_};
+  std::array<uint8_t, kCharBufSize> characters_ = {0};
+  // 0x3f is white, 0 is black
+  std::array<uint8_t, kCharBufSize> foreground_color_ = {0x3f};
+  std::array<uint8_t, kCharBufSize> background_color_ = {0};
+  SDL_Palette* palette_ = nullptr;
+  SDL_Surface* frame_surface_ = nullptr;
 
   uint16_t base_address_ = 0;
   SDL_Window* window_ = nullptr;

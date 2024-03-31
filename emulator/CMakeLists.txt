@@ -5,7 +5,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 find_package(SDL2 REQUIRED)
-find_package(SDL2_ttf REQUIRED)
 find_package(absl REQUIRED)
 
 add_executable(${PROJECT_NAME}
@@ -19,7 +18,6 @@ add_executable(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     SDL2::SDL2
-    SDL2_ttf::SDL2_ttf
     absl::flags_parse
     absl::log
     absl::log_initialize

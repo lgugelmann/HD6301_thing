@@ -1,5 +1,4 @@
 #include <SDL2/SDL.h>
-#include <SDL_ttf.h>
 #include <absl/cleanup/cleanup.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
@@ -43,13 +42,6 @@ int main(int argc, char* argv[]) {
   }
 
   absl::Cleanup sdl_cleanup([] { SDL_Quit(); });
-
-  if (TTF_Init() < 0) {
-    fprintf(stderr, "Failed to initialize TTF: %s\n", TTF_GetError());
-    return -1;
-  }
-
-  absl::Cleanup ttf_cleanup([] { TTF_Quit(); });
 
   // Avoid the SDL window turning the compositor off
   if (!SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0")) {
@@ -98,7 +90,6 @@ int main(int argc, char* argv[]) {
       if (event.type == SDL_QUIT) {
         running = false;
       }
-      // Add keyboard event handling here
       if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
         keyboard.handle_keyboard_event(event.key);
       }
