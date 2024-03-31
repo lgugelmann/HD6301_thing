@@ -1,6 +1,8 @@
 #include <SDL2/SDL.h>
 #include <SDL_ttf.h>
 #include <absl/cleanup/cleanup.h>
+#include <absl/flags/flag.h>
+#include <absl/flags/parse.h>
 #include <absl/log/check.h>
 #include <absl/log/initialize.h>
 #include <absl/log/log.h>
@@ -15,15 +17,14 @@
 #include "cpu6301.h"
 #include "graphics.h"
 
-using eight_bit::AddressSpace;
-using eight_bit::Cpu6301;
-using eight_bit::Graphics;
+ABSL_FLAG(std::string, rom_file, "", "Path to the ROM file to load");
+ABSL_FLAG(int, ticks_per_second, 1000000, "Number of CPU ticks per second");
 
 // This gets called every millisecond, which corresponds to 1000 CPU ticks.
 // TODO: figure out how to do this faster
 Uint32 timer_callback(Uint32 interval, void* param) {
-  const int num_ticks = 1000;
-  Cpu6301* cpu = static_cast<Cpu6301*>(param);
+  const int num_ticks = absl::GetFlag(FLAGS_ticks_per_second) / 1000;
+  eight_bit::Cpu6301* cpu = static_cast<eight_bit::Cpu6301*>(param);
   for (int i = 0; i < num_ticks; ++i) {
     cpu->tick();
   }
@@ -55,13 +56,13 @@ int main(int argc, char* argv[]) {
             "SDL can not disable compositor bypass - not running under Linux?");
   }
 
-  AddressSpace address_space;
+  eight_bit::AddressSpace address_space;
 
-  std::ifstream monitor_file("../../asm/monitor.bin", std::ios::binary);
-  if (!monitor_file.is_open()) {
-    LOG(ERROR) << "Failed to open file: " << absl::GetFlag(FLAGS_rom_file);
-    return -1;
-  }
+  QCHECK(!absl::GetFlag(FLAGS_rom_file).empty()) << "No ROM file specified.";
+  const std::string rom_file = absl::GetFlag(FLAGS_rom_file);
+  std::ifstream monitor_file(rom_file, std::ios::binary);
+  QCHECK(monitor_file.is_open()) << "Failed to open file: " << rom_file;
+
   std::vector<uint8_t> monitor(std::istreambuf_iterator<char>(monitor_file),
                                {});
   address_space.load(0x10000 - monitor.size(), monitor);
@@ -72,7 +73,7 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
-  Cpu6301 cpu(&address_space);
+  eight_bit::Cpu6301 cpu(&address_space);
   cpu.reset();
 
   // Add a timer callback to call cpu.tick() once every millisecond
