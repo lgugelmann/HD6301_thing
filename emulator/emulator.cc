@@ -1,6 +1,9 @@
 #include <SDL2/SDL.h>
 #include <SDL_ttf.h>
 #include <absl/cleanup/cleanup.h>
+#include <absl/log/check.h>
+#include <absl/log/initialize.h>
+#include <absl/log/log.h>
 
 #include <cstdint>
 #include <fstream>
@@ -28,6 +31,9 @@ Uint32 timer_callback(Uint32 interval, void* param) {
 }
 
 int main(int argc, char* argv[]) {
+  absl::ParseCommandLine(argc, argv);
+  absl::InitializeLog();
+
   // Initialize SDL
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
     fprintf(stderr, "Failed to initialize SDL: %s\n", SDL_GetError());

@@ -18,6 +18,10 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     SDL2::SDL2
     SDL2_ttf::SDL2_ttf
+    absl::flags_parse
+    absl::log
+    absl::log_initialize
+    absl::log_flags
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_BINARY_DIR}")
