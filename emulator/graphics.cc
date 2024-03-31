@@ -150,16 +150,16 @@ void Graphics::write(uint16_t address, uint8_t data) {
         // black
         case 0:
           std::fill(characters_.begin(), characters_.end(), ' ');
-          SDL_FillRect(frame_surface_, nullptr, 0);
           std::fill(foreground_color_.begin(), foreground_color_.end(), 0x3f);
           std::fill(background_color_.begin(), background_color_.end(), 0);
+          SDL_FillRect(frame_surface_, nullptr, 0);
           cursor_pos_ = 0;
           if (!cursor_hidden_) {
             render_character(cursor_pos_, true);
           }
           break;
         // 1: clear current row, cursor to start of row, colors to default
-        case 1:
+        case 1: {
           cursor_pos_ -= cursor_pos_ % kNumColumns;
           std::fill(characters_.begin() + cursor_pos_,
                     characters_.begin() + cursor_pos_ + kNumColumns, ' ');
@@ -168,14 +168,20 @@ void Graphics::write(uint16_t address, uint8_t data) {
                     0x3f);
           std::fill(background_color_.begin() + cursor_pos_,
                     background_color_.begin() + cursor_pos_ + kNumColumns, 0);
+          SDL_Rect rect = {0, cursor_pos_ / kNumColumns * kFontCharHeight,
+                           kFrameWidth, kFontCharHeight};
+          SDL_FillRect(frame_surface_, &rect, 0);
           if (!cursor_hidden_) {
             render_character(cursor_pos_, true);
           }
           break;
+        }
         // 2: clear next row, cursor to start of next row, colors to default
         case 2: {
           int previous_cursor_pos = cursor_pos_;
-          cursor_pos_ += kNumColumns - cursor_pos_ % kNumColumns;
+          cursor_pos_ =
+              (cursor_pos_ + kNumColumns - cursor_pos_ % kNumColumns) %
+              kCharBufSize;
           std::fill(characters_.begin() + cursor_pos_,
                     characters_.begin() + cursor_pos_ + kNumColumns, ' ');
           std::fill(foreground_color_.begin() + cursor_pos_,
@@ -183,6 +189,9 @@ void Graphics::write(uint16_t address, uint8_t data) {
                     0x3f);
           std::fill(background_color_.begin() + cursor_pos_,
                     background_color_.begin() + cursor_pos_ + kNumColumns, 0);
+          SDL_Rect rect = {0, cursor_pos_ / kNumColumns * kFontCharHeight,
+                           kFrameWidth, kFontCharHeight};
+          SDL_FillRect(frame_surface_, &rect, 0);
           if (!cursor_hidden_ && previous_cursor_pos != cursor_pos_) {
             render_character(previous_cursor_pos);
             render_character(cursor_pos_, true);
