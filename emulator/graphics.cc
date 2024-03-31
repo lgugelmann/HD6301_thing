@@ -133,13 +133,13 @@ void Graphics::write(uint16_t address, uint8_t data) {
   switch (command) {
     // write character, advance cursor
     case 0: {
-      int previous_cursor_pos = cursor_pos_;
       characters_[cursor_pos_] = data;
+      render_character(cursor_pos_);
       if (++cursor_pos_ >= kCharBufSize) {
         cursor_pos_ = 0;
       }
       if (!cursor_hidden_) {
-        render_character(previous_cursor_pos);
+        // If showing cursor, render the cursor character inverted
         render_character(cursor_pos_, true);
       }
       break;
@@ -157,9 +157,7 @@ void Graphics::write(uint16_t address, uint8_t data) {
           SDL_FillRect(frame_surface_, nullptr, 0);
           SDL_UnlockSurface(frame_surface_);
           cursor_pos_ = 0;
-          if (!cursor_hidden_) {
-            render_character(cursor_pos_, true);
-          }
+          render_character(cursor_pos_, cursor_hidden_ == false);
           break;
         // 1: clear current row, cursor to start of row, colors to default
         case 1: {
@@ -176,9 +174,7 @@ void Graphics::write(uint16_t address, uint8_t data) {
           SDL_LockSurface(frame_surface_);
           SDL_FillRect(frame_surface_, &rect, 0);
           SDL_UnlockSurface(frame_surface_);
-          if (!cursor_hidden_) {
-            render_character(cursor_pos_, true);
-          }
+          render_character(cursor_pos_, cursor_hidden_ == false);
           break;
         }
         // 2: clear next row, cursor to start of next row, colors to default
@@ -199,10 +195,11 @@ void Graphics::write(uint16_t address, uint8_t data) {
           SDL_LockSurface(frame_surface_);
           SDL_FillRect(frame_surface_, &rect, 0);
           SDL_UnlockSurface(frame_surface_);
-          if (!cursor_hidden_ && previous_cursor_pos != cursor_pos_) {
+          if (!cursor_hidden_) {
+            // Restore the previous character to the non-inverted drawing state
             render_character(previous_cursor_pos);
-            render_character(cursor_pos_, true);
           }
+          render_character(cursor_pos_, cursor_hidden_ == false);
           break;
         }
       }
@@ -220,26 +217,28 @@ void Graphics::write(uint16_t address, uint8_t data) {
       while (cursor_pos_ < 0) {
         cursor_pos_ += kCharBufSize;
       }
-      if (!cursor_hidden_ && previous_cursor_pos != cursor_pos_) {
+      if (!cursor_hidden_) {
+        // Restore the previous character to the non-inverted drawing state
         render_character(previous_cursor_pos);
-        render_character(cursor_pos_, true);
       }
+      render_character(cursor_pos_, cursor_hidden_ == false);
       break;
     }
     // Same as 0 but doesn't advance cursor
     case 3:
       characters_[cursor_pos_] = data;
-      render_character(cursor_pos_, cursor_hidden_);
+      render_character(cursor_pos_, cursor_hidden_ == false);
       break;
     // Set cursor column
     case 4: {
       int previous_cursor_pos = cursor_pos_;
       cursor_pos_ =
           cursor_pos_ - (cursor_pos_ % kNumColumns) + data % kNumColumns;
-      if (!cursor_hidden_ && previous_cursor_pos != cursor_pos_) {
+      if (!cursor_hidden_) {
+        // Restore the previous character to the non-inverted drawing state
         render_character(previous_cursor_pos);
-        render_character(cursor_pos_, true);
       }
+      render_character(cursor_pos_, cursor_hidden_ == false);
       break;
     }
     // Set cursor row
@@ -247,11 +246,12 @@ void Graphics::write(uint16_t address, uint8_t data) {
       int previous_cursor_pos = cursor_pos_;
       cursor_pos_ =
           (data % kNumRows) * kNumColumns + (cursor_pos_ % kNumColumns);
-      break;
-      if (!cursor_hidden_ && previous_cursor_pos != cursor_pos_) {
+      if (!cursor_hidden_) {
+        // Restore the previous character to the non-inverted drawing state
         render_character(previous_cursor_pos);
-        render_character(cursor_pos_, true);
       }
+      render_character(cursor_pos_, cursor_hidden_ == false);
+      break;
     }
     // set cursor position high byte
     case 6:
@@ -261,17 +261,18 @@ void Graphics::write(uint16_t address, uint8_t data) {
     case 7: {
       int previous_cursor_pos = cursor_pos_;
       cursor_pos_ = (cursor_pos_high_ << 8) | data;
-      if (!cursor_hidden_ && previous_cursor_pos != cursor_pos_) {
+      if (!cursor_hidden_) {
+        // Restore the previous character to the non-inverted drawing state
         render_character(previous_cursor_pos);
-        render_character(cursor_pos_, true);
       }
+      render_character(cursor_pos_, cursor_hidden_ == false);
       break;
     }
     // Set cursor visibility: 0 = visible, 1 = hidden
     case 8:
       if (cursor_hidden_ != data) {
         cursor_hidden_ = data;
-        render_character(cursor_pos_, true);
+        render_character(cursor_pos_, cursor_hidden_ == false);
       }
       break;
     // Set color at cursor position. Bit format is (MSB first) ABRRGGBB where if
@@ -279,14 +280,18 @@ void Graphics::write(uint16_t address, uint8_t data) {
     // foreground or 1 for background. RR/GG/BB are 2-bit Red, Green, Blue
     // channel colors.
     case 9: {
-      if (data & 0x40 == 0) {
-        foreground_color_[cursor_pos_] = data & 0x3f;
-      } else {
+      bool background = data & 0x40;
+      if (background) {
         background_color_[cursor_pos_] = data & 0x3f;
+      } else {
+        foreground_color_[cursor_pos_] = data & 0x3f;
       }
       bool advance_cursor = data & 0x80;
-      render_character(cursor_pos_, ~advance_cursor & cursor_hidden_);
-      if (data & 0x80) {
+      // We render with reverse colors if we're not advancing and the cursor
+      // isn't hidden.
+      render_character(cursor_pos_,
+                       (advance_cursor == false) && (cursor_hidden_ == false));
+      if (advance_cursor) {
         if (++cursor_pos_ >= kCharBufSize) {
           cursor_pos_ = 0;
         }
