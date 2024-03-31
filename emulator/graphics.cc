@@ -41,9 +41,9 @@ int Graphics::initialize(uint16_t base_address, AddressSpace* address_space) {
     return -1;
   }
   for (int i = 0; i < 64; ++i) {
-    palette_->colors[i].r = (i & 0b00000011) * 85;
+    palette_->colors[i].r = ((i & 0b00110000) >> 4) * 85;
     palette_->colors[i].g = ((i & 0b00001100) >> 2) * 85;
-    palette_->colors[i].b = ((i & 0b00110000) >> 4) * 85;
+    palette_->colors[i].b = (i & 0b00000011) * 85;
   }
 
   // Create a surface for the frame
