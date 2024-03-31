@@ -31,6 +31,9 @@ programs_prog: programs.bin
 
 prog: monitor_prog programs_prog
 
+rom: monitor.p programs.p
+	$(P2BIN) -segment CODE monitor.p programs.p rom.bin
+
 -include $(DEP)
 
 monitor.p: monitor.s
