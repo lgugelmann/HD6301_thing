@@ -205,9 +205,13 @@ void Graphics::write(uint16_t address, uint8_t data) {
     // position.
     case 2: {
       int previous_cursor_pos = cursor_pos_;
-      cursor_pos_ += data;
+      // We need to cast to signed to handle negative deltas
+      cursor_pos_ += (int8_t)data;
       while (cursor_pos_ >= kCharBufSize) {
         cursor_pos_ -= kCharBufSize;
+      }
+      while (cursor_pos_ < 0) {
+        cursor_pos_ += kCharBufSize;
       }
       if (!cursor_hidden_ && previous_cursor_pos != cursor_pos_) {
         render_character(previous_cursor_pos);
