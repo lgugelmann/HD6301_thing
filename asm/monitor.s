@@ -398,6 +398,7 @@ ls_command:
 clear_command:
         clr GRAPHICS_CLEAR
         jsr serial_clear_screen
+        clr GRAPHICS_HIDE_CURSOR
         rts
 
 irq:
