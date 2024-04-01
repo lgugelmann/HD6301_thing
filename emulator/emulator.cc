@@ -41,7 +41,8 @@ int main(int argc, char* argv[]) {
 
   // Initialize SDL
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-    fprintf(stderr, "Failed to initialize SDL: %s\n", SDL_GetError());
+    LOG(ERROR) << absl::StreamFormat("Failed to initialize SDL: %s",
+                                     SDL_GetError());
     return -1;
   }
 
@@ -49,8 +50,8 @@ int main(int argc, char* argv[]) {
 
   // Avoid the SDL window turning the compositor off
   if (!SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0")) {
-    fprintf(stderr,
-            "SDL can not disable compositor bypass - not running under Linux?");
+    LOG(ERROR) << "SDL can not disable compositor bypass - not running under "
+                  "Linux?";
   }
 
   eight_bit::AddressSpace address_space;
@@ -86,7 +87,7 @@ int main(int argc, char* argv[]) {
 
   eight_bit::Graphics graphics;
   if (graphics.initialize(0x7fc0, &address_space) != 0) {
-    fprintf(stderr, "Failed to initialize graphics.\n");
+    LOG(ERROR) << "Failed to initialize graphics";
     return -1;
   }
 
@@ -97,9 +98,10 @@ int main(int argc, char* argv[]) {
                                   cpu.get_port2());
 
   // Add a timer callback to call cpu.tick() once every millisecond
-  SDL_TimerID timerID = SDL_AddTimer(1, timer_callback, &cpu);
-  if (timerID == 0) {
-    fprintf(stderr, "Failed to create timer: %s\n", SDL_GetError());
+  SDL_TimerID timer = SDL_AddTimer(1, timer_callback, &cpu);
+  if (timer == 0) {
+    LOG(ERROR) << absl::StreamFormat("Failed to create timer: %s",
+                                     SDL_GetError());
     return -1;
   }
 

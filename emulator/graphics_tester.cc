@@ -1,11 +1,13 @@
-#include "graphics.h"
-
 #include <SDL2/SDL.h>
 #include <absl/cleanup/cleanup.h>
+#include <absl/log/log.h>
+#include <absl/strings/str_format.h>
 
+#include <cstdint>
 #include <string>
 
 #include "address_space.h"
+#include "graphics.h"
 
 void run_test(eight_bit::AddressSpace* address_space, SDL_Keycode key) {
   uint16_t base_address = 0x0000;
@@ -70,13 +72,14 @@ void run_test(eight_bit::AddressSpace* address_space, SDL_Keycode key) {
 int main() {
   // Initialize SDL
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-    fprintf(stderr, "Failed to initialize SDL: %s\n", SDL_GetError());
+    LOG(ERROR) << absl::StreamFormat("Failed to initialize SDL: %s",
+                                     SDL_GetError());
     return -1;
   }
   // Avoid the SDL window turning the compositor off
   if (!SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0")) {
-    fprintf(stderr,
-            "SDL can not disable compositor bypass - not running under Linux?");
+    LOG(ERROR) << "SDL can not disable compositor bypass - not running under "
+                  "Linux?";
   }
 
   absl::Cleanup sdl_cleanup([] { SDL_Quit(); });
