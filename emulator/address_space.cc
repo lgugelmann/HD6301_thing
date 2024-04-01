@@ -8,6 +8,8 @@
 #include <span>
 #include <vector>
 
+#include "hexdump.h"
+
 namespace eight_bit {
 
 bool AddressSpace::register_read(uint16_t start, uint16_t end,
@@ -88,58 +90,8 @@ void AddressSpace::load(uint16_t address, std::span<uint8_t> data) {
 }
 
 void AddressSpace::hexdump() {
-  const int bytes_per_line = 16;
-
-  std::vector<uint8_t> prev_line(bytes_per_line, 0);
-  bool is_repeated = true;
-
-  for (size_t i = 0; i < data_.size(); i += bytes_per_line) {
-    // Check if the current line is repeated
-    if (i != 0 && i + bytes_per_line <= data_.size() &&
-        std::equal(data_.begin() + i, data_.begin() + i + bytes_per_line,
-                   prev_line.begin())) {
-      if (!is_repeated) {
-        is_repeated = true;
-        printf("*\n");
-      }
-      continue;
-    } else {
-      is_repeated = false;
-    }
-
-    // Copy current line to prev_line
-    std::copy(data_.begin() + i, data_.begin() + i + bytes_per_line,
-              prev_line.begin());
-
-    // Print offset
-    printf("%08zx  ", i);
-
-    // Print bytes in hexadecimal format
-    for (size_t j = 0; j < bytes_per_line; ++j) {
-      if (j == 8) {
-        printf(" ");
-      }
-      if (i + j < data_.size()) {
-        printf("%02x ", static_cast<int>(data_[i + j]));
-      } else {
-        printf("   ");
-      }
-    }
-
-    printf(" |");
-
-    // Print bytes in ASCII format
-    for (size_t j = 0; j < bytes_per_line && i + j < data_.size(); ++j) {
-      char c = static_cast<char>(data_[i + j]);
-      if (c >= 32 && c <= 126) {
-        printf("%c", c);
-      } else {
-        printf(".");
-      }
-    }
-
-    printf("|\n");
-  }
+  std::string hexdump = eight_bit::hexdump(data_);
+  printf("%s", hexdump.c_str());
 }
 
 }  // namespace eight_bit

@@ -12,6 +12,7 @@ add_executable(${PROJECT_NAME}
     cpu6301.cc
     emulator.cc
     graphics.cc
+    hexdump.cc
     ioport.cc
     ps2_keyboard.cc
 )
@@ -30,6 +31,7 @@ add_executable(graphics_tester
     graphics_tester.cc
     address_space.cc
     graphics.cc
+    hexdump.cc
 )
 
 target_link_libraries(graphics_tester
