@@ -25,3 +25,14 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_BINARY_DIR}")
+
+add_executable(graphics_tester
+    graphics_tester.cc
+    address_space.cc
+    graphics.cc
+)
+
+target_link_libraries(graphics_tester
+    SDL2::SDL2
+    absl::log
+ )
