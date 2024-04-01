@@ -124,6 +124,7 @@ int main(int argc, char* argv[]) {
     // Roughly 30 fps. TODO: make this a timer callback.
     SDL_Delay(16);
   }
+  SDL_RemoveTimer(timer);
 
   return 0;
 }
