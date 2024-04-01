@@ -17,6 +17,8 @@
 #include "cpu6301.h"
 #include "graphics.h"
 #include "ps2_keyboard.h"
+#include "ram.h"
+#include "rom.h"
 
 ABSL_FLAG(std::string, rom_file, "", "Path to the ROM file to load");
 ABSL_FLAG(int, ticks_per_second, 1000000, "Number of CPU ticks per second");
@@ -56,14 +58,16 @@ int main(int argc, char* argv[]) {
 
   eight_bit::AddressSpace address_space;
 
-  QCHECK(!absl::GetFlag(FLAGS_rom_file).empty()) << "No ROM file specified.";
-  const std::string rom_file = absl::GetFlag(FLAGS_rom_file);
-  std::ifstream monitor_file(rom_file, std::ios::binary);
-  QCHECK(monitor_file.is_open()) << "Failed to open file: " << rom_file;
+  eight_bit::Rom rom(&address_space, 0x8000, 0x8000);
 
-  std::vector<uint8_t> monitor(std::istreambuf_iterator<char>(monitor_file),
-                               {});
-  address_space.load(0x10000 - monitor.size(), monitor);
+  QCHECK(!absl::GetFlag(FLAGS_rom_file).empty()) << "No ROM file specified.";
+  const std::string rom_file_name = absl::GetFlag(FLAGS_rom_file);
+  std::ifstream rom_file(rom_file_name, std::ios::binary);
+  QCHECK(rom_file.is_open()) << "Failed to open file: " << rom_file_name;
+
+  std::vector<uint8_t> rom_data(std::istreambuf_iterator<char>(rom_file), {});
+  rom.load(0, rom_data);
+  rom.hexdump();
 
   // This creates some easy-to-breakpoint memory reads for debugging
   uint8_t trap_byte = 0;
@@ -84,6 +88,9 @@ int main(int argc, char* argv[]) {
                                    trap_byte = data;
                                  });
   }
+
+  // 0..1f is internal CPU registers and otherwise reserved
+  eight_bit::Ram ram(&address_space, 0x0020, 0x7f00 - 0x0020);
 
   eight_bit::Graphics graphics;
   if (graphics.initialize(0x7fc0, &address_space) != 0) {

@@ -12,7 +12,10 @@ namespace eight_bit {
 // two-byte values stored MSB first.
 class AddressSpace {
  public:
-  AddressSpace() : data_(0x10000, 0) {}
+  AddressSpace() = default;
+  AddressSpace(const AddressSpace&) = delete;
+  AddressSpace& operator=(const AddressSpace&) = delete;
+  ~AddressSpace() = default;
 
   typedef std::function<uint8_t(uint16_t)> read_callback;
   typedef std::function<void(uint16_t, uint8_t)> write_callback;
@@ -39,12 +42,6 @@ class AddressSpace {
   // Sets the memory at address `address` to `data`, MSB first.
   void set16(uint16_t address, uint16_t data);
 
-  // Load the contenst of data starting at `address`.
-  void load(uint16_t address, std::span<uint8_t> data);
-
-  // Prints the contents of the whole address space to stdout.
-  void hexdump();
-
  private:
   struct ReadAddressRange {
     uint16_t start;
@@ -59,7 +56,6 @@ class AddressSpace {
 
   std::vector<ReadAddressRange> read_ranges_;
   std::vector<WriteAddressRange> write_ranges_;
-  std::vector<uint8_t> data_;
 };
 
 }  // namespace eight_bit

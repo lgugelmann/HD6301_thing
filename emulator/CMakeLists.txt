@@ -15,6 +15,8 @@ add_executable(${PROJECT_NAME}
     hexdump.cc
     ioport.cc
     ps2_keyboard.cc
+    ram.cc
+    rom.cc
 )
 
 target_link_libraries(${PROJECT_NAME}

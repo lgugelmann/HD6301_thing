@@ -47,7 +47,9 @@ uint8_t AddressSpace::get(uint16_t address) {
       return r.callback(address);
     }
   }
-  return data_[address];
+  LOG(ERROR) << absl::StreamFormat("No read callback for address %04x",
+                                   address);
+  return 0;
 }
 
 uint16_t AddressSpace::get16(uint16_t address) {
@@ -67,7 +69,8 @@ void AddressSpace::set(uint16_t address, uint8_t data) {
       return;
     }
   }
-  data_[address] = data;
+  LOG(ERROR) << absl::StreamFormat("No write callback for address %04x",
+                                   address);
 }
 
 void AddressSpace::set16(uint16_t address, uint16_t data) {
@@ -78,20 +81,6 @@ void AddressSpace::set16(uint16_t address, uint16_t data) {
   }
   set(address, data >> 8);
   set(address + 1, data);
-}
-
-void AddressSpace::load(uint16_t address, std::span<uint8_t> data) {
-  if (address + data.size() > data_.size()) {
-    return;
-  }
-  for (const auto d : data) {
-    data_[address++] = d;
-  }
-}
-
-void AddressSpace::hexdump() {
-  std::string hexdump = eight_bit::hexdump(data_);
-  printf("%s", hexdump.c_str());
 }
 
 }  // namespace eight_bit
