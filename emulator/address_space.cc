@@ -49,16 +49,12 @@ uint8_t AddressSpace::get(uint16_t address) {
 }
 
 uint16_t AddressSpace::get16(uint16_t address) {
-  for (const auto& r : read_ranges_) {
-    if (r.start <= address && r.end >= address + 1) {
-      return (uint16_t)r.callback(address) << 8 |
-             (uint16_t)r.callback(address + 1);
-    }
+  if (address > 0xfffe) {
+    LOG(ERROR) << absl::StreamFormat("Invalid 16-bit read from address %04x",
+                                     address);
+    return 0;
   }
-  if (address <= 0xfffe) {
-    return (uint16_t)data_[address] << 8 | (uint16_t)data_[address + 1];
-  }
-  return 0;
+  return (uint16_t)get(address) << 8 | (uint16_t)get(address + 1);
 }
 
 void AddressSpace::set(uint16_t address, uint8_t data) {
@@ -73,18 +69,13 @@ void AddressSpace::set(uint16_t address, uint8_t data) {
 }
 
 void AddressSpace::set16(uint16_t address, uint16_t data) {
-  for (const auto& r : write_ranges_) {
-    if (r.start <= address && address + 1 <= r.end) {
-      r.callback(address, data >> 8);
-      r.callback(address + 1, data);
-      return;
-    }
-  }
   if (address > 0xfffe) {
+    LOG(ERROR) << absl::StreamFormat("Invalid 16-bit write to address %04x",
+                                     address);
     return;
   }
-  data_[address] = data >> 8;
-  data_[address + 1] = data;
+  set(address, data >> 8);
+  set(address + 1, data);
 }
 
 void AddressSpace::load(uint16_t address, std::span<uint8_t> data) {
