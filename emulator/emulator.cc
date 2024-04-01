@@ -5,6 +5,7 @@
 #include <absl/log/check.h>
 #include <absl/log/initialize.h>
 #include <absl/log/log.h>
+#include <absl/strings/str_format.h>
 
 #include <cstdint>
 #include <fstream>
@@ -19,6 +20,9 @@
 
 ABSL_FLAG(std::string, rom_file, "", "Path to the ROM file to load");
 ABSL_FLAG(int, ticks_per_second, 1000000, "Number of CPU ticks per second");
+ABSL_FLAG(std::optional<uint16_t>, trap_address, std::nullopt,
+          "Stop execution on reads or writes to this address, helpful for "
+          "setting breakpoints.");
 
 // This gets called every millisecond, which corresponds to 1000 CPU ticks.
 // TODO: figure out how to do this faster
@@ -59,6 +63,26 @@ int main(int argc, char* argv[]) {
   std::vector<uint8_t> monitor(std::istreambuf_iterator<char>(monitor_file),
                                {});
   address_space.load(0x10000 - monitor.size(), monitor);
+
+  // This creates some easy-to-breakpoint memory reads for debugging
+  uint8_t trap_byte = 0;
+  if (absl::GetFlag(FLAGS_trap_address).has_value()) {
+    const uint16_t trap_address = absl::GetFlag(FLAGS_trap_address).value();
+    trap_byte = address_space.get(trap_address);
+    address_space.register_read(
+        trap_address, trap_address, [&trap_byte](uint16_t address) -> uint8_t {
+          VLOG(1) << absl::StreamFormat("Trap read at %04x: %02x", address,
+                                        trap_byte);
+          return trap_byte;
+        });
+    address_space.register_write(trap_address, trap_address,
+                                 [&trap_byte](uint16_t address, uint8_t data) {
+                                   VLOG(1) << absl::StreamFormat(
+                                       "Trap write at %04x: %02x", address,
+                                       data);
+                                   trap_byte = data;
+                                 });
+  }
 
   eight_bit::Graphics graphics;
   if (graphics.initialize(0x7fc0, &address_space) != 0) {
