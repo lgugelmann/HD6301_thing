@@ -459,7 +459,7 @@ Cpu6301::Cpu6301(AddressSpace* memory)
       {0x18, {"xgdx", 1, 2, kIMP, OP(xgdx())}},
       // {0x19, {"daa", 1, 2, kACA, OP() }},
       // {0x18, {"slp", 1, 2, kIMP, OP() }}, // sleep
-      {0x1b, {"aba", 1, 1, kACB, OP(add(a, d, 0))}},
+      {0x1b, {"aba", 1, 1, kACB, OP(add(a, 0, d))}},
 
       // Branching
       {0x20, {"bra", 2, 3, kREL, OP(brx(true, d))}},
