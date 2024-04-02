@@ -710,9 +710,9 @@ Cpu6301::Cpu6301(AddressSpace* memory)
       {0xaf, {"sts", 2, 5, kIDX, OP(set16(d, sp) COMMA nzv_sr16(sp))}},
       {0xbf, {"sts", 3, 5, kEXT, OP(set16(d, sp) COMMA nzv_sr16(sp))}},
       // STX
-      {0xdf, {"ldx", 2, 4, kDIR, OP(set16(d, x) COMMA nzv_sr16(x))}},
-      {0xef, {"ldx", 2, 5, kIDX, OP(set16(d, x) COMMA nzv_sr16(x))}},
-      {0xff, {"ldx", 3, 5, kEXT, OP(set16(d, x) COMMA nzv_sr16(x))}},
+      {0xdf, {"stx", 2, 4, kDIR, OP(set16(d, x) COMMA nzv_sr16(x))}},
+      {0xef, {"stx", 2, 5, kIDX, OP(set16(d, x) COMMA nzv_sr16(x))}},
+      {0xff, {"stx", 3, 5, kEXT, OP(set16(d, x) COMMA nzv_sr16(x))}},
   };
 #undef OP
 #undef COMMA
