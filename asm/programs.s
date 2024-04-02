@@ -13,8 +13,7 @@
 
 ; Set to 0 to start in the monitor, otherwise runs this program at startup.
 program_registry_autorun:
-        adr edi_start
-
+        adr $0000
 program_registry:
         adr +
         byt "edi\0"
@@ -29,20 +28,20 @@ program_registry:
         adr hello_start
 +
         adr +
-        byt "sci_echo\0"
-        adr sci_echo_start
+        byt "midi_synth\0"
+        adr midi_synth_start
 +
         adr +
-        byt "test\0"
-        adr test_program_start
-+
-        adr +
-        byt "snake\0"
-        adr snake_start
+        byt "opl3_test\0"
+        adr opl3_test_start
 +
         adr +
         byt "random\0"
         adr random_start
++
+        adr +
+        byt "sci_echo\0"
+        adr sci_echo_start
 +
         adr +
         byt "seq\0"
@@ -53,14 +52,19 @@ program_registry:
         adr serial_opl3_start
 +
         adr +
-        byt "opl3_test\0"
-        adr opl3_test_start
+        byt "snake\0"
+        adr snake_start
++
+        adr +
+        byt "test\0"
+        adr test_program_start
 +
         adr $0000               ; End marker
 
         include programs/edi.s
         include programs/graphics_test.s
         include programs/hello.s
+        include programs/midi_synth.s
         include programs/opl3_test.s
         include programs/random.s
         include programs/sci_echo.s
