@@ -28,6 +28,10 @@ program_registry:
         adr hello_start
 +
         adr +
+        byt "keyboard_test\0"
+        adr keyboard_test_start
++
+        adr +
         byt "midi_synth\0"
         adr midi_synth_start
 +
@@ -64,6 +68,7 @@ program_registry:
         include programs/edi.s
         include programs/graphics_test.s
         include programs/hello.s
+        include programs/keyboard_test.s
         include programs/midi_synth.s
         include programs/opl3_test.s
         include programs/random.s
