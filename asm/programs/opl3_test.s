@@ -160,6 +160,19 @@ opl3_test_start:
         bne .stop_loop
         jmp .read_loop
 +
+        cmp a,#'d'
+        bne +
+        lda #13                 ; Channel
+        ldb #69                 ; Note number
+        jsr sound_stop_midi_note
+        lda #14                 ; Channel
+        ldb #72                 ; Note number
+        jsr sound_stop_midi_note
+        lda #15                 ; Channel
+        ldb #76                 ; Note number
+        jsr sound_stop_midi_note
+        jmp .read_loop
++
         ; Enable timer 1
         cmp a,#'t'
         bne +
