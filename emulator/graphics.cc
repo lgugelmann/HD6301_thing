@@ -26,9 +26,19 @@ Graphics::~Graphics() {
 
 int Graphics::initialize(uint16_t base_address, AddressSpace* address_space) {
   base_address_ = base_address;
+
+  // Scale the window 2x if the screen has high DPI
+  float dpi = 0.0f;
+  SDL_GetDisplayDPI(0, nullptr, &dpi, nullptr);
+
+  int scale = 1;
+  if (dpi > 120.0f) {
+    scale = 2;
+  }
+
   window_ = SDL_CreateWindow("Emulator", SDL_WINDOWPOS_UNDEFINED,
-                             SDL_WINDOWPOS_UNDEFINED, kFrameWidth, kFrameHeight,
-                             SDL_WINDOW_SHOWN);
+                             SDL_WINDOWPOS_UNDEFINED, kFrameWidth * scale,
+                             kFrameHeight * scale, SDL_WINDOW_SHOWN);
   if (!window_) {
     LOG(ERROR) << "Failed to create window: " << SDL_GetError();
     return -1;
