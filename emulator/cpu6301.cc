@@ -171,7 +171,7 @@ void Cpu6301::add(uint8_t& dest, bool carry, uint8_t mem) {
 
 void Cpu6301::addd(uint16_t data) {
   uint16_t d = get_d();
-  uint16_t r = d - data;
+  uint16_t r = d + data;
   bool d15 = d >> 15;
   bool m15 = data >> 15;
   bool r15 = r >> 15;
