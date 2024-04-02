@@ -29,6 +29,7 @@ uint8_t Cpu6301::tick() {
     if (!instructions_.contains(opcode)) {
       LOG(ERROR) << "Invalid instruction: " << absl::Hex(opcode) << " at "
                  << absl::Hex(pc, absl::kZeroPad4);
+      reset();
       return -1;
     }
     current_opcode_ = opcode;
