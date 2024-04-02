@@ -24,8 +24,7 @@ class PS2Keyboard {
 
   std::queue<uint8_t> data_;
   uint8_t interrupt_clear_ = 0;
-  bool has_interrupt_ = false;
-  int interrupt_id_ = -1;
+  int interrupt_id_ = 0;
 };
 
 }  // namespace eight_bit

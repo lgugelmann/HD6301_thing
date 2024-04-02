@@ -137,9 +137,9 @@ PS2Keyboard::PS2Keyboard(Interrupt* irq, IOPort* data_port,
     // We saw a 0->1 transition on the interrupt clear bit. Clear the interrupt.
     if (data == 1 && interrupt_clear_ == 0) {
       VLOG(1) << "Clearing keyboard interrupt";
-      if (has_interrupt_) {
+      if (interrupt_id_ != 0) {
         irq_->clear_interrupt(interrupt_id_);
-        has_interrupt_ = false;
+        interrupt_id_ = 0;
       }
       // TODO: This should really happen after some given amount of time
       // corresponding to ps2 data rates, but for now just assume that the
@@ -148,7 +148,6 @@ PS2Keyboard::PS2Keyboard(Interrupt* irq, IOPort* data_port,
         data_.pop();
       }
       if (!data_.empty()) {
-        has_interrupt_ = true;
         interrupt_id_ = irq_->set_interrupt();
       }
     }
@@ -157,7 +156,7 @@ PS2Keyboard::PS2Keyboard(Interrupt* irq, IOPort* data_port,
   // Bit 1 can be read from and indicates whether there is an outstanding
   // interrupt from the keyboard (active low).
   irq_status_port_->register_read_callback(
-      [this]() -> uint8_t { return has_interrupt_ ? 0x00 : 0x02; });
+      [this]() -> uint8_t { return interrupt_id_ != 0 ? 0x00 : 0x02; });
 }
 
 PS2Keyboard::~PS2Keyboard() {}
@@ -182,8 +181,8 @@ void PS2Keyboard::handle_keyboard_event(SDL_KeyboardEvent event) {
     for (const auto& byte : *data) {
       data_.push(byte);
     }
-    if (!has_interrupt_) {
-      has_interrupt_ = true;
+    // 0 is a sentinel value for no interrupt.
+    if (interrupt_id_ == 0) {
       interrupt_id_ = irq_->set_interrupt();
     }
   }

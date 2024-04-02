@@ -18,6 +18,9 @@ class Interrupt {
     // active. We're going to ignore it and just say that maybe a few billion
     // interrupts are too many.
     next_interrupt_id_ += 1;
+    if (next_interrupt_id_ == 0) {
+      next_interrupt_id_ = 1;
+    }
     interrupts_.insert(interrupt_id);
     return interrupt_id;
   }
@@ -30,7 +33,9 @@ class Interrupt {
   bool has_interrupt() { return interrupts_.size() > 0; }
 
  private:
-  int next_interrupt_id_ = 0;
+  // The next interrupt ID to use. Value 0 is never a valid interrupt ID and can
+  // be used as a sentinel for 'no interrupt set'.
+  int next_interrupt_id_ = 1;
   std::set<int> interrupts_;
 };
 
