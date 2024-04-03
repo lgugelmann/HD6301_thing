@@ -9,6 +9,7 @@
 #include "address_space.h"
 #include "interrupt.h"
 #include "ioport.h"
+#include "timer.h"
 
 namespace eight_bit {
 
@@ -140,6 +141,8 @@ class Cpu6301 {
   IOPort port1_;
   IOPort port2_;
   Interrupt interrupt_;
+  Interrupt timer_interrupt_;
+  Timer timer_;
 
   uint8_t a = 0;
   uint8_t b = 0;

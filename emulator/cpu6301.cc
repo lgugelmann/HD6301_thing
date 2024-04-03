@@ -20,10 +20,14 @@ void Cpu6301::reset() {
 }
 
 uint8_t Cpu6301::tick() {
+  timer_.tick();
   if (current_opcode_ == 0) {
     if (interrupt_.has_interrupt() & !sr.I) {
       // Moves the PC to the relevant interrupt routine and masks interrupts.
       enter_interrupt(0xfff8);
+    }
+    if (timer_interrupt_.has_interrupt() & !sr.I) {
+      enter_interrupt(0xfff2);
     }
     uint8_t opcode = fetch();
     if (!instructions_.contains(opcode)) {
@@ -87,7 +91,7 @@ uint16_t Cpu6301::set_d(uint16_t d) {
 }
 
 //
-// Instruction impelementations
+// Instruction implementations
 //
 void Cpu6301::mem_op(uint16_t address, void (Cpu6301::*op)(uint8_t&),
                      bool do_set = true) {
@@ -406,7 +410,10 @@ uint8_t Cpu6301::execute(uint8_t opcode) {
 }
 
 Cpu6301::Cpu6301(AddressSpace* memory)
-    : port1_("port1"), port2_("port2"), memory_(memory) {
+    : port1_("port1"),
+      port2_("port2"),
+      memory_(memory),
+      timer_(memory, 0x0008, &timer_interrupt_) {
   // Set up reads, writes to port 1 & port 1 DDR.
   memory->register_read(0x0000, 0x0000, [this](uint16_t address) {
     return port1_.get_direction();

@@ -17,6 +17,7 @@ add_executable(${PROJECT_NAME}
     ps2_keyboard.cc
     ram.cc
     rom.cc
+    timer.cc
 )
 
 target_link_libraries(${PROJECT_NAME}
