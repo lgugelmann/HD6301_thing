@@ -22,9 +22,6 @@
 
 ABSL_FLAG(std::string, rom_file, "", "Path to the ROM file to load");
 ABSL_FLAG(int, ticks_per_second, 1000000, "Number of CPU ticks per second");
-ABSL_FLAG(std::optional<uint16_t>, trap_address, std::nullopt,
-          "Stop execution on reads or writes to this address, helpful for "
-          "setting breakpoints.");
 
 // This gets called every millisecond, which corresponds to 1000 CPU ticks.
 // TODO: figure out how to do this faster
@@ -68,26 +65,6 @@ int main(int argc, char* argv[]) {
   std::vector<uint8_t> rom_data(std::istreambuf_iterator<char>(rom_file), {});
   rom.load(0, rom_data);
   rom.hexdump();
-
-  // This creates some easy-to-breakpoint memory reads for debugging
-  uint8_t trap_byte = 0;
-  if (absl::GetFlag(FLAGS_trap_address).has_value()) {
-    const uint16_t trap_address = absl::GetFlag(FLAGS_trap_address).value();
-    trap_byte = address_space.get(trap_address);
-    address_space.register_read(
-        trap_address, trap_address, [&trap_byte](uint16_t address) -> uint8_t {
-          VLOG(1) << absl::StreamFormat("Trap read at %04x: %02x", address,
-                                        trap_byte);
-          return trap_byte;
-        });
-    address_space.register_write(trap_address, trap_address,
-                                 [&trap_byte](uint16_t address, uint8_t data) {
-                                   VLOG(1) << absl::StreamFormat(
-                                       "Trap write at %04x: %02x", address,
-                                       data);
-                                   trap_byte = data;
-                                 });
-  }
 
   // 0..1f is internal CPU registers and otherwise reserved
   eight_bit::Ram ram(&address_space, 0x0020, 0x7f00 - 0x0020);
