@@ -287,10 +287,23 @@ void Cpu6301::rot_flags(uint8_t result, bool carry) {
   sr.C = carry;
 }
 
+void Cpu6301::rot_flags16(uint16_t result, bool carry) {
+  sr.N = result & 0x8000;
+  sr.Z = result == 0;
+  sr.V = sr.N ^ carry;
+  sr.C = carry;
+}
+
 void Cpu6301::lsr(uint8_t& dest) {
   bool carry = dest & 1;
   dest = dest >> 1;
   rot_flags(dest, carry);
+}
+
+void Cpu6301::lsrd(uint16_t& dest) {
+  bool carry = dest & 1;
+  dest = dest >> 1;
+  rot_flags16(dest, carry);
 }
 
 void Cpu6301::ror(uint8_t& dest) {
@@ -315,6 +328,12 @@ void Cpu6301::asl(uint8_t& dest) {
   bool carry = dest & 0x80;
   dest = dest << 1;
   rot_flags(dest, carry);
+}
+
+void Cpu6301::asld(uint16_t& dest) {
+  bool carry = dest & 0x8000;
+  dest = dest << 1;
+  rot_flags16(dest, carry);
 }
 
 void Cpu6301::dec(uint8_t& dest) {
@@ -448,8 +467,8 @@ Cpu6301::Cpu6301(AddressSpace* memory)
 #define OP(expr) [this](uint16_t d) { expr; }
   instructions_ = {
       {0x01, {"nop", 1, 1, kIMP, OP()}},
-      // {0x04, {"lsrd", 1, 1, kACD, [this](uint16_t d) {}}},
-      // {0x05, {"asld", 1, 1, kACD, [this](uint16_t d) {}}},
+      {0x04, {"lsrd", 1, 1, kACD, OP(lsrd(d))}},
+      {0x05, {"asld", 1, 1, kACD, OP(asld(d))}},
       {0x06, {"tap", 1, 1, kIMP, OP(tap())}},
       {0x07, {"tpa", 1, 1, kIMP, OP(tpa())}},
       {0x08, {"inx", 1, 1, kIMP, OP(add_z(x, 1))}},
