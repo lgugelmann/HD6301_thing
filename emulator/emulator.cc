@@ -19,6 +19,7 @@
 #include "ps2_keyboard.h"
 #include "ram.h"
 #include "rom.h"
+#include "sound_opl3.h"
 
 ABSL_FLAG(std::string, rom_file, "", "Path to the ROM file to load");
 ABSL_FLAG(int, ticks_per_second, 1000000, "Number of CPU ticks per second");
@@ -80,6 +81,12 @@ int main(int argc, char* argv[]) {
 
   eight_bit::PS2Keyboard keyboard(cpu.get_irq(), cpu.get_port1(),
                                   cpu.get_port2());
+
+  auto sound_opl3 = eight_bit::SoundOPL3::Create(&address_space, 0x7f80);
+  if (!sound_opl3.ok()) {
+    LOG(ERROR) << "Failed to initialize sound";
+    return -1;
+  }
 
   // Add a timer callback to call cpu.tick() once every millisecond
   SDL_TimerID timer = SDL_AddTimer(1, timer_callback, &cpu);

@@ -17,7 +17,9 @@ add_executable(${PROJECT_NAME}
     ps2_keyboard.cc
     ram.cc
     rom.cc
+    sound_opl3.cc
     timer.cc
+    Nuked-OPL3/opl3.c
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -26,6 +28,8 @@ target_link_libraries(${PROJECT_NAME}
     absl::log
     absl::log_initialize
     absl::log_flags
+    absl::status
+    absl::statusor
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_BINARY_DIR}")
