@@ -1,0 +1,106 @@
+#include "sound_opl3.h"
+
+#include <SDL.h>
+#include <absl/log/log.h>
+#include <absl/status/status.h>
+#include <absl/status/statusor.h>
+#include <absl/strings/str_format.h>
+
+#include <cstdint>
+#include <memory>
+
+#include "Nuked-OPL3/opl3.h"
+#include "address_space.h"
+
+namespace eight_bit {
+namespace {
+
+static constexpr int kNumSamples = 4096;
+
+void OPL3_AudioCallback(void* userdata, uint8_t* stream, int len) {
+  opl3_chip* chip = static_cast<opl3_chip*>(userdata);
+  // len is the length of the stream in bytes, but we generate 16-bit stereo
+  // samples, and OPL3_GenerateStream expects the number of samples.
+  OPL3_GenerateStream(chip, reinterpret_cast<int16_t*>(stream), len / 4);
+}
+}  // namespace
+
+SoundOPL3::SoundOPL3(AddressSpace* address_space, uint16_t base_address)
+    : address_space_(address_space), base_address_(base_address) {
+  OPL3_Reset(&opl3_chip_, 44100);
+  address_space_->register_write(
+      base_address_, base_address_ + 3,
+      [this](uint16_t address, uint8_t data) { write(address, data); });
+  address_space_->register_read(base_address_, base_address_,
+                                [this](uint16_t) { return read_status(); });
+}
+
+SoundOPL3::~SoundOPL3() {
+  // SDL reference counts the Init and Quit, repeated calls are ok.
+  if (sdl_audio_initialized_) {
+    SDL_CloseAudio();
+  }
+}
+
+absl::StatusOr<std::unique_ptr<SoundOPL3>> SoundOPL3::Create(
+    AddressSpace* address_space, uint16_t base_address) {
+  auto sound_opl3 =
+      absl::WrapUnique(new SoundOPL3(address_space, base_address));
+  auto status = sound_opl3->initialize();
+  if (!status.ok()) {
+    return status;
+  }
+
+  return std::move(sound_opl3);
+}
+
+void SoundOPL3::write(uint16_t address, uint8_t data) {
+  static uint16_t write_address = 0;
+  uint16_t opl_address = address - base_address_;
+  switch (opl_address) {
+    case 0:
+      write_address = data;
+      break;
+    case 1:
+      OPL3_WriteReg(&opl3_chip_, write_address, data);
+      break;
+    case 2:
+      write_address = 0x100 | data;
+      break;
+    default:
+      LOG(ERROR) << absl::StreamFormat("Write to invalid OPL3 address: %x",
+                                       opl_address);
+  }
+}
+
+uint8_t SoundOPL3::read_status() {
+  // TODO implement this
+  return 0;
+}
+
+absl::Status SoundOPL3::initialize() {
+  // Initialize SDL
+  if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+    return absl::InternalError("SDL_Init for AUDIO failed");
+  }
+
+  SDL_AudioSpec spec;
+  SDL_memset(&spec, 0, sizeof(spec));
+  spec.freq = 44100;
+  spec.format = AUDIO_S16SYS;
+  spec.channels = 2;
+  spec.samples = kNumSamples;
+  spec.callback = OPL3_AudioCallback;
+  spec.userdata = &opl3_chip_;
+
+  if (SDL_OpenAudio(&spec, nullptr) < 0) {
+    return absl::InternalError("SDL_OpenAudio failed");
+  }
+
+  sdl_audio_initialized_ = true;
+  SDL_PauseAudio(0);
+
+  return absl::OkStatus();
+}
+
+}  // namespace eight_bit
