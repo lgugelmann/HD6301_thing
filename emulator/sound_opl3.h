@@ -1,8 +1,11 @@
 #ifndef EIGHT_BIT_SOUND_OPL3_H
 #define EIGHT_BIT_SOUND_OPL3_H
 
+#include <absl/base/thread_annotations.h>
 #include <absl/status/statusor.h>
+#include <absl/synchronization/mutex.h>
 
+#include <cstdint>
 #include <memory>
 
 #include "Nuked-OPL3/opl3.h"
@@ -26,10 +29,17 @@ class SoundOPL3 {
   SoundOPL3(AddressSpace* address_space, uint16_t base_address);
   absl::Status initialize();
 
+  static void AudioCallback(void* userdata, uint8_t* stream, int len);
+
   bool sdl_audio_initialized_ = false;
-  opl3_chip opl3_chip_;
   AddressSpace* address_space_;
   uint16_t base_address_;
+
+  struct LockableOPL3Chip {
+    absl::Mutex mutex;
+    opl3_chip chip ABSL_GUARDED_BY(mutex);
+  };
+  LockableOPL3Chip opl3_chip_;
 };
 
 }  // namespace eight_bit

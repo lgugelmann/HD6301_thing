@@ -14,20 +14,21 @@
 
 namespace eight_bit {
 namespace {
+static constexpr int kNumSamples = 1024;
+}  // namespace
 
-static constexpr int kNumSamples = 4096;
-
-void OPL3_AudioCallback(void* userdata, uint8_t* stream, int len) {
-  opl3_chip* chip = static_cast<opl3_chip*>(userdata);
+void SoundOPL3::AudioCallback(void* userdata, uint8_t* stream, int len) {
+  auto* callback_data = static_cast<SoundOPL3::LockableOPL3Chip*>(userdata);
   // len is the length of the stream in bytes, but we generate 16-bit stereo
   // samples, and OPL3_GenerateStream expects the number of samples.
-  OPL3_GenerateStream(chip, reinterpret_cast<int16_t*>(stream), len / 4);
+  absl::MutexLock lock(&callback_data->mutex);
+  OPL3_GenerateStream(&callback_data->chip, reinterpret_cast<int16_t*>(stream),
+                      len / 4);
 }
-}  // namespace
 
 SoundOPL3::SoundOPL3(AddressSpace* address_space, uint16_t base_address)
     : address_space_(address_space), base_address_(base_address) {
-  OPL3_Reset(&opl3_chip_, 44100);
+  OPL3_Reset(&opl3_chip_.chip, 44100);
   address_space_->register_write(
       base_address_, base_address_ + 3,
       [this](uint16_t address, uint8_t data) { write(address, data); });
@@ -61,9 +62,11 @@ void SoundOPL3::write(uint16_t address, uint8_t data) {
     case 0:
       write_address = data;
       break;
-    case 1:
-      OPL3_WriteReg(&opl3_chip_, write_address, data);
+    case 1: {
+      absl::MutexLock lock(&opl3_chip_.mutex);
+      OPL3_WriteRegBuffered(&opl3_chip_.chip, write_address, data);
       break;
+    }
     case 2:
       write_address = 0x100 | data;
       break;
@@ -90,7 +93,7 @@ absl::Status SoundOPL3::initialize() {
   spec.format = AUDIO_S16SYS;
   spec.channels = 2;
   spec.samples = kNumSamples;
-  spec.callback = OPL3_AudioCallback;
+  spec.callback = SoundOPL3::AudioCallback;
   spec.userdata = &opl3_chip_;
 
   if (SDL_OpenAudio(&spec, nullptr) < 0) {

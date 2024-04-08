@@ -30,6 +30,7 @@ target_link_libraries(${PROJECT_NAME}
     absl::log_flags
     absl::status
     absl::statusor
+    absl::synchronization
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_BINARY_DIR}")
