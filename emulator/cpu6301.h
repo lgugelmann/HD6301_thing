@@ -4,9 +4,11 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <memory>
 #include <string>
 
 #include "address_space.h"
+#include "hd6301_serial.h"
 #include "interrupt.h"
 #include "ioport.h"
 #include "timer.h"
@@ -141,11 +143,13 @@ class Cpu6301 {
   void enter_interrupt(uint16_t vector);
   uint8_t execute(uint8_t opcode);
 
-  IOPort port1_;
-  IOPort port2_;
   Interrupt interrupt_;
   Interrupt timer_interrupt_;
+  Interrupt serial_interrupt_;
   Timer timer_;
+  IOPort port1_;
+  IOPort port2_;
+  std::unique_ptr<HD6301Serial> serial_;
 
   uint8_t a = 0;
   uint8_t b = 0;

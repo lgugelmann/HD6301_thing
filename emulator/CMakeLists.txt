@@ -17,6 +17,7 @@ add_executable(${PROJECT_NAME}
     ps2_keyboard.cc
     ram.cc
     rom.cc
+    hd6301_serial.cc
     sound_opl3.cc
     timer.cc
     Nuked-OPL3/opl3.c

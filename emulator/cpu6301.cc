@@ -9,6 +9,7 @@
 #include <string>
 
 #include "address_space.h"
+#include "hd6301_serial.h"
 #include "interrupt.h"
 #include "ioport.h"
 
@@ -21,6 +22,7 @@ void Cpu6301::reset() {
 
 uint8_t Cpu6301::tick() {
   timer_.tick();
+  serial_->tick();
   if (current_opcode_ == 0) {
     if (interrupt_.has_interrupt() & !sr.I) {
       // Moves the PC to the relevant interrupt routine and masks interrupts.
@@ -28,6 +30,9 @@ uint8_t Cpu6301::tick() {
     }
     if (timer_interrupt_.has_interrupt() & !sr.I) {
       enter_interrupt(0xfff2);
+    }
+    if (serial_interrupt_.has_interrupt() & !sr.I) {
+      enter_interrupt(0xfff0);
     }
     uint8_t opcode = fetch();
     if (!instructions_.contains(opcode)) {
@@ -369,7 +374,7 @@ void Cpu6301::jsr(uint16_t address) {
 }
 
 void Cpu6301::enter_interrupt(uint16_t vector) {
-  VLOG(1) << "Entering interrupt";
+  VLOG(3) << "Entering interrupt at " << absl::Hex(vector, absl::kZeroPad4);
   psh16(pc);
   psh16(x);
   psh8(a);
@@ -431,8 +436,14 @@ uint8_t Cpu6301::execute(uint8_t opcode) {
 Cpu6301::Cpu6301(AddressSpace* memory)
     : port1_("port1"),
       port2_("port2"),
-      memory_(memory),
-      timer_(memory, 0x0008, &timer_interrupt_) {
+      timer_(memory, 0x0008, &timer_interrupt_),
+      memory_(memory) {
+  auto serial = HD6301Serial::Create(memory, 0x0010, &serial_interrupt_);
+  if (!serial.ok()) {
+    LOG(FATAL) << "Failed to create HD6301Serial: " << serial.status();
+  }
+  serial_ = std::move(serial.value());
+
   // Set up reads, writes to port 1 & port 1 DDR.
   memory->register_read(0x0000, 0x0000, [this](uint16_t address) {
     return port1_.get_direction();
@@ -458,10 +469,6 @@ Cpu6301::Cpu6301(AddressSpace* memory)
   memory->register_write(
       0x0003, 0x0003,
       [this](uint16_t address, uint8_t data) { port2_.write(data); });
-
-  // Serial TRCSR: fake a ready-to-send serial port
-  memory->register_read(0x0011, 0x0011,
-                        [this](uint16_t address) { return 0x20; });
 
 #define COMMA ,
 #define OP(expr) [this](uint16_t d) { expr; }
