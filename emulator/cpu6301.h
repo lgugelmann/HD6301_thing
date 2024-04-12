@@ -23,7 +23,7 @@ class Cpu6301 {
 
   uint8_t tick();
 
-  void print_state();
+  void print_state() const;
 
   IOPort* get_port1();
   IOPort* get_port2();
@@ -90,7 +90,7 @@ class Cpu6301 {
 
   void set16(uint16_t address, uint16_t data);
 
-  uint16_t get_d();
+  uint16_t get_d() const;
 
   uint16_t set_d(uint16_t d);
 
@@ -120,10 +120,10 @@ class Cpu6301 {
   void neg(uint8_t& dest);
   void nzv_sr(uint8_t result);
   void nzv_sr16(uint16_t result);
-  void logic(uint8_t data, std::function<uint8_t(uint8_t, uint8_t)> op,
+  void logic(uint8_t data, const std::function<uint8_t(uint8_t, uint8_t)>& op,
              uint8_t& dest);
   void logic_m(uint16_t address, uint8_t data,
-               std::function<uint8_t(uint8_t, uint8_t)> op, bool do_set);
+               const std::function<uint8_t(uint8_t, uint8_t)>& op, bool do_set);
   void com(uint8_t& dest);
   void rot_flags(uint8_t result, bool carry);
   void rot_flags16(uint16_t result, bool carry);

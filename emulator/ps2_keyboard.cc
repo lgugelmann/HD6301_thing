@@ -10,8 +10,8 @@ namespace eight_bit {
 namespace {
 
 struct PS2Key {
-  const std::vector<uint8_t> down;
-  const std::vector<uint8_t> up;
+  std::vector<uint8_t> down;
+  std::vector<uint8_t> up;
 };
 
 const std::map<SDL_Scancode, PS2Key> sdl_to_ps2_keymap{
@@ -125,7 +125,7 @@ PS2Keyboard::PS2Keyboard(Interrupt* irq, IOPort* data_port,
                          IOPort* irq_status_port)
     : irq_(irq), data_port_(data_port), irq_status_port_(irq_status_port) {
   data_port_->register_read_callback([this]() -> uint8_t {
-    if (data_.size()) {
+    if (!data_.empty()) {
       return data_.front();
     }
     return 0;
@@ -160,8 +160,6 @@ PS2Keyboard::PS2Keyboard(Interrupt* irq, IOPort* data_port,
       [this]() -> uint8_t { return interrupt_id_ != 0 ? 0x00 : 0x02; });
 }
 
-PS2Keyboard::~PS2Keyboard() {}
-
 // Translates the SDL keyboard event into a sequence of PS/2 data bytes to be
 // put on the data port.
 void PS2Keyboard::handle_keyboard_event(SDL_KeyboardEvent event) {
@@ -178,7 +176,7 @@ void PS2Keyboard::handle_keyboard_event(SDL_KeyboardEvent event) {
       data = &it->second.up;
     }
   }
-  if (data != nullptr && data->size()) {
+  if (data != nullptr && !data->empty()) {
     for (const auto& byte : *data) {
       data_.push(byte);
     }

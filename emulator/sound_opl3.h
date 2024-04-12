@@ -23,7 +23,7 @@ class SoundOPL3 {
       AddressSpace* address_space, uint16_t base_address);
 
   void write(uint16_t address, uint8_t data);
-  uint8_t read_status();
+  static uint8_t read_status();
 
  private:
   SoundOPL3(AddressSpace* address_space, uint16_t base_address);

@@ -3,6 +3,7 @@ project(emulator)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=abseil-*,modernize-*,-modernize-use-trailing-return-type,-modernize-use-bool-literals,performance-*,readability-*,-readability-identifier-length,-readability-function-cognitive-complexity,-readability-magic-numbers,-readability-implicit-bool-conversion")
 
 find_package(SDL2 REQUIRED)
 find_package(absl REQUIRED)

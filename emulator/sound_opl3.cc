@@ -14,7 +14,7 @@
 
 namespace eight_bit {
 namespace {
-static constexpr int kNumSamples = 1024;
+constexpr int kNumSamples = 1024;
 }  // namespace
 
 void SoundOPL3::AudioCallback(void* userdata, uint8_t* stream, int len) {
@@ -33,7 +33,7 @@ SoundOPL3::SoundOPL3(AddressSpace* address_space, uint16_t base_address)
       base_address_, base_address_ + 3,
       [this](uint16_t address, uint8_t data) { write(address, data); });
   address_space_->register_read(base_address_, base_address_,
-                                [this](uint16_t) { return read_status(); });
+                                [](uint16_t) { return read_status(); });
 }
 
 SoundOPL3::~SoundOPL3() {

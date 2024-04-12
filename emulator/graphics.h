@@ -11,7 +11,7 @@ namespace eight_bit {
 
 class Graphics {
  public:
-  Graphics();
+  Graphics() = default;
   ~Graphics();
 
   int initialize(uint16_t base_address, AddressSpace* address_space);

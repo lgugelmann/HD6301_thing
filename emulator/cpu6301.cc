@@ -53,7 +53,7 @@ uint8_t Cpu6301::tick() {
   return execute(opcode);
 }
 
-void Cpu6301::print_state() {
+void Cpu6301::print_state() const {
   printf("A: %02x B: %02x X: %04x SP: %04x PC: %04x CC: 11%d%d%d%d%d%d\n", a, b,
          x, sp, pc, sr.H, sr.I, sr.N, sr.Z, sr.V, sr.C);
 }
@@ -87,7 +87,7 @@ void Cpu6301::set16(uint16_t address, uint16_t data) {
   memory_->set16(address, data);
 }
 
-uint16_t Cpu6301::get_d() { return (uint16_t)a << 8 | (uint16_t)b; }
+uint16_t Cpu6301::get_d() const { return (uint16_t)a << 8 | (uint16_t)b; }
 
 uint16_t Cpu6301::set_d(uint16_t d) {
   a = d >> 8;
@@ -199,8 +199,8 @@ void Cpu6301::xgdx() {
 
 void Cpu6301::brx(bool branch, uint16_t dest) {
   if (branch) {
-    int8_t rel = dest;
-    pc += rel;
+    // Note the signed conversion!
+    pc = (int16_t)pc + (int8_t)dest;
   }
 }
 
@@ -261,14 +261,15 @@ void Cpu6301::nzv_sr16(uint16_t result) {
   sr.V = 0;
 }
 
-void Cpu6301::logic(uint8_t data, std::function<uint8_t(uint8_t, uint8_t)> op,
+void Cpu6301::logic(uint8_t data,
+                    const std::function<uint8_t(uint8_t, uint8_t)>& op,
                     uint8_t& dest) {
   dest = op(dest, data);
   nzv_sr(dest);
 }
 
 void Cpu6301::logic_m(uint16_t address, uint8_t data,
-                      std::function<uint8_t(uint8_t, uint8_t)> op,
+                      const std::function<uint8_t(uint8_t, uint8_t)>& op,
                       bool do_set = true) {
   uint8_t dest = get(address);
   logic(data, op, dest);
@@ -469,7 +470,7 @@ Cpu6301::Cpu6301(AddressSpace* memory)
 #define COMMA ,
 #define OP(expr) [this](uint16_t __attribute__((unused)) d) { expr; }
   instructions_ = {
-      {0x01, {"nop", 1, 1, kIMP, OP()}},
+      {0x01, {"nop", 1, 1, kIMP, [](uint16_t) {}}},
       {0x04, {"lsrd", 1, 1, kACD, OP(lsrd(d))}},
       {0x05, {"asld", 1, 1, kACD, OP(asld(d))}},
       {0x06, {"tap", 1, 1, kIMP, OP(tap())}},

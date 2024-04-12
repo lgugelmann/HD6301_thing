@@ -13,7 +13,7 @@ namespace eight_bit {
 class PS2Keyboard {
  public:
   PS2Keyboard(Interrupt* irq, IOPort* data_port, IOPort* irq_status_port);
-  ~PS2Keyboard();
+  ~PS2Keyboard() = default;
 
   void handle_keyboard_event(SDL_KeyboardEvent event);
 

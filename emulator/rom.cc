@@ -1,5 +1,10 @@
 #include "rom.h"
 
+#include <cstdint>
+#include <span>
+
+#include "address_space.h"
+
 namespace eight_bit {
 
 Rom::Rom(AddressSpace* address_space, uint16_t base_address, uint16_t size,

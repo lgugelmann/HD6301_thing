@@ -29,14 +29,14 @@ class IOPort {
   void set_direction(uint8_t direction_mask);
 
   // Get the data direction for the port.
-  uint8_t get_direction();
+  uint8_t get_direction() const;
 
   // Registers a callback that's called when read() is invoked on this port. The
   // device at the other end is expected to provide data.
-  void register_read_callback(read_callback callback);
+  void register_read_callback(const read_callback& callback);
 
   // Registers a write callback for this port.
-  void register_write_callback(write_callback callback);
+  void register_write_callback(const write_callback& callback);
 
  private:
   std::string name_;

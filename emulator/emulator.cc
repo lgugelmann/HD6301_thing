@@ -28,7 +28,7 @@ ABSL_FLAG(int, ticks_per_second, 1000000, "Number of CPU ticks per second");
 // TODO: figure out how to do this faster
 Uint32 timer_callback(Uint32 interval, void* param) {
   const int num_ticks = absl::GetFlag(FLAGS_ticks_per_second) / 1000;
-  eight_bit::Cpu6301* cpu = static_cast<eight_bit::Cpu6301*>(param);
+  auto* cpu = static_cast<eight_bit::Cpu6301*>(param);
   for (int i = 0; i < num_ticks; ++i) {
     cpu->tick();
   }

@@ -14,7 +14,7 @@ namespace eight_bit {
 
 bool AddressSpace::register_read(uint16_t start, uint16_t end,
                                  read_callback callback) {
-  ReadAddressRange range = {start, end, callback};
+  ReadAddressRange range = {start, end, std::move(callback)};
   for (const auto& r : read_ranges_) {
     if (r.start <= range.end && r.end >= range.start) {
       LOG(ERROR) << absl::StreamFormat(
@@ -28,7 +28,7 @@ bool AddressSpace::register_read(uint16_t start, uint16_t end,
 
 bool AddressSpace::register_write(uint16_t start, uint16_t end,
                                   write_callback callback) {
-  WriteAddressRange range = {start, end, callback};
+  WriteAddressRange range = {start, end, std::move(callback)};
   for (const auto& r : write_ranges_) {
     if (r.start <= range.end && r.end >= range.start) {
       LOG(ERROR) << absl::StreamFormat(

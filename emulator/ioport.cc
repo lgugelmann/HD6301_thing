@@ -38,13 +38,13 @@ void IOPort::set_direction(uint8_t direction_mask) {
   data_direction_ = direction_mask;
 }
 
-uint8_t IOPort::get_direction() { return data_direction_; }
+uint8_t IOPort::get_direction() const { return data_direction_; }
 
-void IOPort::register_read_callback(read_callback callback) {
+void IOPort::register_read_callback(const read_callback& callback) {
   read_callbacks_.push_back(callback);
 }
 
-void IOPort::register_write_callback(write_callback callback) {
+void IOPort::register_write_callback(const write_callback& callback) {
   write_callbacks_.push_back(callback);
 }
 

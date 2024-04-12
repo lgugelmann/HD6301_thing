@@ -14,12 +14,12 @@
 
 namespace eight_bit {
 namespace {
-static constexpr uint8_t kTransmitEnable = 0b00000010;
-static constexpr uint8_t kTransmitInterruptEnable = 0b00000100;
-static constexpr uint8_t kReceiveEnable = 0b00001000;
-static constexpr uint8_t kReceiveInterruptEnable = 0b00010000;
-static constexpr uint8_t kTransmitDataRegisterEmpty = 0b00100000;
-static constexpr uint8_t kReceiveDataRegisterFull = 0b10000000;
+constexpr uint8_t kTransmitEnable = 0b00000010;
+constexpr uint8_t kTransmitInterruptEnable = 0b00000100;
+constexpr uint8_t kReceiveEnable = 0b00001000;
+constexpr uint8_t kReceiveInterruptEnable = 0b00010000;
+constexpr uint8_t kTransmitDataRegisterEmpty = 0b00100000;
+constexpr uint8_t kReceiveDataRegisterFull = 0b10000000;
 
 uint16_t ticks_per_bit(uint8_t rmcr) {
   switch (rmcr & 0x03) {
@@ -31,6 +31,8 @@ uint16_t ticks_per_bit(uint8_t rmcr) {
       return 1024;
     case 3:
       return 4096;
+    default:
+      return 0;
   }
   return 0;
 }
@@ -73,7 +75,7 @@ void HD6301Serial::tick() {
   if (receive_register_full_countdown_ > 0) {
     receive_register_full_countdown_ -= 1;
   }
-  if (rx_fifo_.size() > 0 && receive_register_full_countdown_ == 0) {
+  if (!rx_fifo_.empty() && receive_register_full_countdown_ == 0) {
     receive_data_register_ = rx_fifo_.front();
     rx_fifo_.pop();
     trcsr_ |= kReceiveDataRegisterFull;

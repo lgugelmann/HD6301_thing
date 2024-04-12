@@ -15,7 +15,7 @@ std::string hexdump(const std::vector<uint8_t>& data) {
   std::vector<uint8_t> prev_line(bytes_per_line, 0);
   bool is_repeated = true;
 
-  for (size_t i = 0; i < data.size(); i += bytes_per_line) {
+  for (std::size_t i = 0; i < data.size(); i += bytes_per_line) {
     // Check if the current line is repeated
     if (i != 0 && i + bytes_per_line <= data.size() &&
         std::equal(data.begin() + i, data.begin() + i + bytes_per_line,
@@ -25,9 +25,8 @@ std::string hexdump(const std::vector<uint8_t>& data) {
         absl::StrAppend(&output, "*\n");
       }
       continue;
-    } else {
-      is_repeated = false;
     }
+    is_repeated = false;
 
     // Copy current line to prev_line
     std::copy(data.begin() + i, data.begin() + i + bytes_per_line,
@@ -52,9 +51,9 @@ std::string hexdump(const std::vector<uint8_t>& data) {
 
     // Print bytes in ASCII format
     for (size_t j = 0; j < bytes_per_line && i + j < data.size(); ++j) {
-      uint8_t d = data[i + j];
+      char d = data[i + j];
       if (d >= 32 && d <= 126) {
-        absl::string_view c(reinterpret_cast<const char*>(&d), 1);
+        absl::string_view c(&d, 1);
         absl::StrAppend(&output, c);
       } else {
         absl::StrAppend(&output, ".");

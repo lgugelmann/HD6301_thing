@@ -7,8 +7,6 @@
 
 namespace eight_bit {
 
-Graphics::Graphics() {}
-
 Graphics::~Graphics() {
   if (palette_) {
     SDL_FreePalette(palette_);
@@ -28,11 +26,11 @@ int Graphics::initialize(uint16_t base_address, AddressSpace* address_space) {
   base_address_ = base_address;
 
   // Scale the window 2x if the screen has high DPI
-  float dpi = 0.0f;
+  float dpi = 0.0;
   SDL_GetDisplayDPI(0, nullptr, &dpi, nullptr);
 
   int scale = 1;
-  if (dpi > 120.0f) {
+  if (dpi > 120.0) {
     scale = 2;
   }
 
@@ -127,7 +125,7 @@ void Graphics::render_character(int position, bool reverse_colors = false) {
   // The font is stored as a 1bpp bitmap of size kFontNumChars*kFontCharHeight,
   // with each byte representing a row of 8 pixels.
   const uint8_t* font_data = font + character;
-  uint8_t* pixels = static_cast<uint8_t*>(frame_surface_->pixels);
+  auto* pixels = static_cast<uint8_t*>(frame_surface_->pixels);
   for (int i = 0; i < kFontCharHeight; ++i) {
     for (int j = 0; j < kFontCharWidth; ++j) {
       if ((font_data[i * kFontNumChars] & (1 << j))) {
@@ -167,7 +165,7 @@ void Graphics::write(uint16_t address, uint8_t data) {
           SDL_FillRect(frame_surface_, nullptr, 0);
           SDL_UnlockSurface(frame_surface_);
           cursor_pos_ = 0;
-          render_character(cursor_pos_, cursor_hidden_ == false);
+          render_character(cursor_pos_, !cursor_hidden_);
           break;
         // 1: clear current row, cursor to start of row, colors to default
         case 1: {
@@ -184,7 +182,7 @@ void Graphics::write(uint16_t address, uint8_t data) {
           SDL_LockSurface(frame_surface_);
           SDL_FillRect(frame_surface_, &rect, 0);
           SDL_UnlockSurface(frame_surface_);
-          render_character(cursor_pos_, cursor_hidden_ == false);
+          render_character(cursor_pos_, !cursor_hidden_);
           break;
         }
         // 2: clear next row, cursor to start of next row, colors to default
@@ -209,9 +207,11 @@ void Graphics::write(uint16_t address, uint8_t data) {
             // Restore the previous character to the non-inverted drawing state
             render_character(previous_cursor_pos);
           }
-          render_character(cursor_pos_, cursor_hidden_ == false);
+          render_character(cursor_pos_, !cursor_hidden_);
           break;
         }
+        default:
+          LOG(ERROR) << "Unknown clear command: " << data;
       }
       break;
     }
@@ -231,13 +231,13 @@ void Graphics::write(uint16_t address, uint8_t data) {
         // Restore the previous character to the non-inverted drawing state
         render_character(previous_cursor_pos);
       }
-      render_character(cursor_pos_, cursor_hidden_ == false);
+      render_character(cursor_pos_, !cursor_hidden_);
       break;
     }
     // Same as 0 but doesn't advance cursor
     case 3:
       characters_[cursor_pos_] = data;
-      render_character(cursor_pos_, cursor_hidden_ == false);
+      render_character(cursor_pos_, !cursor_hidden_);
       break;
     // Set cursor column
     case 4: {
@@ -248,7 +248,7 @@ void Graphics::write(uint16_t address, uint8_t data) {
         // Restore the previous character to the non-inverted drawing state
         render_character(previous_cursor_pos);
       }
-      render_character(cursor_pos_, cursor_hidden_ == false);
+      render_character(cursor_pos_, !cursor_hidden_);
       break;
     }
     // Set cursor row
@@ -260,7 +260,7 @@ void Graphics::write(uint16_t address, uint8_t data) {
         // Restore the previous character to the non-inverted drawing state
         render_character(previous_cursor_pos);
       }
-      render_character(cursor_pos_, cursor_hidden_ == false);
+      render_character(cursor_pos_, !cursor_hidden_);
       break;
     }
     // set cursor position high byte
@@ -275,14 +275,14 @@ void Graphics::write(uint16_t address, uint8_t data) {
         // Restore the previous character to the non-inverted drawing state
         render_character(previous_cursor_pos);
       }
-      render_character(cursor_pos_, cursor_hidden_ == false);
+      render_character(cursor_pos_, !cursor_hidden_);
       break;
     }
     // Set cursor visibility: 0 = visible, 1 = hidden
     case 8:
       if (cursor_hidden_ != data) {
         cursor_hidden_ = data;
-        render_character(cursor_pos_, cursor_hidden_ == false);
+        render_character(cursor_pos_, !cursor_hidden_);
       }
       break;
     // Set color at cursor position. Bit format is (MSB first) ABRRGGBB where if
@@ -299,8 +299,7 @@ void Graphics::write(uint16_t address, uint8_t data) {
       bool advance_cursor = data & 0x80;
       // We render with reverse colors if we're not advancing and the cursor
       // isn't hidden.
-      render_character(cursor_pos_,
-                       (advance_cursor == false) && (cursor_hidden_ == false));
+      render_character(cursor_pos_, (!advance_cursor) && (!cursor_hidden_));
       if (advance_cursor) {
         if (++cursor_pos_ >= kCharBufSize) {
           cursor_pos_ = 0;

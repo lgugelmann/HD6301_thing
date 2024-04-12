@@ -75,12 +75,12 @@ uint8_t Timer::read_counter_low() {
   return counter_;
 }
 
-void Timer::write_counter_low(uint8_t data) {
+void Timer::write_counter_low(uint8_t value) {
   if (counter_high_latched_) {
     counter_high_latched_ = false;
-    counter_ = counter_high_latch_ << 8 | data;
+    counter_ = counter_high_latch_ << 8 | value;
   } else {
-    counter_ = (counter_ & 0xff00) | (uint16_t)data;
+    counter_ = (counter_ & 0xff00) | (uint16_t)value;
   }
 }
 

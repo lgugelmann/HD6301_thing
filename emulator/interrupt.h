@@ -1,6 +1,7 @@
 #ifndef EIGHT_BIT_COMPUTER_INTERRUPT_H
 #define EIGHT_BIT_COMPUTER_INTERRUPT_H
 
+#include <absl/base/thread_annotations.h>
 #include <absl/synchronization/mutex.h>
 
 #include <set>
@@ -47,7 +48,7 @@ class Interrupt {
   // The next interrupt ID to use. Value 0 is never a valid interrupt ID and can
   // be used as a sentinel for 'no interrupt set'.
   absl::Mutex mutex_;
-  int next_interrupt_id_ = 1 ABSL_GUARDED_BY(mutex_);
+  int next_interrupt_id_ ABSL_GUARDED_BY(mutex_) = 1;
   std::set<int> interrupts_ ABSL_GUARDED_BY(mutex_);
 };
 

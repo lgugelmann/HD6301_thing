@@ -1,6 +1,7 @@
 #include "ram.h"
 
 #include <cstdint>
+#include <iostream>
 
 #include "address_space.h"
 #include "hexdump.h"
@@ -22,6 +23,6 @@ Ram::Ram(AddressSpace* address_space, uint16_t base_address, uint16_t size,
                                  });
 }
 
-void Ram::hexdump() const { ::eight_bit::hexdump(data_); }
+void Ram::hexdump() const { std::cout << eight_bit::hexdump(data_); }
 
 }  // namespace eight_bit
