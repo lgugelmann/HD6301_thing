@@ -2,6 +2,8 @@
 
 #include <SDL2/SDL.h>
 #include <absl/log/log.h>
+#include <absl/status/status.h>
+#include <absl/strings/str_cat.h>
 
 #include "../pico_graphics/font.h"
 
@@ -22,7 +24,8 @@ Graphics::~Graphics() {
   }
 }
 
-int Graphics::initialize(uint16_t base_address, AddressSpace* address_space) {
+absl::Status Graphics::initialize(uint16_t base_address,
+                                  AddressSpace* address_space) {
   base_address_ = base_address;
 
   // Scale the window 2x if the screen has high DPI
@@ -38,15 +41,15 @@ int Graphics::initialize(uint16_t base_address, AddressSpace* address_space) {
                              SDL_WINDOWPOS_UNDEFINED, kFrameWidth * scale,
                              kFrameHeight * scale, SDL_WINDOW_SHOWN);
   if (!window_) {
-    LOG(ERROR) << "Failed to create window: " << SDL_GetError();
-    return -1;
+    return absl::InternalError(
+        absl::StrCat("Failed to create window: ", SDL_GetError()));
   }
 
   // Initialize a palette with the 64 RGB222 colors
   palette_ = SDL_AllocPalette(64);
   if (!palette_) {
-    LOG(ERROR) << "Failed to allocate palette: " << SDL_GetError();
-    return -1;
+    return absl::InternalError(
+        absl::StrCat("Failed to allocate palette: ", SDL_GetError()));
   }
   for (int i = 0; i < 64; ++i) {
     palette_->colors[i].r = ((i & 0b00110000) >> 4) * 85;
@@ -58,8 +61,8 @@ int Graphics::initialize(uint16_t base_address, AddressSpace* address_space) {
   frame_surface_ = SDL_CreateRGBSurfaceWithFormat(0, kFrameWidth, kFrameHeight,
                                                   8, SDL_PIXELFORMAT_INDEX8);
   if (!frame_surface_) {
-    LOG(ERROR) << "Failed to create frame surface: " << SDL_GetError();
-    return -1;
+    return absl::InternalError(
+        absl::StrCat("Failed to create frame surface: ", SDL_GetError()));
   }
   SDL_SetSurfacePalette(frame_surface_, palette_);
   // nullptr means fill the entire surface
@@ -68,21 +71,23 @@ int Graphics::initialize(uint16_t base_address, AddressSpace* address_space) {
   // Create a renderer
   renderer_ = SDL_CreateRenderer(window_, -1, SDL_RENDERER_ACCELERATED);
   if (!renderer_) {
-    LOG(ERROR) << "Failed to create renderer: " << SDL_GetError();
-    return -1;
+    return absl::InternalError(
+        absl::StrCat("Failed to create renderer: ", SDL_GetError()));
   }
 
   // Set a black background
   SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
   SDL_RenderClear(renderer_);
 
-  if (!address_space->register_write(
-          base_address, base_address + 63,
-          [this](uint16_t address, uint8_t data) { write(address, data); })) {
-    return -1;
-  };
+  auto status = address_space->register_write(
+      base_address, base_address + 63,
+      [this](uint16_t address, uint8_t data) { write(address, data); });
 
-  return 0;
+  if (!status.ok()) {
+    return status;
+  }
+
+  return absl::OkStatus();
 }
 
 void Graphics::render() {

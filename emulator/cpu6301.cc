@@ -446,26 +446,50 @@ Cpu6301::Cpu6301(AddressSpace* memory)
   serial_ = std::move(serial.value());
 
   // Set up reads, writes to port 1 & port 1 DDR.
-  memory->register_read(0x0000, 0x0000,
-                        [this](uint16_t) { return port1_.get_direction(); });
-  memory->register_write(0x0000, 0x0000, [this](uint16_t, uint8_t data) {
-    port1_.set_direction(data);
-  });
-  memory->register_read(0x0002, 0x0002,
-                        [this](uint16_t) { return port1_.read(); });
-  memory->register_write(
+  auto status = memory->register_read(
+      0x0000, 0x0000, [this](uint16_t) { return port1_.get_direction(); });
+  if (!status.ok()) {
+    LOG(ERROR) << "Failed to register read callback for port 1: " << status;
+  }
+  status = memory->register_write(
+      0x0000, 0x0000,
+      [this](uint16_t, uint8_t data) { port1_.set_direction(data); });
+  if (!status.ok()) {
+    LOG(ERROR) << "Failed to register write callback for port 1: " << status;
+  }
+  status = memory->register_read(0x0002, 0x0002,
+                                 [this](uint16_t) { return port1_.read(); });
+  if (!status.ok()) {
+    LOG(ERROR) << "Failed to register read callback for port 1: " << status;
+  }
+  status = memory->register_write(
       0x0002, 0x0002, [this](uint16_t, uint8_t data) { port1_.write(data); });
+  if (!status.ok()) {
+    LOG(ERROR) << "Failed to register write callback for port 1: " << status;
+  }
 
   // Set up reads, writes to port 2 & port 2 DDR.
-  memory->register_read(0x0001, 0x0001,
-                        [this](uint16_t) { return port2_.get_direction(); });
-  memory->register_write(0x0001, 0x0001, [this](uint16_t, uint8_t data) {
-    port2_.set_direction(data);
-  });
-  memory->register_read(0x0003, 0x0003,
-                        [this](uint16_t) { return port2_.read(); });
-  memory->register_write(
+  status = memory->register_read(
+      0x0001, 0x0001, [this](uint16_t) { return port2_.get_direction(); });
+  if (!status.ok()) {
+    LOG(ERROR) << "Failed to register read callback for port 2: " << status;
+  }
+  status = memory->register_write(
+      0x0001, 0x0001,
+      [this](uint16_t, uint8_t data) { port2_.set_direction(data); });
+  if (!status.ok()) {
+    LOG(ERROR) << "Failed to register write callback for port 2: " << status;
+  }
+  status = memory->register_read(0x0003, 0x0003,
+                                 [this](uint16_t) { return port2_.read(); });
+  if (!status.ok()) {
+    LOG(ERROR) << "Failed to register read callback for port 2: " << status;
+  }
+  status = memory->register_write(
       0x0003, 0x0003, [this](uint16_t, uint8_t data) { port2_.write(data); });
+  if (!status.ok()) {
+    LOG(ERROR) << "Failed to register write callback for port 2: " << status;
+  }
 
 #define COMMA ,
 #define OP(expr) [this](uint16_t __attribute__((unused)) d) { expr; }

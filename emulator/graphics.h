@@ -14,7 +14,7 @@ class Graphics {
   Graphics() = default;
   ~Graphics();
 
-  int initialize(uint16_t base_address, AddressSpace* address_space);
+  absl::Status initialize(uint16_t base_address, AddressSpace* address_space);
 
   void render();
 

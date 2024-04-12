@@ -29,11 +29,17 @@ void SoundOPL3::AudioCallback(void* userdata, uint8_t* stream, int len) {
 SoundOPL3::SoundOPL3(AddressSpace* address_space, uint16_t base_address)
     : address_space_(address_space), base_address_(base_address) {
   OPL3_Reset(&opl3_chip_.chip, 44100);
-  address_space_->register_write(
+  auto status = address_space_->register_write(
       base_address_, base_address_ + 3,
       [this](uint16_t address, uint8_t data) { write(address, data); });
-  address_space_->register_read(base_address_, base_address_,
-                                [](uint16_t) { return read_status(); });
+  if (!status.ok()) {
+    LOG(ERROR) << "Failed to register write callback for OPL3: " << status;
+  }
+  status = address_space_->register_read(
+      base_address_, base_address_, [](uint16_t) { return read_status(); });
+  if (!status.ok()) {
+    LOG(ERROR) << "Failed to register read callback for OPL3: " << status;
+  }
 }
 
 SoundOPL3::~SoundOPL3() {

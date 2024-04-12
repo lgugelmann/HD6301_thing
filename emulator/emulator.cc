@@ -41,9 +41,8 @@ int main(int argc, char* argv[]) {
 
   // Initialize SDL
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-    LOG(ERROR) << absl::StreamFormat("Failed to initialize SDL: %s",
+    LOG(FATAL) << absl::StreamFormat("Failed to initialize SDL: %s",
                                      SDL_GetError());
-    return -1;
   }
 
   absl::Cleanup sdl_cleanup([] { SDL_Quit(); });
@@ -71,10 +70,7 @@ int main(int argc, char* argv[]) {
   eight_bit::Ram ram(&address_space, 0x0020, 0x7f00 - 0x0020);
 
   eight_bit::Graphics graphics;
-  if (graphics.initialize(0x7fc0, &address_space) != 0) {
-    LOG(ERROR) << "Failed to initialize graphics";
-    return -1;
-  }
+  QCHECK_OK(graphics.initialize(0x7fc0, &address_space));
 
   eight_bit::Cpu6301 cpu(&address_space);
   cpu.reset();

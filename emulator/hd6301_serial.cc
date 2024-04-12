@@ -155,16 +155,22 @@ HD6301Serial::HD6301Serial(AddressSpace* address_space, uint16_t base_address,
                            Interrupt* interrupt)
     : address_space_(address_space),
       base_address_(base_address),
-      interrupt_(interrupt) {
-  address_space_->register_write(
-      base_address_, base_address_ + 3,
-      [this](uint16_t address, uint8_t data) { write(address, data); });
-  address_space_->register_read(
-      base_address_, base_address_ + 3,
-      [this](uint16_t address) { return read(address); });
-}
+      interrupt_(interrupt) {}
 
 absl::Status HD6301Serial::initialize() {
+  auto status = address_space_->register_write(
+      base_address_, base_address_ + 3,
+      [this](uint16_t address, uint8_t data) { write(address, data); });
+  if (!status.ok()) {
+    return status;
+  }
+  status = address_space_->register_read(
+      base_address_, base_address_ + 3,
+      [this](uint16_t address) { return read(address); });
+  if (!status.ok()) {
+    return status;
+  }
+
   struct termios term = {};
   if (openpty(&our_fd_, &their_fd_, nullptr, &term, nullptr)) {
     return absl::InternalError("Failed to open PTY");

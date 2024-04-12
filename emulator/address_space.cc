@@ -1,6 +1,7 @@
 #include "address_space.h"
 
 #include <absl/log/log.h>
+#include <absl/status/status.h>
 #include <absl/strings/str_format.h>
 
 #include <cstdint>
@@ -12,32 +13,30 @@
 
 namespace eight_bit {
 
-bool AddressSpace::register_read(uint16_t start, uint16_t end,
-                                 read_callback callback) {
+absl::Status AddressSpace::register_read(uint16_t start, uint16_t end,
+                                         read_callback callback) {
   ReadAddressRange range = {start, end, std::move(callback)};
   for (const auto& r : read_ranges_) {
     if (r.start <= range.end && r.end >= range.start) {
-      LOG(ERROR) << absl::StreamFormat(
-          "Address range %04x-%04x already registered for reads", start, end);
-      return false;
+      return absl::InvalidArgumentError(absl::StrFormat(
+          "Address range %04x-%04x already registered for reads", start, end));
     }
   }
   read_ranges_.push_back(range);
-  return true;
+  return absl::OkStatus();
 }
 
-bool AddressSpace::register_write(uint16_t start, uint16_t end,
-                                  write_callback callback) {
+absl::Status AddressSpace::register_write(uint16_t start, uint16_t end,
+                                          write_callback callback) {
   WriteAddressRange range = {start, end, std::move(callback)};
   for (const auto& r : write_ranges_) {
     if (r.start <= range.end && r.end >= range.start) {
-      LOG(ERROR) << absl::StreamFormat(
-          "Address range %04x-%04x already registered for writes", start, end);
-      return false;
+      return absl::InvalidArgumentError(absl::StrFormat(
+          "Address range %04x-%04x already registered for writes", start, end));
     }
   }
   write_ranges_.push_back(range);
-  return true;
+  return absl::OkStatus();
 }
 
 uint8_t AddressSpace::get(uint16_t address) {
