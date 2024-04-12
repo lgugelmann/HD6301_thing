@@ -2,7 +2,10 @@
 #define EIGHT_BIT_GRAPHICS_H_
 
 #include <SDL2/SDL.h>
+#include <absl/status/statusor.h>
 
+#include <cstdint>
+#include <memory>
 #include <vector>
 
 #include "address_space.h"
@@ -11,14 +14,19 @@ namespace eight_bit {
 
 class Graphics {
  public:
-  Graphics() = default;
   ~Graphics();
+  Graphics(const Graphics&) = delete;
+  Graphics& operator=(const Graphics&) = delete;
 
-  absl::Status initialize(uint16_t base_address, AddressSpace* address_space);
+  static absl::StatusOr<std::unique_ptr<Graphics>> create(
+      uint16_t base_address, AddressSpace* address_space);
 
   void render();
 
  private:
+  Graphics(AddressSpace* address_space, uint16_t base_address);
+  absl::Status initialize();
+
   void render_character(int position, bool reverse_colors);
 
   void write(uint16_t address, uint8_t data);
@@ -39,6 +47,9 @@ class Graphics {
   int cursor_pos_high_ = 0;
   bool cursor_hidden_ = false;
 
+  AddressSpace* address_space_ = nullptr;
+  uint16_t base_address_ = 0;
+
   std::array<uint8_t, kCharBufSize> characters_ = {0};
   // 0x3f is white, 0 is black
   std::array<uint8_t, kCharBufSize> foreground_color_ = {0x3f};
@@ -46,7 +57,6 @@ class Graphics {
   SDL_Palette* palette_ = nullptr;
   SDL_Surface* frame_surface_ = nullptr;
 
-  uint16_t base_address_ = 0;
   SDL_Window* window_ = nullptr;
   SDL_Renderer* renderer_ = nullptr;
 };

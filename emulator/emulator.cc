@@ -69,8 +69,9 @@ int main(int argc, char* argv[]) {
   // 0..1f is internal CPU registers and otherwise reserved
   eight_bit::Ram ram(&address_space, 0x0020, 0x7f00 - 0x0020);
 
-  eight_bit::Graphics graphics;
-  QCHECK_OK(graphics.initialize(0x7fc0, &address_space));
+  auto graphics_or = eight_bit::Graphics::create(0x7fc0, &address_space);
+  QCHECK_OK(graphics_or);
+  auto graphics = std::move(graphics_or.value());
 
   eight_bit::Cpu6301 cpu(&address_space);
   cpu.reset();
@@ -106,7 +107,7 @@ int main(int argc, char* argv[]) {
         keyboard.handle_keyboard_event(event.key);
       }
     }
-    graphics.render();
+    graphics->render();
     // Roughly 30 fps. TODO: make this a timer callback.
     SDL_Delay(16);
   }

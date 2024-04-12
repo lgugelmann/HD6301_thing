@@ -24,10 +24,18 @@ Graphics::~Graphics() {
   }
 }
 
-absl::Status Graphics::initialize(uint16_t base_address,
-                                  AddressSpace* address_space) {
-  base_address_ = base_address;
+absl::StatusOr<std::unique_ptr<Graphics>> Graphics::create(
+    uint16_t base_address, AddressSpace* address_space) {
+  auto graphics =
+      std::unique_ptr<Graphics>(new Graphics(address_space, base_address));
+  auto status = graphics->initialize();
+  if (!status.ok()) {
+    return status;
+  }
+  return graphics;
+}
 
+absl::Status Graphics::initialize() {
   // Scale the window 2x if the screen has high DPI
   float dpi = 0.0;
   SDL_GetDisplayDPI(0, nullptr, &dpi, nullptr);
@@ -79,10 +87,9 @@ absl::Status Graphics::initialize(uint16_t base_address,
   SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
   SDL_RenderClear(renderer_);
 
-  auto status = address_space->register_write(
-      base_address, base_address + 63,
+  auto status = address_space_->register_write(
+      base_address_, base_address_ + 63,
       [this](uint16_t address, uint8_t data) { write(address, data); });
-
   if (!status.ok()) {
     return status;
   }
@@ -107,6 +114,9 @@ void Graphics::render() {
 
   SDL_RenderPresent(renderer_);
 }
+
+Graphics::Graphics(AddressSpace* address_space, uint16_t base_address)
+    : address_space_(address_space), base_address_(base_address) {}
 
 void Graphics::render_character(int position, bool reverse_colors = false) {
   const int row = position / kNumColumns;
