@@ -84,8 +84,7 @@ int main(int argc, char* argv[]) {
 
   auto sound_opl3 = eight_bit::SoundOPL3::Create(&address_space, 0x7f80);
   if (!sound_opl3.ok()) {
-    LOG(ERROR) << "Failed to initialize sound";
-    return -1;
+    LOG(FATAL) << "Failed to initialize sound";
   }
 
   // Add a timer callback to call cpu.tick() once every millisecond
