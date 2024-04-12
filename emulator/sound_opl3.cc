@@ -52,7 +52,7 @@ absl::StatusOr<std::unique_ptr<SoundOPL3>> SoundOPL3::Create(
     return status;
   }
 
-  return std::move(sound_opl3);
+  return sound_opl3;
 }
 
 void SoundOPL3::write(uint16_t address, uint8_t data) {

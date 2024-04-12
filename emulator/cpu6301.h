@@ -146,9 +146,9 @@ class Cpu6301 {
   Interrupt interrupt_;
   Interrupt timer_interrupt_;
   Interrupt serial_interrupt_;
-  Timer timer_;
   IOPort port1_;
   IOPort port2_;
+  Timer timer_;
   std::unique_ptr<HD6301Serial> serial_;
 
   uint8_t a = 0;

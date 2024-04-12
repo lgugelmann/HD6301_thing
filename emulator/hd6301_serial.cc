@@ -163,7 +163,7 @@ HD6301Serial::HD6301Serial(AddressSpace* address_space, uint16_t base_address,
 }
 
 absl::Status HD6301Serial::initialize() {
-  struct termios term;
+  struct termios term = {};
   if (openpty(&our_fd_, &their_fd_, nullptr, &term, nullptr)) {
     return absl::InternalError("Failed to open PTY");
   }

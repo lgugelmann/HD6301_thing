@@ -16,22 +16,21 @@ Timer::Timer(AddressSpace* address_space, u_int16_t base_address,
     : address_space_(address_space),
       base_address_(base_address),
       interrupt_(interrupt) {
-  address_space_->register_read(0x0008, 0x0008, [this](uint16_t address) {
-    return read_status_register();
-  });
+  address_space_->register_read(
+      0x0008, 0x0008, [this](uint16_t) { return read_status_register(); });
   address_space_->register_write(
       0x0008, 0x0008,
-      [this](uint16_t address, uint8_t data) { write_status_register(data); });
+      [this](uint16_t, uint8_t data) { write_status_register(data); });
   address_space_->register_read(
-      0x0009, 0x0009, [this](uint16_t address) { return read_counter_high(); });
+      0x0009, 0x0009, [this](uint16_t) { return read_counter_high(); });
   address_space_->register_write(
       0x0009, 0x0009,
-      [this](uint16_t address, uint8_t data) { write_counter_high(data); });
+      [this](uint16_t, uint8_t data) { write_counter_high(data); });
   address_space_->register_read(
-      0x000a, 0x000a, [this](uint16_t address) { return read_counter_low(); });
+      0x000a, 0x000a, [this](uint16_t) { return read_counter_low(); });
   address_space_->register_write(
       0x000a, 0x000a,
-      [this](uint16_t address, uint8_t data) { write_counter_low(data); });
+      [this](uint16_t, uint8_t data) { write_counter_low(data); });
 }
 
 void Timer::tick() {

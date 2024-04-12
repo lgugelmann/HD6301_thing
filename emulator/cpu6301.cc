@@ -54,8 +54,8 @@ uint8_t Cpu6301::tick() {
 }
 
 void Cpu6301::print_state() {
-  printf("A: %02x B: %02x X: %04x SP: %04x PC: %04x CC: %b\n", a, b, x, sp, pc,
-         sr.as_integer());
+  printf("A: %02x B: %02x X: %04x SP: %04x PC: %04x CC: 11%d%d%d%d%d%d\n", a, b,
+         x, sp, pc, sr.H, sr.I, sr.N, sr.Z, sr.V, sr.C);
 }
 
 IOPort* Cpu6301::get_port1() { return &port1_; }
@@ -445,33 +445,29 @@ Cpu6301::Cpu6301(AddressSpace* memory)
   serial_ = std::move(serial.value());
 
   // Set up reads, writes to port 1 & port 1 DDR.
-  memory->register_read(0x0000, 0x0000, [this](uint16_t address) {
-    return port1_.get_direction();
+  memory->register_read(0x0000, 0x0000,
+                        [this](uint16_t) { return port1_.get_direction(); });
+  memory->register_write(0x0000, 0x0000, [this](uint16_t, uint8_t data) {
+    port1_.set_direction(data);
   });
-  memory->register_write(
-      0x0000, 0x0000,
-      [this](uint16_t address, uint8_t data) { port1_.set_direction(data); });
   memory->register_read(0x0002, 0x0002,
-                        [this](uint16_t address) { return port1_.read(); });
+                        [this](uint16_t) { return port1_.read(); });
   memory->register_write(
-      0x0002, 0x0002,
-      [this](uint16_t address, uint8_t data) { port1_.write(data); });
+      0x0002, 0x0002, [this](uint16_t, uint8_t data) { port1_.write(data); });
 
   // Set up reads, writes to port 2 & port 2 DDR.
-  memory->register_read(0x0001, 0x0001, [this](uint16_t address) {
-    return port2_.get_direction();
+  memory->register_read(0x0001, 0x0001,
+                        [this](uint16_t) { return port2_.get_direction(); });
+  memory->register_write(0x0001, 0x0001, [this](uint16_t, uint8_t data) {
+    port2_.set_direction(data);
   });
-  memory->register_write(
-      0x0001, 0x0001,
-      [this](uint16_t address, uint8_t data) { port2_.set_direction(data); });
   memory->register_read(0x0003, 0x0003,
-                        [this](uint16_t address) { return port2_.read(); });
+                        [this](uint16_t) { return port2_.read(); });
   memory->register_write(
-      0x0003, 0x0003,
-      [this](uint16_t address, uint8_t data) { port2_.write(data); });
+      0x0003, 0x0003, [this](uint16_t, uint8_t data) { port2_.write(data); });
 
 #define COMMA ,
-#define OP(expr) [this](uint16_t d) { expr; }
+#define OP(expr) [this](uint16_t __attribute__((unused)) d) { expr; }
   instructions_ = {
       {0x01, {"nop", 1, 1, kIMP, OP()}},
       {0x04, {"lsrd", 1, 1, kACD, OP(lsrd(d))}},
