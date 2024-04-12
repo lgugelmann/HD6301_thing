@@ -1,3 +1,4 @@
 {
-  "cmake.sourceDirectory": "/home/lucag/projects/HD6301_thing/emulator"
+  "cmake.sourceDirectory": "/home/lucag/projects/HD6301_thing/emulator",
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }
