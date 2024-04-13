@@ -23,7 +23,7 @@ class HD6301Serial {
   HD6301Serial& operator=(const HD6301Serial&) = delete;
   ~HD6301Serial();
 
-  static absl::StatusOr<std::unique_ptr<HD6301Serial>> Create(
+  static absl::StatusOr<std::unique_ptr<HD6301Serial>> create(
       AddressSpace* address_space, uint16_t base_address, Interrupt* interrupt);
 
   void tick();

@@ -49,7 +49,7 @@ SoundOPL3::~SoundOPL3() {
   }
 }
 
-absl::StatusOr<std::unique_ptr<SoundOPL3>> SoundOPL3::Create(
+absl::StatusOr<std::unique_ptr<SoundOPL3>> SoundOPL3::create(
     AddressSpace* address_space, uint16_t base_address) {
   auto sound_opl3 =
       absl::WrapUnique(new SoundOPL3(address_space, base_address));

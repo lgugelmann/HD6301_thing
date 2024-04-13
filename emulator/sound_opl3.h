@@ -19,7 +19,7 @@ class SoundOPL3 {
   SoundOPL3& operator=(const SoundOPL3&) = delete;
   ~SoundOPL3();
 
-  static absl::StatusOr<std::unique_ptr<SoundOPL3>> Create(
+  static absl::StatusOr<std::unique_ptr<SoundOPL3>> create(
       AddressSpace* address_space, uint16_t base_address);
 
   void write(uint16_t address, uint8_t data);

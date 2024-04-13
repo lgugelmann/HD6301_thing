@@ -47,7 +47,7 @@ HD6301Serial::~HD6301Serial() {
   }
 }
 
-absl::StatusOr<std::unique_ptr<HD6301Serial>> HD6301Serial::Create(
+absl::StatusOr<std::unique_ptr<HD6301Serial>> HD6301Serial::create(
     AddressSpace* address_space, uint16_t base_address, Interrupt* interrupt) {
   std::unique_ptr<HD6301Serial> hd6301_serial(
       new HD6301Serial(address_space, base_address, interrupt));
