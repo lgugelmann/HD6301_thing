@@ -75,6 +75,8 @@ IOPort* Cpu6301::get_port2() { return &port2_; }
 
 Interrupt* Cpu6301::get_irq() { return &interrupt_; }
 
+HD6301Serial* Cpu6301::get_serial() { return serial_.get(); }
+
 uint8_t Cpu6301::fetch() {
   uint8_t ret = get(pc);
   ++pc;

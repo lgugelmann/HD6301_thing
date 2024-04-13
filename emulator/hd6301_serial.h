@@ -31,6 +31,8 @@ class HD6301Serial {
   uint8_t read(uint16_t address);
   void write(uint16_t address, uint8_t data);
 
+  std::string get_pty_name() const;
+
  private:
   HD6301Serial(AddressSpace* address_space, uint16_t base_address,
                Interrupt* interrupt);

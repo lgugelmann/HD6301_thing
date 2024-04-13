@@ -34,6 +34,7 @@ class Cpu6301 {
   IOPort* get_port1();
   IOPort* get_port2();
   Interrupt* get_irq();
+  HD6301Serial* get_serial();
 
  private:
   Cpu6301(AddressSpace* memory);

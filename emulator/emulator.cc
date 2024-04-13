@@ -78,6 +78,7 @@ int main(int argc, char* argv[]) {
   auto cpu_or = eight_bit::Cpu6301::create(&address_space);
   QCHECK_OK(cpu_or);
   auto cpu = std::move(cpu_or.value());
+  std::cout << "CPU serial port: " << cpu->get_serial()->get_pty_name() << "\n";
 
   eight_bit::PS2Keyboard keyboard(cpu->get_irq(), cpu->get_port1(),
                                   cpu->get_port2());

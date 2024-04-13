@@ -151,6 +151,8 @@ uint8_t HD6301Serial::read(uint16_t address) {
   return 0;
 }
 
+std::string HD6301Serial::get_pty_name() const { return ttyname(their_fd_); }
+
 HD6301Serial::HD6301Serial(AddressSpace* address_space, uint16_t base_address,
                            Interrupt* interrupt)
     : address_space_(address_space),
@@ -190,9 +192,6 @@ absl::Status HD6301Serial::initialize() {
     return absl::InternalError(
         absl::StrCat("Error reading from PTY: ", strerror(errno)));
   }
-
-  const char* term_name = ttyname(their_fd_);
-  LOG(ERROR) << "Opened PTY for HD6301Serial: " << term_name;
 
   return absl::OkStatus();
 }
