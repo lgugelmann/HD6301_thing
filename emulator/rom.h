@@ -1,8 +1,12 @@
 #ifndef EIGHT_BIT_ROM_H
 #define EIGHT_BIT_ROM_H
 
+#include <absl/status/statusor.h>
+
 #include <cstdint>
+#include <memory>
 #include <span>
+#include <vector>
 
 #include "address_space.h"
 
@@ -10,10 +14,12 @@ namespace eight_bit {
 
 class Rom {
  public:
-  Rom(AddressSpace* address_space, uint16_t base_address, uint16_t size,
-      uint8_t fill_byte = 0);
   Rom(const Rom&) = delete;
   Rom& operator=(const Rom&) = delete;
+
+  static absl::StatusOr<std::unique_ptr<Rom>> create(
+      AddressSpace* address_space, uint16_t base_address, uint16_t size,
+      uint8_t fill_byte = 0);
 
   // Load data into the ROM. `address` is with respect to the base address of
   // the ROM. A value of 0 loads the data at the start of the ROM. If `data`
@@ -24,6 +30,11 @@ class Rom {
   void hexdump() const;
 
  private:
+  Rom(AddressSpace* address_space, uint16_t base_address, uint16_t size,
+      uint8_t fill_byte = 0);
+
+  absl::Status initialize();
+
   AddressSpace* address_space_;
   const uint16_t base_address_;
   std::vector<uint8_t> data_;

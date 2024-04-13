@@ -55,7 +55,9 @@ int main(int argc, char* argv[]) {
 
   eight_bit::AddressSpace address_space;
 
-  eight_bit::Rom rom(&address_space, 0x8000, 0x8000);
+  auto rom_or = eight_bit::Rom::create(&address_space, 0x8000, 0x8000);
+  QCHECK_OK(rom_or);
+  auto rom = std::move(rom_or.value());
 
   QCHECK(!absl::GetFlag(FLAGS_rom_file).empty()) << "No ROM file specified.";
   const std::string rom_file_name = absl::GetFlag(FLAGS_rom_file);
@@ -63,8 +65,7 @@ int main(int argc, char* argv[]) {
   QCHECK(rom_file.is_open()) << "Failed to open file: " << rom_file_name;
 
   std::vector<uint8_t> rom_data(std::istreambuf_iterator<char>(rom_file), {});
-  rom.load(0, rom_data);
-  rom.hexdump();
+  rom->load(0, rom_data);
 
   // 0..1f is internal CPU registers and otherwise reserved
   eight_bit::Ram ram(&address_space, 0x0020, 0x7f00 - 0x0020);
