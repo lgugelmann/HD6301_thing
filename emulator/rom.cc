@@ -10,6 +10,7 @@
 #include <span>
 
 #include "address_space.h"
+#include "hexdump.h"
 
 namespace eight_bit {
 
@@ -33,7 +34,7 @@ void Rom::load(uint16_t address, std::span<uint8_t> data) {
   }
 }
 
-void Rom::hexdump() const {}
+void Rom::hexdump() const { std::cout << eight_bit::hexdump(data_) << "\n"; }
 
 Rom::Rom(AddressSpace* address_space, uint16_t base_address, uint16_t size,
          uint8_t fill_byte)
