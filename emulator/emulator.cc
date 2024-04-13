@@ -82,17 +82,14 @@ int main(int argc, char* argv[]) {
   eight_bit::PS2Keyboard keyboard(cpu->get_irq(), cpu->get_port1(),
                                   cpu->get_port2());
 
-  auto sound_opl3 = eight_bit::SoundOPL3::Create(&address_space, 0x7f80);
-  if (!sound_opl3.ok()) {
-    LOG(FATAL) << "Failed to initialize sound";
-  }
+  auto sound_opl3 = eight_bit::SoundOPL3::create(&address_space, 0x7f80);
+  QCHECK_OK(sound_opl3);
 
   // Add a timer callback to call cpu.tick() once every millisecond
   SDL_TimerID timer = SDL_AddTimer(1, timer_callback, cpu.get());
   if (timer == 0) {
-    LOG(ERROR) << absl::StreamFormat("Failed to create timer: %s",
+    LOG(FATAL) << absl::StreamFormat("Failed to create timer: %s",
                                      SDL_GetError());
-    return -1;
   }
 
   // Create an event handler
