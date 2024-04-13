@@ -68,7 +68,8 @@ int main(int argc, char* argv[]) {
   rom->load(0, rom_data);
 
   // 0..1f is internal CPU registers and otherwise reserved
-  eight_bit::Ram ram(&address_space, 0x0020, 0x7f00 - 0x0020);
+  auto ram_or = eight_bit::Ram::create(&address_space, 0x0020, 0x7f00 - 0x0020);
+  QCHECK_OK(ram_or);
 
   auto graphics_or = eight_bit::Graphics::create(0x7fc0, &address_space);
   QCHECK_OK(graphics_or);
