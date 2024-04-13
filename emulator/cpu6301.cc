@@ -319,10 +319,11 @@ void Cpu6301::lsr(uint8_t& dest) {
   rot_flags(dest, carry);
 }
 
-void Cpu6301::lsrd(uint16_t& dest) {
+void Cpu6301::lsrd(uint16_t dest) {
   bool carry = dest & 1;
-  dest = dest >> 1;
-  rot_flags16(dest, carry);
+  uint16_t result = dest >> 1;
+  set_d(result);
+  rot_flags16(result, carry);
 }
 
 void Cpu6301::ror(uint8_t& dest) {
@@ -349,10 +350,11 @@ void Cpu6301::asl(uint8_t& dest) {
   rot_flags(dest, carry);
 }
 
-void Cpu6301::asld(uint16_t& dest) {
+void Cpu6301::asld(uint16_t dest) {
   bool carry = dest & 0x8000;
-  dest = dest << 1;
-  rot_flags16(dest, carry);
+  uint16_t result = dest << 1;
+  set_d(result);
+  rot_flags16(result, carry);
 }
 
 void Cpu6301::dec(uint8_t& dest) {

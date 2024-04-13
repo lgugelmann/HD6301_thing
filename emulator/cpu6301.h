@@ -139,12 +139,12 @@ class Cpu6301 {
   void rot_flags(uint8_t result, bool carry);
   void rot_flags16(uint16_t result, bool carry);
   void lsr(uint8_t& dest);
-  void lsrd(uint16_t& dest);
+  void lsrd(uint16_t dest);
   void ror(uint8_t& dest);
   void rol(uint8_t& dest);
   void asr(uint8_t& dest);
   void asl(uint8_t& dest);
-  void asld(uint16_t& dest);
+  void asld(uint16_t dest);
   void dec(uint8_t& dest);
   void inc(uint8_t& dest);
   void clr(uint8_t& dest);
