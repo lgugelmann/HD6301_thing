@@ -7,24 +7,37 @@ set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=abseil-*,modernize-*,-modernize-use
 
 find_package(SDL2 REQUIRED)
 find_package(absl REQUIRED)
+find_package(RtMidi QUIET)
+if (RtMidi_FOUND)
+    message(STATUS "RtMidi found, adding MIDI support")
+    add_compile_definitions(HAVE_MIDI)
+else()
+    message(STATUS "RtMidi not found, MIDI support disabled")
+endif()
 
-add_executable(${PROJECT_NAME}
+set(emulator_SOURCES
     address_space.cc
     cpu6301.cc
     emulator.cc
     graphics.cc
+    hd6301_serial.cc
     hexdump.cc
     ioport.cc
     ps2_keyboard.cc
     ram.cc
     rom.cc
-    hd6301_serial.cc
     sound_opl3.cc
     timer.cc
+    tl16c2550.cc
     Nuked-OPL3/opl3.c
 )
+if (RtMidi_FOUND)
+    list(APPEND emulator_SOURCES midi_to_serial.cc)
+endif()
 
-target_link_libraries(${PROJECT_NAME}
+add_executable(emulator ${emulator_SOURCES})
+
+target_link_libraries(emulator
     SDL2::SDL2
     absl::flags_parse
     absl::log
@@ -34,9 +47,12 @@ target_link_libraries(${PROJECT_NAME}
     absl::statusor
     absl::synchronization
 )
+if (RtMidi_FOUND)
+    target_link_libraries(emulator RtMidi::rtmidi)
+endif()
 
-target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_BINARY_DIR}")
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_include_directories(emulator PUBLIC "${PROJECT_BINARY_DIR}")
+target_compile_options(emulator PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 add_executable(graphics_tester
     graphics_tester.cc

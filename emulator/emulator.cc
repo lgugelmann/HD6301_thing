@@ -20,6 +20,11 @@
 #include "ram.h"
 #include "rom.h"
 #include "sound_opl3.h"
+#include "tl16c2550.h"
+
+#ifdef HAVE_MIDI
+#include "midi_to_serial.h"
+#endif
 
 ABSL_FLAG(std::string, rom_file, "", "Path to the ROM file to load");
 ABSL_FLAG(int, ticks_per_second, 1000000, "Number of CPU ticks per second");
@@ -78,6 +83,7 @@ int main(int argc, char* argv[]) {
   auto cpu_or = eight_bit::Cpu6301::create(&address_space);
   QCHECK_OK(cpu_or);
   auto cpu = std::move(cpu_or.value());
+  cpu->reset();
   std::cout << "CPU serial port: " << cpu->get_serial()->get_pty_name() << "\n";
 
   eight_bit::PS2Keyboard keyboard(cpu->get_irq(), cpu->get_port1(),
@@ -85,6 +91,16 @@ int main(int argc, char* argv[]) {
 
   auto sound_opl3 = eight_bit::SoundOPL3::create(&address_space, 0x7f80);
   QCHECK_OK(sound_opl3);
+
+  auto tl16c2550 =
+      eight_bit::TL16C2550::create(&address_space, 0x7f40, cpu->get_irq());
+  QCHECK_OK(tl16c2550);
+
+#ifdef HAVE_MIDI
+  auto midi_to_serial =
+      eight_bit::MidiToSerial::create((*tl16c2550)->get_pty_name(0));
+  QCHECK_OK(midi_to_serial);
+#endif
 
   // Add a timer callback to call cpu.tick() once every millisecond
   SDL_TimerID timer = SDL_AddTimer(1, timer_callback, cpu.get());
