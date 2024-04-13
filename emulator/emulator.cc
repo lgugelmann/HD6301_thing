@@ -75,11 +75,12 @@ int main(int argc, char* argv[]) {
   QCHECK_OK(graphics_or);
   auto graphics = std::move(graphics_or.value());
 
-  eight_bit::Cpu6301 cpu(&address_space);
-  cpu.reset();
+  auto cpu_or = eight_bit::Cpu6301::create(&address_space);
+  QCHECK_OK(cpu_or);
+  auto cpu = std::move(cpu_or.value());
 
-  eight_bit::PS2Keyboard keyboard(cpu.get_irq(), cpu.get_port1(),
-                                  cpu.get_port2());
+  eight_bit::PS2Keyboard keyboard(cpu->get_irq(), cpu->get_port1(),
+                                  cpu->get_port2());
 
   auto sound_opl3 = eight_bit::SoundOPL3::Create(&address_space, 0x7f80);
   if (!sound_opl3.ok()) {
@@ -87,7 +88,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Add a timer callback to call cpu.tick() once every millisecond
-  SDL_TimerID timer = SDL_AddTimer(1, timer_callback, &cpu);
+  SDL_TimerID timer = SDL_AddTimer(1, timer_callback, cpu.get());
   if (timer == 0) {
     LOG(ERROR) << absl::StreamFormat("Failed to create timer: %s",
                                      SDL_GetError());

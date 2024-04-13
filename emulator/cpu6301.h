@@ -1,6 +1,9 @@
 #ifndef EIGHT_BIT_CPU6301_H
 #define EIGHT_BIT_CPU6301_H
 
+#include <absl/status/status.h>
+#include <absl/status/statusor.h>
+
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -17,7 +20,10 @@ namespace eight_bit {
 
 class Cpu6301 {
  public:
-  Cpu6301(AddressSpace* memory);
+  Cpu6301(const Cpu6301&) = delete;
+  Cpu6301& operator=(const Cpu6301&) = delete;
+
+  static absl::StatusOr<std::unique_ptr<Cpu6301>> create(AddressSpace* memory);
 
   void reset();
 
@@ -30,6 +36,10 @@ class Cpu6301 {
   Interrupt* get_irq();
 
  private:
+  Cpu6301(AddressSpace* memory);
+
+  absl::Status initialize();
+
   struct StatusRegister {
     StatusRegister() : StatusRegister(0) {}
     explicit StatusRegister(uint8_t r)

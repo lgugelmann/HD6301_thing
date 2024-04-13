@@ -1,6 +1,8 @@
 #include "cpu6301.h"
 
 #include <absl/log/log.h>
+#include <absl/status/status.h>
+#include <absl/status/statusor.h>
 #include <absl/strings/str_cat.h>
 
 #include <cstdio>
@@ -14,6 +16,15 @@
 #include "ioport.h"
 
 namespace eight_bit {
+
+absl::StatusOr<std::unique_ptr<Cpu6301>> Cpu6301::create(AddressSpace* memory) {
+  std::unique_ptr<Cpu6301> cpu(new Cpu6301(memory));
+  auto status = cpu->initialize();
+  if (!status.ok()) {
+    return status;
+  }
+  return cpu;
+}
 
 void Cpu6301::reset() {
   pc = memory_->get16(0xfffe);
@@ -439,58 +450,6 @@ Cpu6301::Cpu6301(AddressSpace* memory)
       port2_("port2"),
       timer_(memory, 0x0008, &timer_interrupt_),
       memory_(memory) {
-  auto serial = HD6301Serial::Create(memory, 0x0010, &serial_interrupt_);
-  if (!serial.ok()) {
-    LOG(FATAL) << "Failed to create HD6301Serial: " << serial.status();
-  }
-  serial_ = std::move(serial.value());
-
-  // Set up reads, writes to port 1 & port 1 DDR.
-  auto status = memory->register_read(
-      0x0000, 0x0000, [this](uint16_t) { return port1_.get_direction(); });
-  if (!status.ok()) {
-    LOG(ERROR) << "Failed to register read callback for port 1: " << status;
-  }
-  status = memory->register_write(
-      0x0000, 0x0000,
-      [this](uint16_t, uint8_t data) { port1_.set_direction(data); });
-  if (!status.ok()) {
-    LOG(ERROR) << "Failed to register write callback for port 1: " << status;
-  }
-  status = memory->register_read(0x0002, 0x0002,
-                                 [this](uint16_t) { return port1_.read(); });
-  if (!status.ok()) {
-    LOG(ERROR) << "Failed to register read callback for port 1: " << status;
-  }
-  status = memory->register_write(
-      0x0002, 0x0002, [this](uint16_t, uint8_t data) { port1_.write(data); });
-  if (!status.ok()) {
-    LOG(ERROR) << "Failed to register write callback for port 1: " << status;
-  }
-
-  // Set up reads, writes to port 2 & port 2 DDR.
-  status = memory->register_read(
-      0x0001, 0x0001, [this](uint16_t) { return port2_.get_direction(); });
-  if (!status.ok()) {
-    LOG(ERROR) << "Failed to register read callback for port 2: " << status;
-  }
-  status = memory->register_write(
-      0x0001, 0x0001,
-      [this](uint16_t, uint8_t data) { port2_.set_direction(data); });
-  if (!status.ok()) {
-    LOG(ERROR) << "Failed to register write callback for port 2: " << status;
-  }
-  status = memory->register_read(0x0003, 0x0003,
-                                 [this](uint16_t) { return port2_.read(); });
-  if (!status.ok()) {
-    LOG(ERROR) << "Failed to register read callback for port 2: " << status;
-  }
-  status = memory->register_write(
-      0x0003, 0x0003, [this](uint16_t, uint8_t data) { port2_.write(data); });
-  if (!status.ok()) {
-    LOG(ERROR) << "Failed to register write callback for port 2: " << status;
-  }
-
 #define COMMA ,
 #define OP(expr) [this](uint16_t __attribute__((unused)) d) { expr; }
   instructions_ = {
@@ -770,6 +729,58 @@ Cpu6301::Cpu6301(AddressSpace* memory)
   };
 #undef OP
 #undef COMMA
+}
+
+absl::Status Cpu6301::initialize() {
+  auto serial = HD6301Serial::create(memory_, 0x0010, &serial_interrupt_);
+  if (!serial.ok()) {
+    return serial.status();
+  }
+  serial_ = std::move(serial.value());
+
+  // Set up reads, writes to port 1 & port 1 DDR.
+  auto status = memory_->register_read(
+      0x0000, 0x0000, [this](uint16_t) { return port1_.get_direction(); });
+  if (!status.ok()) {
+    return status;
+  }
+  status = memory_->register_write(
+      0x0000, 0x0000,
+      [this](uint16_t, uint8_t data) { port1_.set_direction(data); });
+  if (!status.ok()) {
+    return status;
+  }
+  status = memory_->register_read(0x0002, 0x0002,
+                                  [this](uint16_t) { return port1_.read(); });
+  if (!status.ok()) {
+    return status;
+  }
+  status = memory_->register_write(
+      0x0002, 0x0002, [this](uint16_t, uint8_t data) { port1_.write(data); });
+  if (!status.ok()) {
+    return status;
+  }
+
+  // Set up reads, writes to port 2 & port 2 DDR.
+  status = memory_->register_read(
+      0x0001, 0x0001, [this](uint16_t) { return port2_.get_direction(); });
+  if (!status.ok()) {
+    return status;
+  }
+  status = memory_->register_write(
+      0x0001, 0x0001,
+      [this](uint16_t, uint8_t data) { port2_.set_direction(data); });
+  if (!status.ok()) {
+    return status;
+  }
+  status = memory_->register_read(0x0003, 0x0003,
+                                  [this](uint16_t) { return port2_.read(); });
+  if (!status.ok()) {
+    return status;
+  }
+  status = memory_->register_write(
+      0x0003, 0x0003, [this](uint16_t, uint8_t data) { port2_.write(data); });
+  return status;
 }
 
 }  // namespace eight_bit
