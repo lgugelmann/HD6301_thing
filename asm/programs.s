@@ -63,6 +63,10 @@ program_registry:
         byt "test\0"
         adr test_program_start
 +
+        adr +
+        byt "volume_test\0"
+        adr volume_test_start
++
         adr $0000               ; End marker
 
         include programs/edi.s
@@ -77,3 +81,4 @@ program_registry:
         include programs/serial_opl3.s
         include programs/snake.s
         include programs/test.s
+        include programs/volume_test.s
