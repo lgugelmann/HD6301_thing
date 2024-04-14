@@ -63,7 +63,7 @@ See the documentation there for the prerequisites for assembling a ROM image.
 
 ## Running the emulator
 
-```
+```sh
 ./emulator --rom_file=[rom file]
 ```
 
@@ -77,14 +77,15 @@ command line for example.
 
 After you start the ROM file you'll see the monitor prompt like this:
 
-```
+```text
 
 > 
 ```
 
-Try `ls` to see a list of available programs. You can run them with `run` or `r` followed by the program name. For example:
+Try `ls` to see a list of available programs. You can run them with `run` or `r`
+followed by the program name. For example:
 
-```
+```text
 > ls
 edi 94B7
 graphics_test 9A5E
@@ -109,7 +110,7 @@ To get back to the monitor from any program, hit the 'Pause / Break' key on your
 keyboard. You'll see a dump of the status register flags, the A, B, X registers,
 the program counter, and the stack pointer, and then the familiar monitor prompt.
 
-```
+```text
 --HINZVC  A  B    X   PC   SP
 11000100 00 00 100B F89B 7DF2
 > 
@@ -120,3 +121,22 @@ To get back to the running program use the `continue` or `c` command.
 Other available commands are `reset` which starts the system fresh, and `clear`
 which resets the graphics. That last command may also bring back the cursor.
 Some programs disable it and don't turn it back on on exit :-).
+
+## Profiling
+
+There is some support for profiling using
+[gperftools](https://github.com/gperftools/gperftools). To do so turn on the
+`GPERFTOOLS_BUILD` option (e.g. by using `ccmake .` in the build folder) and
+recompile.
+
+To get a profile run the emulator with:
+
+```sh
+CPUPROFILE=cpu.profile ./emulator --rom_file=../asm/rom.bin
+```
+
+You can then examine the profile with e.g. `pprof` using:
+
+```sh
+pprof -http localhost:8080 ./emulator cpu.profile
+```
