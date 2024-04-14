@@ -226,7 +226,8 @@ void Graphics::write(uint16_t address, uint8_t data) {
           break;
         }
         default:
-          LOG(ERROR) << "Unknown clear command: " << data;
+          LOG(ERROR) << "Unknown clear command: "
+                     << absl::Hex(data, absl::kZeroPad2);
       }
       break;
     }
@@ -326,7 +327,8 @@ void Graphics::write(uint16_t address, uint8_t data) {
       break;
     }
     default:
-      LOG(ERROR) << "Unknown graphics command: " << command;
+      LOG(ERROR) << "Unknown graphics command: "
+                 << absl::Hex(command, absl::kZeroPad2);
   }
 }
 

@@ -138,7 +138,8 @@ void HD6301Serial::write(uint16_t address, uint8_t data) {
       break;
     }
     default:
-      LOG(ERROR) << "Write to invalid HD6301Serial address: " << offset;
+      LOG(ERROR) << "Write to invalid HD6301Serial address: "
+                 << absl::Hex(offset, absl::kZeroPad4);
   }
 }
 
@@ -160,7 +161,8 @@ uint8_t HD6301Serial::read(uint16_t address) {
     case 3:
       return 0;
     default:
-      LOG(ERROR) << "Read from invalid HD6301Serial address: " << offset;
+      LOG(ERROR) << "Read from invalid HD6301Serial address: "
+                 << absl::Hex(offset, absl::kZeroPad4);
   }
   return 0;
 }

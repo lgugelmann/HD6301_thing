@@ -11,11 +11,8 @@ constexpr uint8_t kTimerOverflow = 0x10;
 constexpr uint8_t kTimerInterruptEnable = 0x04;
 }  // namespace
 
-Timer::Timer(AddressSpace* address_space, u_int16_t base_address,
-             Interrupt* interrupt)
-    : address_space_(address_space),
-      base_address_(base_address),
-      interrupt_(interrupt) {
+Timer::Timer(AddressSpace* address_space, Interrupt* interrupt)
+    : address_space_(address_space), interrupt_(interrupt) {
   auto status = address_space_->register_read(
       0x0008, 0x0008, [this](uint16_t) { return read_status_register(); });
   if (!status.ok()) {

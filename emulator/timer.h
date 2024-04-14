@@ -10,8 +10,7 @@ namespace eight_bit {
 
 class Timer {
  public:
-  Timer(AddressSpace* address_space, u_int16_t base_address,
-        Interrupt* interrupt);
+  Timer(AddressSpace* address_space, Interrupt* interrupt);
   Timer(const Timer&) = delete;
   Timer& operator=(const Timer&) = delete;
   ~Timer() = default;
@@ -33,7 +32,6 @@ class Timer {
 
  private:
   AddressSpace* address_space_ = nullptr;
-  const uint16_t base_address_ = 0;
   Interrupt* interrupt_ = nullptr;
 
   uint8_t status_register_ = 0;

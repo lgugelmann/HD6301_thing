@@ -41,7 +41,6 @@ class TL16C2550 {
 
   Interrupt* interrupt_;
   int receive_data_available_irq_id_ ABSL_GUARDED_BY(io_mutex_) = 0;
-  int transmit_holding_register_empty_irq_id_ = 0;
 
   // TODO: change into a struct, implement both UARTS in the TL16C2550.
   uint8_t interrupt_enable_register_ ABSL_GUARDED_BY(io_mutex_) = 0;
@@ -52,8 +51,6 @@ class TL16C2550 {
   uint8_t line_status_register_ = 0b01100000;
   uint8_t modem_status_register_ = 0;
   uint8_t scratch_register_ = 0;
-  uint8_t divisor_latch_lsb_ = 0;
-  uint8_t divisor_latch_msb_ = 0;
 
   // FD 0 is stdin, so it's usable here as a sentinel value for "not open".
   int our_fd_ = 0;

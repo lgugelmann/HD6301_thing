@@ -37,6 +37,10 @@ if (RtMidi_FOUND)
     list(APPEND emulator_SOURCES midi_to_serial.cc)
 endif()
 
+# Silence warnings in Nuked-OPL3 - Clang has a lot of warnings in this file but
+# it isn't ours.
+set_source_files_properties(Nuked-OPL3/opl3.c PROPERTIES COMPILE_FLAGS -w)
+
 add_executable(emulator ${emulator_SOURCES})
 
 target_link_libraries(emulator

@@ -452,7 +452,7 @@ uint8_t Cpu6301::execute(uint8_t opcode) {
 Cpu6301::Cpu6301(AddressSpace* memory)
     : port1_("port1"),
       port2_("port2"),
-      timer_(memory, 0x0008, &timer_interrupt_),
+      timer_(memory, &timer_interrupt_),
       memory_(memory) {
 #define COMMA ,
 #define OP(expr) [this](uint16_t __attribute__((unused)) d) { expr; }
