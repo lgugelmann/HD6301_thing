@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <absl/cleanup/cleanup.h>
+#include <absl/log/check.h>
 #include <absl/log/log.h>
 #include <absl/strings/str_format.h>
 
@@ -19,8 +20,8 @@ void run_test(eight_bit::AddressSpace* address_space, SDL_Keycode key) {
     case SDLK_1: {
       // Write out "Hello World!"
       std::string hello_world = "Hello World!";
-      for (int i = 0; i < hello_world.size(); ++i) {
-        address_space->set(base_address, hello_world[i]);
+      for (char i : hello_world) {
+        address_space->set(base_address, i);
       }
       break;
     }
@@ -58,8 +59,8 @@ void run_test(eight_bit::AddressSpace* address_space, SDL_Keycode key) {
       // Write 450 "0...9" strings (fill the screen and then some)
       std::string hello_world = "0123456789";
       for (int i = 0; i < 450; ++i) {
-        for (int j = 0; j < hello_world.size(); ++j) {
-          address_space->set(base_address, hello_world[j]);
+        for (char j : hello_world) {
+          address_space->set(base_address, j);
         }
       }
       break;
@@ -85,8 +86,8 @@ int main() {
   absl::Cleanup sdl_cleanup([] { SDL_Quit(); });
 
   eight_bit::AddressSpace address_space;
-  eight_bit::Graphics graphics;
-  graphics.initialize(0x0000, &address_space);
+  auto graphics = eight_bit::Graphics::create(0, &address_space);
+  QCHECK_OK(graphics);
 
   SDL_Event event;
   bool running = true;
@@ -99,7 +100,7 @@ int main() {
         run_test(&address_space, event.key.keysym.sym);
       }
     }
-    graphics.render();
+    (*graphics)->render();
     SDL_Delay(16);
   }
   return 0;
