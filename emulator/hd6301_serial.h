@@ -58,7 +58,12 @@ class HD6301Serial {
   int our_fd_ = 0;
   int their_fd_ = 0;
 
-  std::queue<uint8_t> rx_fifo_;
+  // Used to signal the read thread to stop.
+  std::array<int, 2> shutdown_fd_ = {0, 0};
+  std::thread read_thread_;
+
+  absl::Mutex mutex_;
+  std::queue<uint8_t> rx_fifo_ ABSL_GUARDED_BY(mutex_);
 };
 
 }  // namespace eight_bit

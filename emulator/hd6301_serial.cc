@@ -4,9 +4,11 @@
 #include <absl/status/status.h>
 #include <absl/status/statusor.h>
 #include <absl/strings/str_cat.h>
-#include <fcntl.h>
+#include <absl/synchronization/mutex.h>
+#include <poll.h>
 #include <pty.h>
 #include <termios.h>
+#include <unistd.h>
 
 #include <cstdint>
 
@@ -39,11 +41,25 @@ uint16_t ticks_per_bit(uint8_t rmcr) {
 }  // namespace
 
 HD6301Serial::~HD6301Serial() {
+  // Signal the read thread to stop.
+  if (shutdown_fd_[1] != 0) {
+    uint8_t data = 0;
+    ::write(shutdown_fd_[1], &data, 1);
+  }
+  if (read_thread_.joinable()) {
+    read_thread_.join();
+  }
   if (our_fd_ != 0) {
     close(our_fd_);
   }
   if (their_fd_ != 0) {
     close(their_fd_);
+  }
+  if (shutdown_fd_[0] != 0) {
+    close(shutdown_fd_[0]);
+  }
+  if (shutdown_fd_[1] != 0) {
+    close(shutdown_fd_[1]);
   }
 }
 
@@ -59,10 +75,6 @@ absl::StatusOr<std::unique_ptr<HD6301Serial>> HD6301Serial::create(
 }
 
 void HD6301Serial::tick() {
-  uint8_t data;
-  if (::read(our_fd_, &data, 1) > 0) {
-    rx_fifo_.push(data);
-  }
   if (transmit_register_empty_countdown_ > 0) {
     transmit_register_empty_countdown_ -= 1;
     if (transmit_register_empty_countdown_ == 0) {
@@ -75,6 +87,7 @@ void HD6301Serial::tick() {
   if (receive_register_full_countdown_ > 0) {
     receive_register_full_countdown_ -= 1;
   }
+  absl::MutexLock lock(&mutex_);
   if (!rx_fifo_.empty() && receive_register_full_countdown_ == 0) {
     receive_data_register_ = rx_fifo_.front();
     rx_fifo_.pop();
@@ -98,6 +111,7 @@ void HD6301Serial::write(uint16_t address, uint8_t data) {
       // Clear the queue if we just enabled receiving
       if (!receive_enabled && trcsr_ & kReceiveEnable) {
         std::queue<uint8_t> empty;
+        absl::MutexLock lock(&mutex_);
         std::swap(rx_fifo_, empty);
       }
     } break;
@@ -177,21 +191,42 @@ absl::Status HD6301Serial::initialize() {
   if (openpty(&our_fd_, &their_fd_, nullptr, &term, nullptr)) {
     return absl::InternalError("Failed to open PTY");
   }
-  // Set the file descriptor to non-blocking mode
-  int flags = fcntl(our_fd_, F_GETFL, 0);
-  fcntl(our_fd_, F_SETFL, flags | O_NONBLOCK);
 
-  // Drain the buffer. Somehow we get garbage bytes here.
-  // TODO: figure out why.
-  uint8_t data = 0;
-  while (::read(our_fd_, &data, 1) > 0) {
-  }
-
-  // Reading 0 bytes just checks for errors on the PTY.
-  if (::read(our_fd_, &data, 0) < 0) {
+  // Create a pipe to signal the read thread to stop.
+  if (pipe(shutdown_fd_.data()) != 0) {
     return absl::InternalError(
-        absl::StrCat("Error reading from PTY: ", strerror(errno)));
+        absl::StrCat("Failed to create pipe: ", strerror(errno)));
   }
+  read_thread_ = std::thread([this]() {
+    while (true) {
+      std::array<struct pollfd, 2> fds;
+      fds[0].fd = our_fd_;
+      fds[0].events = POLLIN;
+      // The read end of the pipe for the shutdown signal.
+      fds[1].fd = shutdown_fd_[0];
+      fds[1].events = POLLIN;
+
+      int retval = poll(fds.data(), fds.size(), -1);  // -1 means no timeout
+      if (retval == -1) {
+        perror("poll");
+        continue;
+      }
+      if (retval > 0) {
+        if (fds[0].revents & POLLIN) {
+          uint8_t data;
+          if (::read(our_fd_, &data, 1) > 0) {
+            absl::MutexLock lock(&mutex_);
+            rx_fifo_.push(data);
+          }
+        }
+        if (fds[1].revents & POLLIN) {
+          // We've been woken up by a write on the shutdown pipe. Stop the
+          // thread.
+          break;
+        }
+      }
+    }
+  });
 
   return absl::OkStatus();
 }
