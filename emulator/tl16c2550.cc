@@ -4,7 +4,7 @@
 #include <absl/status/status.h>
 #include <absl/status/statusor.h>
 #include <absl/strings/str_cat.h>
-#include <fcntl.h>
+#include <poll.h>
 #include <pty.h>
 #include <termios.h>
 #include <unistd.h>
@@ -26,7 +26,7 @@ constexpr uint8_t kLsrDataReady = 0b00000001;
 }  // namespace
 
 TL16C2550::~TL16C2550() {
-  stop_running_.Notify();
+  ::write(shutdown_fd_[1], "x", 1);
   if (read_thread_.joinable()) {
     read_thread_.join();
   }
@@ -35,6 +35,12 @@ TL16C2550::~TL16C2550() {
   }
   if (their_fd_ != 0) {
     close(their_fd_);
+  }
+  if (shutdown_fd_[0] != 0) {
+    close(shutdown_fd_[0]);
+  }
+  if (shutdown_fd_[1] != 0) {
+    close(shutdown_fd_[1]);
   }
 }
 
@@ -171,27 +177,49 @@ absl::Status TL16C2550::initialize() {
   if (openpty(&our_fd_, &their_fd_, nullptr, &term, nullptr)) {
     return absl::InternalError("Failed to open PTY");
   }
-  // Set the file descriptor to non-blocking mode
-  int flags = fcntl(our_fd_, F_GETFL, 0);
-  fcntl(our_fd_, F_SETFL, flags | O_NONBLOCK);
 
+  // Create a pipe to signal the read thread to stop.
+  if (pipe(shutdown_fd_.data()) != 0) {
+    return absl::InternalError(
+        absl::StrCat("Failed to create pipe: ", strerror(errno)));
+  }
   read_thread_ = std::thread([this]() {
-    while (!stop_running_.HasBeenNotified()) {
-      uint8_t data;
-      if (::read(our_fd_, &data, 1) > 0) {
-        absl::MutexLock lock(&io_mutex_);
-        rx_fifo_.push(data);
-        line_status_register_ |= kLsrDataReady;
-        if ((interrupt_enable_register_ & kIerEnableReceivedInterrupt) != 0) {
-          // There is a hierarchy of interrupts, but for now we only support the
-          // read one. TODO: implement the rest.
-          interrupt_ident_register_ = kIirReceiveInterrupt;
-          if (receive_data_available_irq_id_ == 0) {
-            receive_data_available_irq_id_ = interrupt_->set_interrupt();
+    while (true) {
+      std::array<struct pollfd, 2> fds;
+      fds[0].fd = our_fd_;
+      fds[0].events = POLLIN;
+      // The read end of the pipe for the shutdown signal.
+      fds[1].fd = shutdown_fd_[0];
+      fds[1].events = POLLIN;
+
+      int retval = poll(fds.data(), fds.size(), -1);  // -1 means no timeout
+      if (retval == -1) {
+        perror("poll");
+        continue;
+      }
+      if (retval > 0) {
+        if (fds[0].revents & POLLIN) {
+          uint8_t data;
+          if (::read(our_fd_, &data, 1) > 0) {
+            absl::MutexLock lock(&io_mutex_);
+            rx_fifo_.push(data);
+            line_status_register_ |= kLsrDataReady;
+            if ((interrupt_enable_register_ & kIerEnableReceivedInterrupt) !=
+                0) {
+              // There is a hierarchy of interrupts, but for now we only support
+              // the read one. TODO: implement the rest.
+              interrupt_ident_register_ = kIirReceiveInterrupt;
+              if (receive_data_available_irq_id_ == 0) {
+                receive_data_available_irq_id_ = interrupt_->set_interrupt();
+              }
+            }
           }
         }
-        // That's hacky - but should be fast enough for 115200 baud.
-        std::this_thread::sleep_for(std::chrono::microseconds(50));
+        if (fds[1].revents & POLLIN) {
+          // We've been woken up by a write on the shutdown pipe. Stop the
+          // thread.
+          break;
+        }
       }
     }
   });

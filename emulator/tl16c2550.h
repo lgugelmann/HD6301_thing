@@ -4,7 +4,6 @@
 #include <absl/base/thread_annotations.h>
 #include <absl/status/statusor.h>
 #include <absl/synchronization/mutex.h>
-#include <absl/synchronization/notification.h>
 
 #include <cstdint>
 #include <memory>
@@ -60,7 +59,8 @@ class TL16C2550 {
   int our_fd_ = 0;
   int their_fd_ = 0;
 
-  absl::Notification stop_running_;
+  // Used to signal the read thread to stop.
+  std::array<int, 2> shutdown_fd_ = {0, 0};
   std::thread read_thread_;
 
   std::queue<uint8_t> rx_fifo_ ABSL_GUARDED_BY(io_mutex_);
