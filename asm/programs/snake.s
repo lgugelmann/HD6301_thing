@@ -259,6 +259,7 @@ adjust_and_readraw_snake:
         beq .no_food_found
 
         ; Hit food! Increase score, etc.
+        ldx head_ptr            ; X was clobbered by draw_head
         and a,#$ff-FOOD         ; Clear the food bit
         sta 0,x
         inc score
@@ -354,7 +355,6 @@ draw_game_over_message:
         byt "$    Game Over!!   $\0"
 .game_over_string_3:
         byt "$     q to quit    $\0"
-
 
 ; Draws the header line and the walls.
 draw_game_field:
@@ -657,7 +657,8 @@ set_cursor_vertical:
         ; rts in serial_send_byte
 
 set_cursor_hidden:
-        inc GRAPHICS_HIDE_CURSOR
+        lda #1
+        sta GRAPHICS_HIDE_CURSOR
         ldx #.hide_cursor
         jmp serial_send_string
         ; rts in serial_send_string
