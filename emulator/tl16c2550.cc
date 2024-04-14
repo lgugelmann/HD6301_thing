@@ -111,6 +111,7 @@ void TL16C2550::write(uint16_t address, uint8_t data) {
         // receive interrupt was disabled, clear any outstanding ones
         if (receive_data_available_irq_id_ != 0) {
           interrupt_->clear_interrupt(receive_data_available_irq_id_);
+          receive_data_available_irq_id_ = 0;
         }
       }
       break;
