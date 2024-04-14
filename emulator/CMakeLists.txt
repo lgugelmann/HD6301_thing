@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=abseil-*,modernize-*,-modernize-use-trailing-return-type,-modernize-use-bool-literals,performance-*,readability-*,-readability-identifier-length,-readability-function-cognitive-complexity,-readability-magic-numbers,-readability-implicit-bool-conversion")
 
+option(GPERFTOOLS_BUILD "Enable profiling with gperftools" OFF)
+
 find_package(SDL2 REQUIRED)
 find_package(absl REQUIRED)
 find_package(RtMidi QUIET)
@@ -49,6 +51,9 @@ target_link_libraries(emulator
 )
 if (RtMidi_FOUND)
     target_link_libraries(emulator RtMidi::rtmidi)
+endif()
+if (GPERFTOOLS_BUILD)
+    target_link_libraries(emulator profiler)
 endif()
 
 target_include_directories(emulator PUBLIC "${PROJECT_BINARY_DIR}")
