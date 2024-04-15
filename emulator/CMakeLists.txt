@@ -5,6 +5,12 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 option(GPERFTOOLS_BUILD "Enable profiling with gperftools" OFF)
+option(TSAN_BUILD "Set up a TSan build" OFF)
+
+if (TSAN_BUILD)
+    add_compile_options(-fsanitize=thread -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=thread -fno-omit-frame-pointer)
+endif()
 
 # Abseil
 set(ABSL_PROPAGATE_CXX_STD ON)
