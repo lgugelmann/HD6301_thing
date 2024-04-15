@@ -4,3 +4,6 @@
 [submodule "emulator/Nuked-OPL3"]
 	path = emulator/Nuked-OPL3
 	url = https://github.com/nukeykt/Nuked-OPL3.git
+[submodule "emulator/abseil-cpp"]
+	path = emulator/abseil-cpp
+	url = https://github.com/abseil/abseil-cpp.git

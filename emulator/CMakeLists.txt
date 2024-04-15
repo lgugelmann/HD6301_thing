@@ -1,14 +1,19 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 project(emulator)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=abseil-*,modernize-*,-modernize-use-trailing-return-type,-modernize-use-bool-literals,performance-*,readability-*,-readability-identifier-length,-readability-function-cognitive-complexity,-readability-magic-numbers,-readability-implicit-bool-conversion")
 
 option(GPERFTOOLS_BUILD "Enable profiling with gperftools" OFF)
 
+# Abseil
+set(ABSL_PROPAGATE_CXX_STD ON)
+add_subdirectory(abseil-cpp)
+
+# SDL2
 find_package(SDL2 REQUIRED)
-find_package(absl REQUIRED)
+
+# RtMidi -- Optional
 find_package(RtMidi QUIET)
 if (RtMidi_FOUND)
     message(STATUS "RtMidi found, adding MIDI support")
@@ -41,7 +46,26 @@ endif()
 # it isn't ours.
 set_source_files_properties(Nuked-OPL3/opl3.c PROPERTIES COMPILE_FLAGS -w)
 
+set(EMULATOR_CLANG_TIDY_CHECKS
+    abseil-*
+    modernize-*
+    -modernize-use-trailing-return-type
+    -modernize-use-bool-literals
+    performance-*
+    readability-*
+    -readability-identifier-length
+    -readability-function-cognitive-complexity
+    -readability-magic-numbers
+    -readability-implicit-bool-conversion
+)
+list(JOIN EMULATOR_CLANG_TIDY_CHECKS "," EMULATOR_CLANG_TIDY_CHECKS)
+set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=${EMULATOR_CLANG_TIDY_CHECKS}")
+
 add_executable(emulator ${emulator_SOURCES})
+
+target_include_directories(emulator PUBLIC "${PROJECT_BINARY_DIR}")
+
+target_compile_options(emulator PRIVATE -Wall -Wextra -Werror -Wno-gcc-compat)
 
 target_link_libraries(emulator
     SDL2::SDL2
@@ -59,9 +83,6 @@ endif()
 if (GPERFTOOLS_BUILD)
     target_link_libraries(emulator profiler)
 endif()
-
-target_include_directories(emulator PUBLIC "${PROJECT_BINARY_DIR}")
-target_compile_options(emulator PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 add_executable(graphics_tester
     graphics_tester.cc
