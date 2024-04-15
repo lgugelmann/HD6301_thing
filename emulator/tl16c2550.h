@@ -1,15 +1,14 @@
 #ifndef EIGHT_BIT_TL16C2550_H
 #define EIGHT_BIT_TL16C2550_H
 
-#include <absl/base/thread_annotations.h>
-#include <absl/status/statusor.h>
-#include <absl/synchronization/mutex.h>
-
 #include <cstdint>
 #include <memory>
 #include <queue>
 #include <thread>
 
+#include "absl/base/thread_annotations.h"
+#include "absl/status/statusor.h"
+#include "absl/synchronization/mutex.h"
 #include "address_space.h"
 #include "interrupt.h"
 

@@ -1,15 +1,14 @@
 #include "cpu6301.h"
 
-#include <absl/log/log.h>
-#include <absl/status/status.h>
-#include <absl/status/statusor.h>
-#include <absl/strings/str_cat.h>
-
 #include <cstdio>
 #include <functional>
 #include <map>
 #include <string>
 
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "address_space.h"
 #include "hd6301_serial.h"
 #include "interrupt.h"

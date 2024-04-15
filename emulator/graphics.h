@@ -2,12 +2,12 @@
 #define EIGHT_BIT_GRAPHICS_H_
 
 #include <SDL2/SDL.h>
-#include <absl/status/statusor.h>
 
 #include <cstdint>
 #include <memory>
 #include <vector>
 
+#include "absl/status/statusor.h"
 #include "address_space.h"
 
 namespace eight_bit {

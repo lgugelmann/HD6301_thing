@@ -1,11 +1,12 @@
 #ifndef EIGHT_BIT_MIDI_TO_SERIAL_H
 #define EIGHT_BIT_MIDI_TO_SERIAL_H
 
-#include <absl/status/statusor.h>
 #include <rtmidi/RtMidi.h>
 
 #include <memory>
 #include <string_view>
+
+#include "absl/status/statusor.h"
 
 namespace eight_bit {
 

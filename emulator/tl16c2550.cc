@@ -1,9 +1,5 @@
 #include "tl16c2550.h"
 
-#include <absl/log/log.h>
-#include <absl/status/status.h>
-#include <absl/status/statusor.h>
-#include <absl/strings/str_cat.h>
 #include <poll.h>
 #include <pty.h>
 #include <termios.h>
@@ -14,6 +10,11 @@
 #include <memory>
 #include <queue>
 #include <thread>
+
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 
 namespace eight_bit {
 namespace {

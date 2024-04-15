@@ -1,14 +1,13 @@
 #ifndef EIGHT_BIT_HD6301_SERIAL_H
 #define EIGHT_BIT_HD6301_SERIAL_H
 
-#include <absl/status/statusor.h>
-#include <absl/synchronization/mutex.h>
-
 #include <cstdint>
 #include <memory>
 #include <queue>
 #include <thread>
 
+#include "absl/status/statusor.h"
+#include "absl/synchronization/mutex.h"
 #include "address_space.h"
 #include "interrupt.h"
 

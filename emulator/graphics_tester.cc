@@ -1,12 +1,12 @@
 #include <SDL2/SDL.h>
-#include <absl/cleanup/cleanup.h>
-#include <absl/log/check.h>
-#include <absl/log/log.h>
-#include <absl/strings/str_format.h>
 
 #include <cstdint>
 #include <string>
 
+#include "absl/cleanup/cleanup.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/strings/str_format.h"
 #include "address_space.h"
 #include "graphics.h"
 

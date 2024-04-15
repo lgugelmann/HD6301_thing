@@ -1,10 +1,10 @@
 #ifndef EIGHT_BIT_COMPUTER_INTERRUPT_H
 #define EIGHT_BIT_COMPUTER_INTERRUPT_H
 
-#include <absl/base/thread_annotations.h>
-#include <absl/synchronization/mutex.h>
-
 #include <set>
+
+#include "absl/base/thread_annotations.h"
+#include "absl/synchronization/mutex.h"
 
 namespace eight_bit {
 

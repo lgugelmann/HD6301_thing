@@ -1,11 +1,4 @@
 #include <SDL2/SDL.h>
-#include <absl/cleanup/cleanup.h>
-#include <absl/flags/flag.h>
-#include <absl/flags/parse.h>
-#include <absl/log/check.h>
-#include <absl/log/initialize.h>
-#include <absl/log/log.h>
-#include <absl/strings/str_format.h>
 
 #include <cstdint>
 #include <fstream>
@@ -13,6 +6,13 @@
 #include <iostream>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/log/check.h"
+#include "absl/log/initialize.h"
+#include "absl/log/log.h"
+#include "absl/strings/str_format.h"
 #include "address_space.h"
 #include "cpu6301.h"
 #include "graphics.h"

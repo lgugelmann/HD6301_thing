@@ -1,11 +1,10 @@
 #include "ram.h"
 
-#include <absl/log/log.h>
-#include <absl/status/status.h>
-
 #include <cstdint>
 #include <iostream>
 
+#include "absl/log/log.h"
+#include "absl/status/status.h"
 #include "address_space.h"
 #include "hexdump.h"
 

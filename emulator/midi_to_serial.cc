@@ -1,11 +1,12 @@
 #include "midi_to_serial.h"
 
-#include <absl/status/status.h>
-#include <absl/status/statusor.h>
-#include <absl/strings/str_cat.h>
 #include <fcntl.h>
 #include <rtmidi/RtMidi.h>
 #include <unistd.h>
+
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 
 namespace eight_bit {
 

@@ -1,14 +1,13 @@
 #ifndef EIGHT_BIT_SOUND_OPL3_H
 #define EIGHT_BIT_SOUND_OPL3_H
 
-#include <absl/base/thread_annotations.h>
-#include <absl/status/statusor.h>
-#include <absl/synchronization/mutex.h>
-
 #include <cstdint>
 #include <memory>
 
 #include "Nuked-OPL3/opl3.h"
+#include "absl/base/thread_annotations.h"
+#include "absl/status/statusor.h"
+#include "absl/synchronization/mutex.h"
 #include "address_space.h"
 
 namespace eight_bit {

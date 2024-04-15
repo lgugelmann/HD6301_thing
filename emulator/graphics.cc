@@ -1,11 +1,11 @@
 #include "graphics.h"
 
 #include <SDL2/SDL.h>
-#include <absl/log/log.h>
-#include <absl/status/status.h>
-#include <absl/strings/str_cat.h>
 
 #include "../pico_graphics/font.h"
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
 
 namespace eight_bit {
 

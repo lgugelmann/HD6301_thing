@@ -1,9 +1,9 @@
 #include "ps2_keyboard.h"
 
-#include <absl/log/log.h>
-
 #include <map>
 #include <span>
+
+#include "absl/log/log.h"
 
 namespace eight_bit {
 

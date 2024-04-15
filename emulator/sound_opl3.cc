@@ -1,15 +1,15 @@
 #include "sound_opl3.h"
 
-#include <SDL.h>
-#include <absl/log/log.h>
-#include <absl/status/status.h>
-#include <absl/status/statusor.h>
-#include <absl/strings/str_format.h>
+#include <SDL2/SDL.h>
 
 #include <cstdint>
 #include <memory>
 
 #include "Nuked-OPL3/opl3.h"
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_format.h"
 #include "address_space.h"
 
 namespace eight_bit {

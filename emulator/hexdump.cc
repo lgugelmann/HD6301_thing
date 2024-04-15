@@ -1,10 +1,10 @@
 #include "hexdump.h"
 
-#include <absl/strings/str_cat.h>
-
 #include <cstdint>
 #include <string>
 #include <vector>
+
+#include "absl/strings/str_cat.h"
 
 namespace eight_bit {
 

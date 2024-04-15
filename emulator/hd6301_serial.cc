@@ -1,10 +1,5 @@
 #include "hd6301_serial.h"
 
-#include <absl/log/log.h>
-#include <absl/status/status.h>
-#include <absl/status/statusor.h>
-#include <absl/strings/str_cat.h>
-#include <absl/synchronization/mutex.h>
 #include <poll.h>
 #include <pty.h>
 #include <termios.h>
@@ -12,6 +7,11 @@
 
 #include <cstdint>
 
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
+#include "absl/synchronization/mutex.h"
 #include "address_space.h"
 
 namespace eight_bit {

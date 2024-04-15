@@ -1,15 +1,14 @@
 #ifndef EIGHT_BIT_CPU6301_H
 #define EIGHT_BIT_CPU6301_H
 
-#include <absl/status/status.h>
-#include <absl/status/statusor.h>
-
 #include <cstdint>
 #include <functional>
 #include <map>
 #include <memory>
 #include <string>
 
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "address_space.h"
 #include "hd6301_serial.h"
 #include "interrupt.h"

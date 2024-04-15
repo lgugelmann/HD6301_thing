@@ -1,11 +1,11 @@
 #include "ioport.h"
 
-#include <absl/log/log.h>
-#include <absl/strings/str_cat.h>
-
 #include <cstdio>
 #include <string>
 #include <string_view>
+
+#include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
 
 namespace eight_bit {
 

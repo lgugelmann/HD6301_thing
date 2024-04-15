@@ -1,14 +1,13 @@
 #include "address_space.h"
 
-#include <absl/log/log.h>
-#include <absl/status/status.h>
-#include <absl/strings/str_format.h>
-
 #include <cstdint>
 #include <cstdio>
 #include <span>
 #include <vector>
 
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/strings/str_format.h"
 #include "hexdump.h"
 
 namespace eight_bit {

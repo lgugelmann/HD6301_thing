@@ -1,12 +1,12 @@
 #ifndef EIGHT_BIT_ADDRESS_SPACE_H
 #define EIGHT_BIT_ADDRESS_SPACE_H
 
-#include <absl/status/status.h>
-
 #include <cstdint>
 #include <functional>
 #include <span>
 #include <vector>
+
+#include "absl/status/status.h"
 
 namespace eight_bit {
 
