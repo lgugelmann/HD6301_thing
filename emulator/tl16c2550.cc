@@ -106,6 +106,7 @@ void TL16C2550::write(uint16_t address, uint8_t data) {
       break;
     case 1: {
       // interrupt enable register
+      absl::MutexLock lock(&io_mutex_);
       // TODO - implement remaining bits
       interrupt_enable_register_ = data;
       if ((interrupt_enable_register_ & 0b00000001) == 0) {
@@ -185,48 +186,50 @@ absl::Status TL16C2550::initialize() {
     return absl::InternalError(
         absl::StrCat("Failed to create pipe: ", strerror(errno)));
   }
-  read_thread_ = std::thread([this]() {
-    while (true) {
-      std::array<struct pollfd, 2> fds;
-      fds[0].fd = our_fd_;
-      fds[0].events = POLLIN;
-      // The read end of the pipe for the shutdown signal.
-      fds[1].fd = shutdown_fd_[0];
-      fds[1].events = POLLIN;
+  read_thread_ =
+      std::thread([this]() { read_thread(our_fd_, shutdown_fd_[0]); });
 
-      int retval = poll(fds.data(), fds.size(), -1);  // -1 means no timeout
-      if (retval == -1) {
-        perror("poll");
-        continue;
-      }
-      if (retval > 0) {
-        if (fds[0].revents & POLLIN) {
-          uint8_t data;
-          if (::read(our_fd_, &data, 1) > 0) {
-            absl::MutexLock lock(&io_mutex_);
-            rx_fifo_.push(data);
-            line_status_register_ |= kLsrDataReady;
-            if ((interrupt_enable_register_ & kIerEnableReceivedInterrupt) !=
-                0) {
-              // There is a hierarchy of interrupts, but for now we only support
-              // the read one. TODO: implement the rest.
-              interrupt_ident_register_ = kIirReceiveInterrupt;
-              if (receive_data_available_irq_id_ == 0) {
-                receive_data_available_irq_id_ = interrupt_->set_interrupt();
-              }
+  return absl::OkStatus();
+}
+
+void TL16C2550::read_thread(int read_fd, int shutdown_fd) {
+  while (true) {
+    std::array<struct pollfd, 2> fds;
+    fds[0].fd = read_fd;
+    fds[0].events = POLLIN;
+    // The read end of the pipe for the shutdown signal.
+    fds[1].fd = shutdown_fd;
+    fds[1].events = POLLIN;
+
+    int retval = poll(fds.data(), fds.size(), -1);  // -1 means no timeout
+    if (retval == -1) {
+      perror("poll");
+      continue;
+    }
+    if (retval > 0) {
+      if (fds[0].revents & POLLIN) {
+        uint8_t data;
+        if (::read(read_fd, &data, 1) > 0) {
+          absl::MutexLock lock(&io_mutex_);
+          rx_fifo_.push(data);
+          line_status_register_ |= kLsrDataReady;
+          if ((interrupt_enable_register_ & kIerEnableReceivedInterrupt) != 0) {
+            // There is a hierarchy of interrupts, but for now we only support
+            // the read one. TODO: implement the rest.
+            interrupt_ident_register_ = kIirReceiveInterrupt;
+            if (receive_data_available_irq_id_ == 0) {
+              receive_data_available_irq_id_ = interrupt_->set_interrupt();
             }
           }
         }
-        if (fds[1].revents & POLLIN) {
-          // We've been woken up by a write on the shutdown pipe. Stop the
-          // thread.
-          break;
-        }
+      }
+      if (fds[1].revents & POLLIN) {
+        // We've been woken up by a write on the shutdown pipe. Stop the
+        // thread.
+        break;
       }
     }
-  });
-
-  return absl::OkStatus();
+  }
 }
 
 }  // namespace eight_bit

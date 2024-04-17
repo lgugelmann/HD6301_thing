@@ -33,6 +33,8 @@ class TL16C2550 {
             Interrupt* interrupt);
   absl::Status initialize();
 
+  void read_thread(int read_fd, int shutdown_fd);
+
   AddressSpace* address_space_;
   uint16_t base_address_;
 
