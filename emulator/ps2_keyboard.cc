@@ -4,6 +4,7 @@
 #include <span>
 
 #include "absl/log/log.h"
+#include "absl/synchronization/mutex.h"
 
 namespace eight_bit {
 
@@ -125,6 +126,7 @@ PS2Keyboard::PS2Keyboard(Interrupt* irq, IOPort* data_port,
                          IOPort* irq_status_port)
     : irq_(irq), data_port_(data_port), irq_status_port_(irq_status_port) {
   data_port_->register_read_callback([this]() -> uint8_t {
+    absl::MutexLock lock(&mutex_);
     if (!data_.empty()) {
       return data_.front();
     }
@@ -134,6 +136,7 @@ PS2Keyboard::PS2Keyboard(Interrupt* irq, IOPort* data_port,
   // Bit 0 on the irq status port can be written to and is used to clear the
   // keyboard interrupt by being pulled low then high again.
   irq_status_port_->register_write_callback([this](uint8_t data) {
+    absl::MutexLock lock(&mutex_);
     data = data & 0x01;
     // We saw a 0->1 transition on the interrupt clear bit. Clear the interrupt.
     if (data == 1 && interrupt_clear_ == 0) {
@@ -156,8 +159,10 @@ PS2Keyboard::PS2Keyboard(Interrupt* irq, IOPort* data_port,
   });
   // Bit 1 can be read from and indicates whether there is an outstanding
   // interrupt from the keyboard (active low).
-  irq_status_port_->register_read_callback(
-      [this]() -> uint8_t { return interrupt_id_ != 0 ? 0x00 : 0x02; });
+  irq_status_port_->register_read_callback([this]() -> uint8_t {
+    absl::MutexLock lock(&mutex_);
+    return interrupt_id_ != 0 ? 0x00 : 0x02;
+  });
 }
 
 // Translates the SDL keyboard event into a sequence of PS/2 data bytes to be
@@ -177,7 +182,8 @@ void PS2Keyboard::handle_keyboard_event(SDL_KeyboardEvent event) {
     }
   }
   if (data != nullptr && !data->empty()) {
-    for (const auto& byte : *data) {
+    absl::MutexLock lock(&mutex_);
+    for (const auto byte : *data) {
       data_.push(byte);
     }
     // 0 is a sentinel value for no interrupt.
