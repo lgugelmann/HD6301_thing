@@ -29,9 +29,18 @@
 ABSL_FLAG(std::string, rom_file, "", "Path to the ROM file to load");
 ABSL_FLAG(int, ticks_per_second, 1000000, "Number of CPU ticks per second");
 
+// SDL starts one timer thread that runs all timer callbacks. In theory
+// SDL_Quit() should shut it down, but instead it seems to jsut stop running the
+// callbacks while the thread itself sticks around. With the thread still active
+// TSan can't see that accesses from timer_callback and the destructors from the
+// main thread do not interact with each other and freks out at shoutdown time.
+// This mutex is cheap and avoids the false positive.
+ABSL_CONST_INIT absl::Mutex callback_mutex_(absl::kConstInit);
+
 // This gets called every millisecond, which corresponds to 1000 CPU ticks.
 // TODO: figure out how to do this faster
 Uint32 timer_callback(Uint32 interval, void* param) {
+  absl::MutexLock lock(&callback_mutex_);
   const int num_ticks = absl::GetFlag(FLAGS_ticks_per_second) / 1000;
   auto* cpu = static_cast<eight_bit::Cpu6301*>(param);
   for (int i = 0; i < num_ticks; ++i) {
@@ -129,6 +138,9 @@ int main(int argc, char* argv[]) {
     SDL_Delay(16);
   }
   SDL_RemoveTimer(timer);
+
+  // This makes sure that the timer callback has finished before we exit.
+  absl::MutexLock lock(&callback_mutex_);
 
   return 0;
 }
