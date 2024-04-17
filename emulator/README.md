@@ -39,18 +39,17 @@ board.
 
 ## How to compile
 
-The emulator has a hard dependency on libSDL and the Abseil C++ libraries, and
-an optional one on RtMidi. It can be built using CMake. Create a build
-somewhere, e.g. `emulator/build`. Then in that directory run `cmake [path to
-CMakeList.txt]`. In the example before that's `cmake ..`. After successfully
-configuring, run `make` to create the `emulator` binary.
+The emulator has a hard dependency on SDL2, and an optional one on RtMidi. It
+can be built using CMake. Create a build directory somewhere, e.g.
+`emulator/build`. Then in that directory run `cmake [path to CMakeList.txt]`. In
+the example before that's `cmake ..`. After successfully configuring, run `make`
+to create the `emulator` binary.
 
 Alternatively, open the project in VSCode and hit F7 (assuming you have the
 CMake extensions installed - which is very likely).
 
 NOTE: The CMake setup is not particularly great. For example it doesn't set up
-  minimum versions for any libraries used. Chances are good that at least Abseil
-  needs to be fairly recent to work.
+  minimum versions for any libraries used.
 
 ## Creating a ROM file to run
 
@@ -122,7 +121,9 @@ Other available commands are `reset` which starts the system fresh, and `clear`
 which resets the graphics. That last command may also bring back the cursor.
 Some programs disable it and don't turn it back on on exit :-).
 
-## Profiling
+## Profiling & sanitizer runs
+
+### Profiling
 
 There is some support for profiling using
 [gperftools](https://github.com/gperftools/gperftools). To do so turn on the
@@ -140,3 +141,13 @@ You can then examine the profile with e.g. `pprof` using:
 ```sh
 pprof -http localhost:8080 ./emulator cpu.profile
 ```
+
+### Sanitizers
+
+To run a ThreadSanitizer build enable the `TSAN_BUILD` option (see above for
+how) and rebuild.
+
+Running the binary now prints warnings about potential threading issues.
+
+Note: On my system TSan flags a false positive with audio buffers passing
+  between SDL and Pulseaudio.
