@@ -28,6 +28,7 @@ void SoundOPL3::AudioCallback(void* userdata, uint8_t* stream, int len) {
 
 SoundOPL3::SoundOPL3(AddressSpace* address_space, uint16_t base_address)
     : address_space_(address_space), base_address_(base_address) {
+  absl::MutexLock lock(&opl3_chip_.mutex);
   OPL3_Reset(&opl3_chip_.chip, 44100);
   auto status = address_space_->register_write(
       base_address_, base_address_ + 3,
