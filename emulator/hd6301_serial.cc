@@ -1,5 +1,6 @@
 #include "hd6301_serial.h"
 
+#include <fcntl.h>
 #include <poll.h>
 #include <pty.h>
 #include <termios.h>
@@ -7,6 +8,7 @@
 
 #include <cstdint>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -37,6 +39,44 @@ uint16_t ticks_per_bit(uint8_t rmcr) {
       return 0;
   }
   return 0;
+}
+
+absl::StatusOr<int> get_open_pty() {
+  int fd = posix_openpt(O_RDWR | O_NOCTTY);
+  absl::Cleanup close_fd = [&fd] { close(fd); };
+
+  if (fd == -1) {
+    return absl::InternalError(
+        absl::StrCat("Failed to open PTY:", strerror(errno)));
+  }
+  if (grantpt(fd) == -1) {
+    return absl::InternalError(
+        absl::StrCat("Failed to grant PTY:", strerror(errno)));
+  }
+  if (unlockpt(fd) == -1) {
+    return absl::InternalError(
+        absl::StrCat("Failed to unlock PTY:", strerror(errno)));
+  }
+  struct termios term;
+  if (tcgetattr(fd, &term) == -1) {
+    return absl::InternalError(
+        absl::StrCat("Failed to get PTY attributes:", strerror(errno)));
+  }
+  term.c_lflag &= ~ECHO;
+  if (tcsetattr(fd, TCSANOW, &term) == -1) {
+    return absl::InternalError(
+        absl::StrCat("Failed to disable echo on PTY:", strerror(errno)));
+  }
+  // Set the PTY to non-blocking. We write to it regardless of whether there is
+  // somebody on the other end, and we don't want to block write() when the
+  // buffer is full as it would block the entire emulator.
+  int flags = fcntl(fd, F_GETFL, 0);
+  if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+    return absl::InternalError(
+        absl::StrCat("Failed to set PTY to non-blocking:", strerror(errno)));
+  }
+  std::move(close_fd).Cancel();
+  return fd;
 }
 }  // namespace
 
@@ -131,6 +171,7 @@ void HD6301Serial::write(uint16_t address, uint8_t data) {
       if ((trcsr_ & kTransmitEnable) && (trcsr_ & kTransmitDataRegisterEmpty)) {
         // Clear out the transmit data register empty bit
         trcsr_ &= ~kTransmitDataRegisterEmpty;
+        absl::MutexLock lock(&mutex_);
         ::write(our_fd_, &data, 1);
         // Sending 10 bits: Start bit, 8 data bits, stop bit
         transmit_register_empty_countdown_ = ticks_per_bit(rmcr_) * 10;
@@ -167,7 +208,10 @@ uint8_t HD6301Serial::read(uint16_t address) {
   return 0;
 }
 
-std::string HD6301Serial::get_pty_name() const { return ttyname(their_fd_); }
+std::string HD6301Serial::get_pty_name() {
+  absl::MutexLock lock(&mutex_);
+  return ptsname(our_fd_);
+}
 
 HD6301Serial::HD6301Serial(AddressSpace* address_space, uint16_t base_address,
                            Interrupt* interrupt)
@@ -189,10 +233,11 @@ absl::Status HD6301Serial::initialize() {
     return status;
   }
 
-  struct termios term = {};
-  if (openpty(&our_fd_, &their_fd_, nullptr, &term, nullptr)) {
-    return absl::InternalError("Failed to open PTY");
+  auto pty_fd = get_open_pty();
+  if (!pty_fd.ok()) {
+    return pty_fd.status();
   }
+  our_fd_ = pty_fd.value();
 
   // Create a pipe to signal the read thread to stop.
   if (pipe(shutdown_fd_.data()) != 0) {
@@ -203,7 +248,7 @@ absl::Status HD6301Serial::initialize() {
     while (true) {
       std::array<struct pollfd, 2> fds;
       fds[0].fd = our_fd_;
-      fds[0].events = POLLIN;
+      fds[0].events = POLLIN | POLLHUP;
       // The read end of the pipe for the shutdown signal.
       fds[1].fd = shutdown_fd_[0];
       fds[1].events = POLLIN;
@@ -220,6 +265,19 @@ absl::Status HD6301Serial::initialize() {
             absl::MutexLock lock(&mutex_);
             rx_fifo_.push(data);
           }
+        }
+        if (fds[0].revents & POLLHUP) {
+          // The other side of our PTY has been closed. It can't be reopened so
+          // we create a new one.
+          absl::MutexLock lock(&mutex_);
+          close(our_fd_);
+          auto pty_fd = get_open_pty();
+          if (!pty_fd.ok()) {
+            LOG(ERROR) << "Failed to open PTY: " << pty_fd.status()
+                       << ". Disabling serial port.";
+            break;
+          }
+          our_fd_ = pty_fd.value();
         }
         if (fds[1].revents & POLLIN) {
           // We've been woken up by a write on the shutdown pipe. Stop the
