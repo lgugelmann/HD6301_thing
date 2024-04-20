@@ -7,3 +7,6 @@
 [submodule "emulator/abseil-cpp"]
 	path = emulator/abseil-cpp
 	url = https://github.com/abseil/abseil-cpp.git
+[submodule "emulator/imgui"]
+	path = emulator/imgui
+	url = https://github.com/ocornut/imgui.git
