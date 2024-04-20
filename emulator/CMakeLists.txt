@@ -28,6 +28,19 @@ else()
     message(STATUS "RtMidi not found, MIDI support disabled")
 endif()
 
+# Dear ImGui
+set(IMGUI_SOURCES
+    imgui/imgui.cpp
+    imgui/imgui_draw.cpp
+    imgui/imgui_widgets.cpp
+    imgui/imgui_tables.cpp
+    imgui/backends/imgui_impl_sdl2.cpp
+    imgui/backends/imgui_impl_sdlrenderer2.cpp
+)
+add_library(imgui STATIC ${IMGUI_SOURCES})
+target_include_directories(imgui PUBLIC imgui imgui/backends ${SDL2_INCLUDE_DIRS})
+set_source_files_properties(${IMGUI_SOURCES} PROPERTIES SKIP_LINTING ON)
+
 # Nuked-OPL3
 set(NUKED_OPL3_SOURCES
     Nuked-OPL3/opl3.c
@@ -85,6 +98,7 @@ target_link_libraries(emulator
     absl::status
     absl::statusor
     absl::synchronization
+    imgui
     nuked-opl3
 )
 if (RtMidi_FOUND)
