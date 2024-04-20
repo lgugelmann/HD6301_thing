@@ -5,6 +5,7 @@
 #include "../pico_graphics/font.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 
 namespace eight_bit {
@@ -15,12 +16,6 @@ Graphics::~Graphics() {
   }
   if (frame_surface_) {
     SDL_FreeSurface(frame_surface_);
-  }
-  if (renderer_) {
-    SDL_DestroyRenderer(renderer_);
-  }
-  if (window_) {
-    SDL_DestroyWindow(window_);
   }
 }
 
@@ -36,23 +31,6 @@ absl::StatusOr<std::unique_ptr<Graphics>> Graphics::create(
 }
 
 absl::Status Graphics::initialize() {
-  // Scale the window 2x if the screen has high DPI
-  float dpi = 0.0;
-  SDL_GetDisplayDPI(0, nullptr, &dpi, nullptr);
-
-  int scale = 1;
-  if (dpi > 120.0) {
-    scale = 2;
-  }
-
-  window_ = SDL_CreateWindow("Emulator", SDL_WINDOWPOS_UNDEFINED,
-                             SDL_WINDOWPOS_UNDEFINED, kFrameWidth * scale,
-                             kFrameHeight * scale, SDL_WINDOW_SHOWN);
-  if (!window_) {
-    return absl::InternalError(
-        absl::StrCat("Failed to create window: ", SDL_GetError()));
-  }
-
   // Initialize a palette with the 64 RGB222 colors
   palette_ = SDL_AllocPalette(64);
   if (!palette_) {
@@ -74,18 +52,7 @@ absl::Status Graphics::initialize() {
   }
   SDL_SetSurfacePalette(frame_surface_, palette_);
   // nullptr means fill the entire surface
-  SDL_FillRect(frame_surface_, nullptr, 0);
-
-  // Create a renderer
-  renderer_ = SDL_CreateRenderer(window_, -1, SDL_RENDERER_ACCELERATED);
-  if (!renderer_) {
-    return absl::InternalError(
-        absl::StrCat("Failed to create renderer: ", SDL_GetError()));
-  }
-
-  // Set a black background
-  SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
-  SDL_RenderClear(renderer_);
+  SDL_FillRect(frame_surface_, nullptr, 0 /* black */);
 
   auto status = address_space_->register_write(
       base_address_, base_address_ + 63,
@@ -97,22 +64,18 @@ absl::Status Graphics::initialize() {
   return absl::OkStatus();
 }
 
-void Graphics::render() {
-  SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
-  SDL_RenderClear(renderer_);
-
+absl::Status Graphics::render(SDL_Renderer* renderer,
+                              SDL_Rect* destination_rect) {
   SDL_LockSurface(frame_surface_);
-  SDL_Texture* texture =
-      SDL_CreateTextureFromSurface(renderer_, frame_surface_);
+  SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, frame_surface_);
   SDL_UnlockSurface(frame_surface_);
   if (!texture) {
-    LOG(ERROR) << "Failed to create texture: " << SDL_GetError();
-    return;
+    return absl::InternalError(
+        absl::StrCat("Failed to create texture: ", SDL_GetError()));
   }
-  SDL_RenderCopy(renderer_, texture, nullptr, nullptr);
+  SDL_RenderCopy(renderer, texture, nullptr, destination_rect);
   SDL_DestroyTexture(texture);
-
-  SDL_RenderPresent(renderer_);
+  return absl::OkStatus();
 }
 
 Graphics::Graphics(AddressSpace* address_space, uint16_t base_address)

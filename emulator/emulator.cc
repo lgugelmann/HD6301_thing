@@ -58,7 +58,6 @@ int main(int argc, char* argv[]) {
     LOG(FATAL) << absl::StreamFormat("Failed to initialize SDL: %s",
                                      SDL_GetError());
   }
-
   absl::Cleanup sdl_cleanup([] { SDL_Quit(); });
 
   // Avoid the SDL window turning the compositor off
@@ -66,6 +65,37 @@ int main(int argc, char* argv[]) {
     LOG(ERROR) << "SDL can not disable compositor bypass - not running under "
                   "Linux?";
   }
+
+  // Scale the window 2x if the screen has high DPI
+  float dpi = 0.0;
+  SDL_GetDisplayDPI(0, nullptr, &dpi, nullptr);
+  int scale = 1;
+  if (dpi > 120.0) {
+    scale = 2;
+  }
+
+  constexpr int kFrameWidth = 800;
+  constexpr int kFrameHeight = 600;
+  auto* window = SDL_CreateWindow("Emulator", SDL_WINDOWPOS_UNDEFINED,
+                                  SDL_WINDOWPOS_UNDEFINED, kFrameWidth * scale,
+                                  kFrameHeight * scale, SDL_WINDOW_SHOWN);
+  if (!window) {
+    LOG(FATAL) << absl::StreamFormat("Failed to create window: %s",
+                                     SDL_GetError());
+  }
+  absl::Cleanup window_cleanup([window] { SDL_DestroyWindow(window); });
+
+  // Create a renderer
+  auto* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+  if (!renderer) {
+    LOG(FATAL) << absl::StreamFormat("Failed to create renderer: %s",
+                                     SDL_GetError());
+  }
+  absl::Cleanup renderer_cleanup([renderer] { SDL_DestroyRenderer(renderer); });
+
+  // Init to a black background
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+  SDL_RenderClear(renderer);
 
   eight_bit::AddressSpace address_space;
 
@@ -133,7 +163,14 @@ int main(int argc, char* argv[]) {
         keyboard.handle_keyboard_event(event.key);
       }
     }
-    graphics->render();
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+    SDL_RenderClear(renderer);
+    auto status = graphics->render(renderer);
+    if (!status.ok()) {
+      LOG(ERROR) << "Failed to render graphics: " << status;
+      break;
+    };
+    SDL_RenderPresent(renderer);
     // Roughly 30 fps. TODO: make this a timer callback.
     SDL_Delay(16);
   }

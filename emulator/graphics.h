@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "address_space.h"
 
@@ -21,7 +22,11 @@ class Graphics {
   static absl::StatusOr<std::unique_ptr<Graphics>> create(
       uint16_t base_address, AddressSpace* address_space);
 
-  void render();
+  // Render the screen to the given renderer. If destination_rect is not null,
+  // the screen will be scaled to fit within the given rectangle. Otherwise it
+  // fills the entire renderer.
+  absl::Status render(SDL_Renderer* renderer,
+                      SDL_Rect* destination_rect = nullptr);
 
  private:
   Graphics(AddressSpace* address_space, uint16_t base_address);
@@ -56,9 +61,6 @@ class Graphics {
   std::array<uint8_t, kCharBufSize> background_color_ = {0};
   SDL_Palette* palette_ = nullptr;
   SDL_Surface* frame_surface_ = nullptr;
-
-  SDL_Window* window_ = nullptr;
-  SDL_Renderer* renderer_ = nullptr;
 };
 
 }  // namespace eight_bit
