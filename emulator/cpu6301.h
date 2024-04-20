@@ -26,7 +26,10 @@ class Cpu6301 {
 
   void reset();
 
-  uint8_t tick();
+  // Run for approximately the given number of cycles, but make sure to end on
+  // an instruction boundary. Returns the difference (positive or negative) of
+  // cycles actually run vs what was asked for.
+  int tick(int cycles_to_run);
 
   void print_state() const;
 
@@ -34,6 +37,16 @@ class Cpu6301 {
   IOPort* get_port2();
   Interrupt* get_irq();
   HD6301Serial* get_serial();
+
+  struct CpuState {
+    uint8_t a;
+    uint8_t b;
+    uint16_t x;
+    uint16_t sp;
+    uint16_t pc;
+    uint8_t sr;
+  };
+  CpuState get_state() const;
 
  private:
   Cpu6301(AddressSpace* memory);
@@ -50,7 +63,7 @@ class Cpu6301 {
           V(r & 0x02),
           C(r & 0x01) {}
 
-    uint8_t as_integer() {
+    uint8_t as_integer() const {
       return 0xC0 | H << 5 | I << 4 | N << 3 | Z << 2 | V << 1 | (uint8_t)C;
     }
 
@@ -150,7 +163,9 @@ class Cpu6301 {
   void bsr(int8_t offset);
   void jsr(uint16_t address);
 
-  void enter_interrupt(uint16_t vector);
+  // Enters an interrupt handler at the given vector address. Returns the number
+  // of cycles entering the interrupt takes.
+  int enter_interrupt(uint16_t vector);
   uint8_t execute(uint8_t opcode);
 
   Interrupt interrupt_;
@@ -168,8 +183,6 @@ class Cpu6301 {
   uint16_t pc = 0xfffe;
   StatusRegister sr;
 
-  uint8_t current_opcode_ = 0;
-  uint8_t opcode_cycles_ = 0;
   AddressSpace* memory_ = nullptr;
   std::map<uint8_t, Instruction> instructions_;
 };

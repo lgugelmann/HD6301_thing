@@ -30,42 +30,49 @@ void Cpu6301::reset() {
   LOG(INFO) << "Reset to start at " << absl::Hex(pc, absl::kZeroPad4);
 }
 
-uint8_t Cpu6301::tick() {
-  timer_.tick();
-  serial_->tick();
-  if (current_opcode_ == 0) {
+int Cpu6301::tick(int cycles_to_run) {
+  while (cycles_to_run > 0) {
+    // We are always at instruction boundaries here, so we can check for
+    // interrupts.
     if (interrupt_.has_interrupt() & !sr.I) {
       // Moves the PC to the relevant interrupt routine and masks interrupts.
-      enter_interrupt(0xfff8);
+      cycles_to_run -= enter_interrupt(0xfff8);
     }
     if (timer_interrupt_.has_interrupt() & !sr.I) {
-      enter_interrupt(0xfff2);
+      cycles_to_run -= enter_interrupt(0xfff2);
     }
     if (serial_interrupt_.has_interrupt() & !sr.I) {
-      enter_interrupt(0xfff0);
+      cycles_to_run -= enter_interrupt(0xfff0);
     }
     uint8_t opcode = fetch();
     if (!instructions_.contains(opcode)) {
       LOG(ERROR) << "Invalid instruction: " << absl::Hex(opcode) << " at "
                  << absl::Hex(pc, absl::kZeroPad4);
       reset();
-      return -1;
+      cycles_to_run -= 1;
+      continue;
     }
-    current_opcode_ = opcode;
-    opcode_cycles_ = instructions_[opcode].cycles;
+    int opcode_cycles = instructions_[opcode].cycles;
+
+    for (int i = 0; i < opcode_cycles; ++i) {
+      timer_.tick();
+      serial_->tick();
+    }
+    cycles_to_run -= opcode_cycles;
+
+    execute(opcode);
   }
-  if (opcode_cycles_ > 0) {
-    opcode_cycles_ -= 1;
-    return 0;
-  }
-  uint8_t opcode = current_opcode_;
-  current_opcode_ = 0;
-  return execute(opcode);
+  return -cycles_to_run;
 }
 
 void Cpu6301::print_state() const {
   printf("A: %02x B: %02x X: %04x SP: %04x PC: %04x CC: 11%d%d%d%d%d%d\n", a, b,
          x, sp, pc, sr.H, sr.I, sr.N, sr.Z, sr.V, sr.C);
+}
+
+Cpu6301::CpuState Cpu6301::get_state() const {
+  return CpuState{
+      .a = a, .b = b, .x = x, .sp = sp, .pc = pc, .sr = sr.as_integer()};
 }
 
 IOPort* Cpu6301::get_port1() { return &port1_; }
@@ -388,7 +395,8 @@ void Cpu6301::jsr(uint16_t address) {
   pc = address;
 }
 
-void Cpu6301::enter_interrupt(uint16_t vector) {
+// Returns the number of cycles taken.
+int Cpu6301::enter_interrupt(uint16_t vector) {
   VLOG(3) << "Entering interrupt at " << absl::Hex(vector, absl::kZeroPad4);
   psh16(pc);
   psh16(x);
@@ -398,6 +406,9 @@ void Cpu6301::enter_interrupt(uint16_t vector) {
   // Inhibit further interrupts.
   sr.I = 1;
   pc = memory_->get16(vector);
+  // The number of cycles an interrupt takes is not documented - but it's a
+  // fair guess that it's as many as there are memory writes.
+  return 9;
 }
 
 uint8_t Cpu6301::execute(uint8_t opcode) {

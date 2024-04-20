@@ -47,12 +47,12 @@ constexpr int kGraphicsFrameHeight = 600;
 // This gets called every millisecond, which corresponds to 1000 CPU ticks.
 // TODO: figure out how to do this faster
 Uint32 timer_callback(Uint32 interval, void* param) {
+  static const int ticks_to_run = absl::GetFlag(FLAGS_ticks_per_second) / 1000;
+  static int extra_ticks = 0;  // How many extra ticks we ran last time
+
   absl::MutexLock lock(&callback_mutex_);
-  const int num_ticks = absl::GetFlag(FLAGS_ticks_per_second) / 1000;
   auto* cpu = static_cast<eight_bit::Cpu6301*>(param);
-  for (int i = 0; i < num_ticks; ++i) {
-    cpu->tick();
-  }
+  extra_ticks = cpu->tick(ticks_to_run - extra_ticks);
   return interval;
 }
 
@@ -213,12 +213,15 @@ int main(int argc, char* argv[]) {
 
     static std::string button_text = "Pause";
     static bool cpu_running = true;
+    static eight_bit::Cpu6301::CpuState cpu_state;
     if (ImGui::Button(button_text.c_str(), ImVec2(-1, 0))) {
       if (cpu_running) {
         SDL_RemoveTimer(timer);
         timer = 0;
         cpu_running = false;
         button_text = "Run";
+        absl::MutexLock lock(&callback_mutex_);
+        cpu_state = cpu->get_state();
       } else {
         timer = SDL_AddTimer(1, timer_callback, cpu.get());
         button_text = "Pause";
@@ -228,12 +231,29 @@ int main(int argc, char* argv[]) {
     ImGui::BeginDisabled(cpu_running);
     if (ImGui::Button("Step", ImVec2(-1, 0))) {
       absl::MutexLock lock(&callback_mutex_);
-      cpu->tick();
+      cpu->tick(1);
+      cpu_state = cpu->get_state();
     }
+    ImGui::Text("-- CPU State --");
+    ImGui::Text(" A: 0x%02X", cpu_state.a);
+    ImGui::Text(" B: 0x%02X", cpu_state.b);
+    ImGui::Text(" X: 0x%04X", cpu_state.x);
+    ImGui::Text("PC: 0x%04X", cpu_state.pc);
+    ImGui::Text("SP: 0x%04X", cpu_state.sp);
+    int sr = cpu_state.sr;
+    ImGui::Text("SR: HINZVC\n    %d%d%d%d%d%d", (sr & 0x20) >> 5,
+                (sr & 0x10) >> 4, (sr & 0x08) >> 3, (sr & 0x04) >> 2,
+                (sr & 0x02) >> 1, sr & 0x01);
+
+    ImGui::SetCursorPosY(
+        ImGui::GetWindowSize().y - ImGui::GetStyle().ItemSpacing.y -
+        ImGui::GetStyle().FramePadding.y - ImGui::GetFrameHeightWithSpacing());
     if (ImGui::Button("Reset", ImVec2(-1, 0))) {
       absl::MutexLock lock(&callback_mutex_);
       cpu->reset();
+      cpu_state = cpu->get_state();
     }
+
     ImGui::EndDisabled();
 
     ImGui::End();
