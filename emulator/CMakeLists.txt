@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 option(GPERFTOOLS_BUILD "Enable profiling with gperftools" OFF)
 option(TSAN_BUILD "Set up a TSan build" OFF)
+option(USE_CLANG_TIDY "Use clang-tidy for static analysis" ON)
 
 if (TSAN_BUILD)
     add_compile_options(-fsanitize=thread -fno-omit-frame-pointer)
@@ -81,7 +82,12 @@ set(EMULATOR_CLANG_TIDY_CHECKS
     -readability-implicit-bool-conversion
 )
 list(JOIN EMULATOR_CLANG_TIDY_CHECKS "," EMULATOR_CLANG_TIDY_CHECKS)
-set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=${EMULATOR_CLANG_TIDY_CHECKS}")
+if (USE_CLANG_TIDY)
+    message(STATUS "Using clang-tidy for static analysis")
+    set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=${EMULATOR_CLANG_TIDY_CHECKS}")
+else()
+    message(STATUS "Not using clang-tidy for static analysis")
+endif()
 
 add_executable(emulator ${emulator_SOURCES})
 
