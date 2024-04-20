@@ -109,8 +109,6 @@ int main(int argc, char* argv[]) {
   absl::Cleanup imgui_cleanup([] { ImGui::DestroyContext(); });
 
   ImGuiIO& io = ImGui::GetIO();
-  // Enable keyboard controls for Dear ImGui.
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
   ImGui::StyleColorsDark();
   ImGui::GetStyle().ScaleAllSizes(scale);
