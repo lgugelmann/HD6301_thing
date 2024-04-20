@@ -1,6 +1,6 @@
 #include "sound_opl3.h"
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 #include <cstdint>
 #include <memory>

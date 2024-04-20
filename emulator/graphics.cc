@@ -1,6 +1,6 @@
 #include "graphics.h"
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 #include "../pico_graphics/font.h"
 #include "absl/log/log.h"
