@@ -93,19 +93,3 @@ endif()
 if (GPERFTOOLS_BUILD)
     target_link_libraries(emulator profiler)
 endif()
-
-add_executable(graphics_tester
-    graphics_tester.cc
-    address_space.cc
-    graphics.cc
-    hexdump.cc
-)
-
-target_include_directories(graphics_tester PUBLIC "${PROJECT_SOURCE_DIR}" ${SDL2_INCLUDE_DIRS})
-
-target_link_libraries(graphics_tester
-    SDL2::SDL2
-    absl::log
-    absl::status
-    absl::statusor
- )
