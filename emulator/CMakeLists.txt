@@ -28,6 +28,14 @@ else()
     message(STATUS "RtMidi not found, MIDI support disabled")
 endif()
 
+# Nuked-OPL3
+set(NUKED_OPL3_SOURCES
+    Nuked-OPL3/opl3.c
+)
+add_library(nuked-opl3 STATIC ${NUKED_OPL3_SOURCES})
+set_source_files_properties(${NUKED_OPL3_SOURCES} PROPERTIES SKIP_LINTING ON)
+set_source_files_properties(${NUKED_OPL3_SOURCES} PROPERTIES COMPILE_FLAGS -w)
+
 set(emulator_SOURCES
     address_space.cc
     cpu6301.cc
@@ -42,15 +50,10 @@ set(emulator_SOURCES
     sound_opl3.cc
     timer.cc
     tl16c2550.cc
-    Nuked-OPL3/opl3.c
 )
 if (RtMidi_FOUND)
     list(APPEND emulator_SOURCES midi_to_serial.cc)
 endif()
-
-# Silence warnings in Nuked-OPL3 - Clang has a lot of warnings in this file but
-# it isn't ours.
-set_source_files_properties(Nuked-OPL3/opl3.c PROPERTIES COMPILE_FLAGS -w)
 
 set(EMULATOR_CLANG_TIDY_CHECKS
     abseil-*
@@ -69,7 +72,7 @@ set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=${EMULATOR_CLANG_TIDY_CHECKS}")
 
 add_executable(emulator ${emulator_SOURCES})
 
-target_include_directories(emulator PUBLIC "${PROJECT_BINARY_DIR}")
+target_include_directories(emulator PUBLIC "${PROJECT_SOURCE_DIR}" ${SDL2_INCLUDE_DIRS})
 
 target_compile_options(emulator PRIVATE -Wall -Wextra -Werror -Wno-gcc-compat)
 
@@ -82,6 +85,7 @@ target_link_libraries(emulator
     absl::status
     absl::statusor
     absl::synchronization
+    nuked-opl3
 )
 if (RtMidi_FOUND)
     target_link_libraries(emulator RtMidi::rtmidi)
@@ -96,6 +100,8 @@ add_executable(graphics_tester
     graphics.cc
     hexdump.cc
 )
+
+target_include_directories(graphics_tester PUBLIC "${PROJECT_SOURCE_DIR}" ${SDL2_INCLUDE_DIRS})
 
 target_link_libraries(graphics_tester
     SDL2::SDL2
