@@ -16,6 +16,9 @@
 #include "address_space.h"
 #include "cpu6301.h"
 #include "graphics.h"
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_sdlrenderer2.h"
 #include "ps2_keyboard.h"
 #include "ram.h"
 #include "rom.h"
@@ -36,6 +39,10 @@ ABSL_FLAG(int, ticks_per_second, 1000000, "Number of CPU ticks per second");
 // main thread do not interact with each other and freks out at shoutdown time.
 // This mutex is cheap and avoids the false positive.
 ABSL_CONST_INIT absl::Mutex callback_mutex_(absl::kConstInit);
+
+constexpr int kDebugWindowWidth = 200;
+constexpr int kGraphicsFrameWidth = 800;
+constexpr int kGraphicsFrameHeight = 600;
 
 // This gets called every millisecond, which corresponds to 1000 CPU ticks.
 // TODO: figure out how to do this faster
@@ -74,11 +81,10 @@ int main(int argc, char* argv[]) {
     scale = 2;
   }
 
-  constexpr int kFrameWidth = 800;
-  constexpr int kFrameHeight = 600;
-  auto* window = SDL_CreateWindow("Emulator", SDL_WINDOWPOS_UNDEFINED,
-                                  SDL_WINDOWPOS_UNDEFINED, kFrameWidth * scale,
-                                  kFrameHeight * scale, SDL_WINDOW_SHOWN);
+  auto* window = SDL_CreateWindow(
+      "Emulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+      (kGraphicsFrameWidth + kDebugWindowWidth) * scale,
+      kGraphicsFrameHeight * scale, SDL_WINDOW_SHOWN);
   if (!window) {
     LOG(FATAL) << absl::StreamFormat("Failed to create window: %s",
                                      SDL_GetError());
@@ -86,7 +92,8 @@ int main(int argc, char* argv[]) {
   absl::Cleanup window_cleanup([window] { SDL_DestroyWindow(window); });
 
   // Create a renderer
-  auto* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+  auto* renderer = SDL_CreateRenderer(
+      window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
   if (!renderer) {
     LOG(FATAL) << absl::StreamFormat("Failed to create renderer: %s",
                                      SDL_GetError());
@@ -96,6 +103,28 @@ int main(int argc, char* argv[]) {
   // Init to a black background
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
   SDL_RenderClear(renderer);
+
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  absl::Cleanup imgui_cleanup([] { ImGui::DestroyContext(); });
+
+  ImGuiIO& io = ImGui::GetIO();
+  // Enable keyboard controls for Dear ImGui.
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+  ImGui::StyleColorsDark();
+  ImGui::GetStyle().ScaleAllSizes(scale);
+
+  io.Fonts->ClearFonts();
+  auto font_config = ImFontConfig();
+  font_config.SizePixels = 13.0F * scale;
+  io.Fonts->AddFontDefault(&font_config);
+
+  ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
+  absl::Cleanup imgui_sdl_cleanup([] { ImGui_ImplSDL2_Shutdown(); });
+  ImGui_ImplSDLRenderer2_Init(renderer);
+  absl::Cleanup imgui_renderer_cleanup(
+      [] { ImGui_ImplSDLRenderer2_Shutdown(); });
 
   eight_bit::AddressSpace address_space;
 
@@ -156,23 +185,73 @@ int main(int argc, char* argv[]) {
   while (running) {
     // Handle events
     while (SDL_PollEvent(&event)) {
+      ImGui_ImplSDL2_ProcessEvent(&event);
+
       if (event.type == SDL_QUIT) {
         running = false;
       }
       if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
-        keyboard.handle_keyboard_event(event.key);
+        // Only pass keyboard events if Dear ImGui doesn't want them
+        if (!io.WantCaptureKeyboard) {
+          keyboard.handle_keyboard_event(event.key);
+        }
       }
     }
+
+    ImGui_ImplSDLRenderer2_NewFrame();
+    ImGui_ImplSDL2_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::SetNextWindowPos(ImVec2(kGraphicsFrameWidth * scale, 0));
+    ImGui::SetNextWindowSize(
+        ImVec2(kDebugWindowWidth * scale, kGraphicsFrameHeight * scale));
+    ImGui::Begin("Emulator controls", nullptr,
+                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+                     ImGuiWindowFlags_NoCollapse |
+                     ImGuiWindowFlags_NoSavedSettings |
+                     ImGuiWindowFlags_NoFocusOnAppearing);
+
+    static std::string button_text = "Pause";
+    static bool cpu_running = true;
+    if (ImGui::Button(button_text.c_str(), ImVec2(-1, 0))) {
+      if (cpu_running) {
+        SDL_RemoveTimer(timer);
+        timer = 0;
+        cpu_running = false;
+        button_text = "Run";
+      } else {
+        timer = SDL_AddTimer(1, timer_callback, cpu.get());
+        button_text = "Pause";
+        cpu_running = true;
+      }
+    }
+    ImGui::BeginDisabled(cpu_running);
+    if (ImGui::Button("Step", ImVec2(-1, 0))) {
+      absl::MutexLock lock(&callback_mutex_);
+      cpu->tick();
+    }
+    if (ImGui::Button("Reset", ImVec2(-1, 0))) {
+      absl::MutexLock lock(&callback_mutex_);
+      cpu->reset();
+    }
+    ImGui::EndDisabled();
+
+    ImGui::End();
+
+    ImGui::Render();
+
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
-    auto status = graphics->render(renderer);
+    //
+    SDL_Rect graphics_rect = {0, 0, kGraphicsFrameWidth * scale,
+                              kGraphicsFrameHeight * scale};
+    auto status = graphics->render(renderer, &graphics_rect);
     if (!status.ok()) {
       LOG(ERROR) << "Failed to render graphics: " << status;
       break;
     };
+    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
     SDL_RenderPresent(renderer);
-    // Roughly 30 fps. TODO: make this a timer callback.
-    SDL_Delay(16);
   }
   SDL_RemoveTimer(timer);
 
