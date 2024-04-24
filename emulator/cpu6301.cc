@@ -486,7 +486,7 @@ Cpu6301::Cpu6301(AddressSpace* memory)
       {0x17, {"tba", 1, 1, kACB, OP(a = d COMMA nzv_sr(a))}},
       {0x18, {"xgdx", 1, 2, kIMP, OP(xgdx())}},
       // {0x19, {"daa", 1, 2, kACA, OP() }},
-      // {0x18, {"slp", 1, 2, kIMP, OP() }}, // sleep
+      // {0x1a, {"slp", 1, 2, kIMP, OP() }}, // sleep
       {0x1b, {"aba", 1, 1, kACB, OP(add(a, 0, d))}},
 
       // Branching

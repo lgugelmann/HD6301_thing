@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 
+#include "../disassembler/disassembler.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
@@ -13,6 +14,7 @@
 #include "absl/log/initialize.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "address_space.h"
 #include "cpu6301.h"
 #include "graphics.h"
@@ -40,7 +42,7 @@ ABSL_FLAG(int, ticks_per_second, 1000000, "Number of CPU ticks per second");
 // This mutex is cheap and avoids the false positive.
 ABSL_CONST_INIT absl::Mutex callback_mutex_(absl::kConstInit);
 
-constexpr int kDebugWindowWidth = 200;
+constexpr int kDebugWindowWidth = 400;
 constexpr int kGraphicsFrameWidth = 800;
 constexpr int kGraphicsFrameHeight = 600;
 
@@ -126,7 +128,9 @@ int main(int argc, char* argv[]) {
 
   eight_bit::AddressSpace address_space;
 
-  auto rom_or = eight_bit::Rom::create(&address_space, 0x8000, 0x8000);
+  constexpr uint rom_start = 0x8000;
+  constexpr uint rom_size = 0x8000;
+  auto rom_or = eight_bit::Rom::create(&address_space, rom_start, rom_size);
   QCHECK_OK(rom_or);
   auto rom = std::move(rom_or.value());
 
@@ -136,7 +140,12 @@ int main(int argc, char* argv[]) {
   QCHECK(rom_file.is_open()) << "Failed to open file: " << rom_file_name;
 
   std::vector<uint8_t> rom_data(std::istreambuf_iterator<char>(rom_file), {});
-  rom->load(0, rom_data);
+  uint16_t rom_load_address = rom_size - rom_data.size();
+  rom->load(rom_load_address, rom_data);
+
+  eight_bit::Disassembler disassembler;
+  QCHECK_OK(disassembler.set_data(rom_start + rom_load_address, rom_data));
+  QCHECK_OK(disassembler.disassemble());
 
   // 0..1f is internal CPU registers and otherwise reserved
   auto ram_or = eight_bit::Ram::create(&address_space, 0x0020, 0x7f00 - 0x0020);
@@ -232,16 +241,48 @@ int main(int argc, char* argv[]) {
       cpu->tick(1);
       cpu_state = cpu->get_state();
     }
-    ImGui::Text("-- CPU State --");
+    static std::string pre_context;
+    static std::string disassembly;
+    static std::string post_context;
+    if (cpu_running == false) {
+      static constexpr int kPreContext = 4;
+      static constexpr int kPostContext = 7;
+
+      static uint16_t last_pc = 0;
+      if (last_pc != cpu_state.pc) {
+        last_pc = cpu_state.pc;
+        disassembler.set_instruction_boundary_hint(cpu_state.pc);
+        QCHECK_OK(disassembler.disassemble());
+        const auto& disassembly_vector = disassembler.disassembly();
+        std::ranges::subrange pre_context_range(
+            disassembly_vector.begin() + std::max(0, last_pc - kPreContext),
+            disassembly_vector.begin() + last_pc);
+        std::ranges::subrange post_context_range(
+            disassembly_vector.begin() +
+                std::min((int)disassembly_vector.size(), last_pc + 1),
+            disassembly_vector.begin() +
+                std::min((int)disassembly_vector.size(),
+                         last_pc + kPostContext));
+        pre_context = absl::StrJoin(pre_context_range, "");
+        disassembly = disassembly_vector[last_pc];
+        post_context = absl::StrJoin(post_context_range, "");
+      }
+    }
+    ImGui::SeparatorText("CPU State");
     ImGui::Text(" A: 0x%02X", cpu_state.a);
     ImGui::Text(" B: 0x%02X", cpu_state.b);
     ImGui::Text(" X: 0x%04X", cpu_state.x);
     ImGui::Text("PC: 0x%04X", cpu_state.pc);
     ImGui::Text("SP: 0x%04X", cpu_state.sp);
     int sr = cpu_state.sr;
-    ImGui::Text("SR: HINZVC\n    %d%d%d%d%d%d", (sr & 0x20) >> 5,
+    ImGui::Text("SR: HINZVC\n    %d%d%d%d%d%d\n", (sr & 0x20) >> 5,
                 (sr & 0x10) >> 4, (sr & 0x08) >> 3, (sr & 0x04) >> 2,
                 (sr & 0x02) >> 1, sr & 0x01);
+    ImGui::SeparatorText("Disassembly");
+    ImGui::Text("%s", pre_context.c_str());
+    ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s",
+                       disassembly.c_str());
+    ImGui::Text("%s", post_context.c_str());
 
     ImGui::SetCursorPosY(
         ImGui::GetWindowSize().y - ImGui::GetStyle().ItemSpacing.y -

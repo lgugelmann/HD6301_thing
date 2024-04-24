@@ -102,6 +102,7 @@ target_link_libraries(emulator
     absl::synchronization
     imgui
     nuked-opl3
+    disassembler_lib
 )
 if (RtMidi_FOUND)
     target_link_libraries(emulator RtMidi::rtmidi)
