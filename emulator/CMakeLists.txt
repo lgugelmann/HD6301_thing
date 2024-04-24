@@ -13,10 +13,6 @@ if (TSAN_BUILD)
     add_link_options(-fsanitize=thread -fno-omit-frame-pointer)
 endif()
 
-# Abseil
-set(ABSL_PROPAGATE_CXX_STD ON)
-add_subdirectory(abseil-cpp)
-
 # SDL2
 find_package(SDL2 REQUIRED)
 
