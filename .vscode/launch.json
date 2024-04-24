@@ -5,10 +5,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "(gdb) Launch",
+      "name": "(gdb) Launch emulator / disassembler",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/emulator",
+      "program": "${command:cmake.launchTargetPath}",
       "args": [
         "--rom_file",
         "${workspaceFolder}/asm/rom.bin"
