@@ -39,7 +39,6 @@ keyboard_init:
 ; interrupt was indeed handled, and the overflow bit (V) if the 'break' key was
 ; pressed.
 keyboard_irq:
-        clc
         tim #$02,PORT2          ; P21 is 0 if a keyboard interrupt is active
         bne .end
 

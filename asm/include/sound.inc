@@ -57,7 +57,6 @@ sound_init:
 ; the IRQ fires. That seems realistic as long as we don't have long SWI or NMI
 ; interrupt handlers.
 sound_irq:
-        clc
         lda OPL3_STATUS_READ
         ; lda sets N to the value of bit 7, which is also the IRQ flag. Unset
         ; means it's not an OPL3 interrupt.
@@ -68,7 +67,6 @@ sound_irq:
         stb OPL3_ADDRESS_ARRAY0
         ldb #$80                ; Note: touching RST does not affect the rest of
         stb OPL3_DATA_WRITE     ;       the register.
-
 
         ; Run timer 1 callback if needed
         bit a,#$40              ; Bit 6 is the timer 1 overflow flag

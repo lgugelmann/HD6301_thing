@@ -406,6 +406,8 @@ irq:
         ; stack before entering an interrupt routine. We don't need to take
         ; precautions to preserve them.
 
+        ; IRQ handlers set C to indicate that they handled an interrupt
+        clc
         ; OPL3 timer IRQ go first. If we don't handle them within 80uS there is
         ; a chance of dropping timer events. See sound.inc for details.
         jsr sound_irq
