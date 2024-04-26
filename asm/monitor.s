@@ -2,6 +2,7 @@
 
         org $f000
 
+        include include/io
         include include/macros
         include include/map
         include include/midi_uart
@@ -24,7 +25,8 @@ MONITOR_STACK_START = $7eff
 ;  100-7dff  Program memory, with stack at 7dff growing down
 ; 7e00-7eff  Monitor memory, with stack at 7eff growing down
 ; 7f00-7fff  I/O space, of which:
-;   00-  3f  [unused]
+;   00-  1f  [unused]
+;   20 - 3f  65C22 I/O            0111 1111 001x xxxx
 ;   40-  7f  MIDI / UART          0111 1111 01xx xxxx
 ;   80-  bf  OPL3 sound           0111 1111 10xx xxxx
 ;   c0-  ff  Graphics registers   0111 1111 11xx xxxx
@@ -107,6 +109,7 @@ start:
         lds #MONITOR_STACK_START ; Set stack to monitor stack location
         sts monitor_stack_ptr
 
+        jsr io_init
         jsr midi_uart_init
         jsr random_init
         jsr sound_init
@@ -415,6 +418,9 @@ irq:
 
         jsr keyboard_irq
         bvs invoke_monitor      ; keyboard IRQ sets V if 'break' key is pressed
+        bcs .handled
+
+        jsr io_irq
         bcs .handled
 
         ; Invoke the monitor on an unexpected unhandled interrupt

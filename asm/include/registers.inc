@@ -63,6 +63,9 @@ GRAPHICS_HIDE_CURSOR     = $7fc8  ; 0 = cursor visible, 1 = hidden.
 ; Format is CCRRGGBB where CC=0 is foreground, CC=1 is background, CC=2 is both
 GRAPHICS_SET_COLOR       = $7fc9
 
+;;
+;; MIDI / UART registers
+;;
 UART_BASE = $7f40
 UART_RBR_A  = UART_BASE         ; Reciever Buffer, read only
 UART_THR_A  = UART_BASE         ; Transmitter Holding, write only
@@ -90,5 +93,29 @@ UART_MSR_B  = UART_BASE + 14    ; Modem Status
 UART_SCR_B  = UART_BASE + 15    ; SCratch Register
 UART_DLL_B  = UART_BASE + 8     ; Divisor Latch LSB
 UART_DLM_B  = UART_BASE + 9     ; Divisor Latch MSB
+
+;;
+;; I/O board registers
+;;
+IO_BASE = $7f20
+IO_ORB    = IO_BASE + 0
+IO_IRB    = IO_ORB
+IO_ORA    = IO_BASE + 1
+IO_IRA    = IO_ORA
+IO_DDRB   = IO_BASE + 2
+IO_DDRA   = IO_BASE + 3
+IO_T1C_L  = IO_BASE + 4
+IO_T1C_H  = IO_BASE + 5
+IO_T1L_L  = IO_BASE + 6
+IO_T1L_H  = IO_BASE + 7
+IO_T2C_L  = IO_BASE + 8
+IO_T2C_H  = IO_BASE + 9
+IO_SR     = IO_BASE + 10
+IO_ACR    = IO_BASE + 11
+IO_PCR    = IO_BASE + 12
+IO_IFR    = IO_BASE + 13
+IO_IER    = IO_BASE + 14
+IO_ORA_NH = IO_BASE + 15
+IO_IRA_NH = IO_ORA_NH
 
         endif
