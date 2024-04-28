@@ -30,26 +30,30 @@ void Cpu6301::reset() {
   LOG(INFO) << "Reset to start at " << absl::Hex(pc, absl::kZeroPad4);
 }
 
-int Cpu6301::tick(int cycles_to_run) {
-  while (cycles_to_run > 0) {
+Cpu6301::TickResult Cpu6301::tick(int cycles_to_run, bool ignore_breakpoint) {
+  int cycles_run = 0;
+  while (cycles_run < cycles_to_run) {
     // We are always at instruction boundaries here, so we can check for
     // interrupts.
     if (interrupt_.has_interrupt() & !sr.I) {
       // Moves the PC to the relevant interrupt routine and masks interrupts.
-      cycles_to_run -= enter_interrupt(0xfff8);
+      cycles_run += enter_interrupt(0xfff8);
     }
     if (timer_interrupt_.has_interrupt() & !sr.I) {
-      cycles_to_run -= enter_interrupt(0xfff2);
+      cycles_run += enter_interrupt(0xfff2);
     }
     if (serial_interrupt_.has_interrupt() & !sr.I) {
-      cycles_to_run -= enter_interrupt(0xfff0);
+      cycles_run += enter_interrupt(0xfff0);
+    }
+    if (!ignore_breakpoint && breakpoint_ && pc == breakpoint_) {
+      return {.cycles_run = cycles_run, .breakpoint_hit = true};
     }
     uint8_t opcode = fetch();
     if (!instructions_.contains(opcode)) {
       LOG(ERROR) << "Invalid instruction: " << absl::Hex(opcode) << " at "
                  << absl::Hex(pc, absl::kZeroPad4);
       reset();
-      cycles_to_run -= 1;
+      cycles_run += 1;
       continue;
     }
     int opcode_cycles = instructions_[opcode].cycles;
@@ -58,12 +62,16 @@ int Cpu6301::tick(int cycles_to_run) {
       timer_.tick();
       serial_->tick();
     }
-    cycles_to_run -= opcode_cycles;
+    cycles_run += opcode_cycles;
 
     execute(opcode);
   }
-  return -cycles_to_run;
+  return {.cycles_run = cycles_run, .breakpoint_hit = false};
 }
+
+void Cpu6301::set_breakpoint(uint16_t address) { breakpoint_ = address; }
+
+void Cpu6301::clear_breakpoint() { breakpoint_.reset(); }
 
 void Cpu6301::print_state() const {
   printf("A: %02x B: %02x X: %04x SP: %04x PC: %04x CC: 11%d%d%d%d%d%d\n", a, b,
@@ -71,8 +79,13 @@ void Cpu6301::print_state() const {
 }
 
 Cpu6301::CpuState Cpu6301::get_state() const {
-  return CpuState{
-      .a = a, .b = b, .x = x, .sp = sp, .pc = pc, .sr = sr.as_integer()};
+  return CpuState{.a = a,
+                  .b = b,
+                  .x = x,
+                  .sp = sp,
+                  .pc = pc,
+                  .sr = sr.as_integer(),
+                  .breakpoint = breakpoint_};
 }
 
 IOPort* Cpu6301::get_port1() { return &port1_; }

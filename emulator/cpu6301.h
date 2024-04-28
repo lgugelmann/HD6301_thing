@@ -26,10 +26,24 @@ class Cpu6301 {
 
   void reset();
 
-  // Run for approximately the given number of cycles, but make sure to end on
-  // an instruction boundary. Returns the difference (positive or negative) of
-  // cycles actually run vs what was asked for.
-  int tick(int cycles_to_run);
+  // Run for approximately the given number of clock cycles, but make sure to
+  // end on an instruction boundary. Returns the number of cycles actually run,
+  // which may be slightly more or less than asked for. If a breakpoint is hit,
+  // the execution stops before executing the instruction at the breakpoint
+  // unless 'ignore_breakpoint' is true.
+  struct TickResult {
+    int cycles_run = 0;
+    bool breakpoint_hit = false;
+  };
+  TickResult tick(int cycles_to_run, bool ignore_breakpoint = false);
+
+  // Set a breakpoint to stop execution if the PC reaches the given address.
+  // 'address' has to be at an instruction boundary. If a breakpoint is already
+  // set, it will be replaced.
+  void set_breakpoint(uint16_t address);
+
+  // Clear the current breakpoint.
+  void clear_breakpoint();
 
   void print_state() const;
 
@@ -39,12 +53,16 @@ class Cpu6301 {
   HD6301Serial* get_serial();
 
   struct CpuState {
+    // Registers
     uint8_t a;
     uint8_t b;
     uint16_t x;
     uint16_t sp;
     uint16_t pc;
     uint8_t sr;
+
+    // Debugging helpers
+    std::optional<uint16_t> breakpoint;
   };
   CpuState get_state() const;
 
@@ -182,6 +200,7 @@ class Cpu6301 {
   uint16_t sp = 0x0200;
   uint16_t pc = 0xfffe;
   StatusRegister sr;
+  std::optional<uint16_t> breakpoint_;
 
   AddressSpace* memory_ = nullptr;
   std::map<uint8_t, Instruction> instructions_;

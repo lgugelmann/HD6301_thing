@@ -35,12 +35,16 @@ ABSL_FLAG(std::string, rom_file, "", "Path to the ROM file to load");
 ABSL_FLAG(int, ticks_per_second, 1000000, "Number of CPU ticks per second");
 
 // SDL starts one timer thread that runs all timer callbacks. In theory
-// SDL_Quit() should shut it down, but instead it seems to jsut stop running the
+// SDL_Quit() should shut it down, but instead it seems to just stop running the
 // callbacks while the thread itself sticks around. With the thread still active
 // TSan can't see that accesses from timer_callback and the destructors from the
 // main thread do not interact with each other and freks out at shoutdown time.
 // This mutex is cheap and avoids the false positive.
 ABSL_CONST_INIT absl::Mutex callback_mutex_(absl::kConstInit);
+// Taking the mutext above is too expensive, and we don't actually need to have
+// any ordering guarantees. As long as the flip is atomic we don't care when
+// exactly we see it.
+std::atomic_flag breakpoint_hit = ATOMIC_FLAG_INIT;
 
 constexpr int kDebugWindowWidth = 400;
 constexpr int kGraphicsFrameWidth = 800;
@@ -54,7 +58,13 @@ Uint32 timer_callback(Uint32 interval, void* param) {
 
   absl::MutexLock lock(&callback_mutex_);
   auto* cpu = static_cast<eight_bit::Cpu6301*>(param);
-  extra_ticks = cpu->tick(ticks_to_run - extra_ticks);
+  auto result = cpu->tick(ticks_to_run - extra_ticks);
+  extra_ticks = result.cycles_run - ticks_to_run;
+  if (result.breakpoint_hit) {
+    // Stop the timer if we hit a breakpoint
+    breakpoint_hit.test_and_set(std::memory_order_relaxed);
+    return 0;
+  }
   return interval;
 }
 
@@ -221,26 +231,86 @@ int main(int argc, char* argv[]) {
     static std::string button_text = "Pause";
     static bool cpu_running = true;
     static eight_bit::Cpu6301::CpuState cpu_state;
+    bool to_stop_state = false;
+    bool to_run_state = false;
     if (ImGui::Button(button_text.c_str(), ImVec2(-1, 0))) {
       if (cpu_running) {
-        SDL_RemoveTimer(timer);
-        timer = 0;
-        cpu_running = false;
-        button_text = "Run";
-        absl::MutexLock lock(&callback_mutex_);
-        cpu_state = cpu->get_state();
+        to_stop_state = true;
       } else {
-        timer = SDL_AddTimer(1, timer_callback, cpu.get());
-        button_text = "Pause";
-        cpu_running = true;
+        to_run_state = true;
       }
+    }
+    {
+      if (breakpoint_hit.test()) {
+        to_stop_state = true;
+        breakpoint_hit.clear();
+      }
+    }
+    if (to_stop_state) {
+      SDL_RemoveTimer(timer);
+      timer = 0;
+      cpu_running = false;
+      button_text = "Run";
+      absl::MutexLock lock(&callback_mutex_);
+      cpu_state = cpu->get_state();
+    } else if (to_run_state) {
+      timer = SDL_AddTimer(1, timer_callback, cpu.get());
+      button_text = "Pause";
+      cpu_running = true;
     }
     ImGui::BeginDisabled(cpu_running);
     if (ImGui::Button("Step", ImVec2(-1, 0))) {
       absl::MutexLock lock(&callback_mutex_);
-      cpu->tick(1);
+      cpu->tick(1, true /* ignore_breakpoint */);
       cpu_state = cpu->get_state();
     }
+
+    // Breakpoint handling
+    ImGui::SeparatorText("Breakpoints");
+    static std::string breakpoint_str("0000");
+    ImGui::InputText("Address", breakpoint_str.data(),
+                     breakpoint_str.size() + 1,
+                     ImGuiInputTextFlags_CharsHexadecimal);
+    if (ImGui::Button("Set breakpoint", ImVec2(-1, 0))) {
+      // SimleAtoi only works with 32 or 64 bit ints.
+      int breakpoint;
+      if (absl::SimpleHexAtoi(breakpoint_str, &breakpoint) && breakpoint >= 0 &&
+          breakpoint <= 0xffff) {
+        absl::MutexLock lock(&callback_mutex_);
+        cpu->set_breakpoint((uint16_t)breakpoint);
+        cpu_state = cpu->get_state();
+      } else {
+        // Bare-bones error handling as the ImGuiInputTextFlags_CharsHexadecimal
+        // above should prevent an invalid address from being settable.
+        LOG(ERROR) << "Invalid breakpoint address: " << breakpoint_str;
+      }
+    }
+    if (cpu_state.breakpoint.has_value()) {
+      ImGui::Text("Breakpoint set at 0x%04X", cpu_state.breakpoint.value());
+      ImGui::SameLine();
+      if (ImGui::Button("Clear breakpoint")) {
+        absl::MutexLock lock(&callback_mutex_);
+        cpu->clear_breakpoint();
+        cpu_state = cpu->get_state();
+      }
+    } else {
+      ImGui::Text("No breakpoint set");
+    }
+
+    // CPU state
+    ImGui::SeparatorText("CPU State");
+    ImGui::Text(" A: 0x%02X", cpu_state.a);
+    ImGui::Text(" B: 0x%02X", cpu_state.b);
+    ImGui::Text(" X: 0x%04X", cpu_state.x);
+    ImGui::Text("PC: 0x%04X", cpu_state.pc);
+    ImGui::Text("SP: 0x%04X", cpu_state.sp);
+    int sr = cpu_state.sr;
+    ImGui::Text("SR: HINZVC\n    %d%d%d%d%d%d\n", (sr & 0x20) >> 5,
+                (sr & 0x10) >> 4, (sr & 0x08) >> 3, (sr & 0x04) >> 2,
+                (sr & 0x02) >> 1, sr & 0x01);
+
+    // Disassembly
+    ImGui::SeparatorText("Disassembly");
     static std::string pre_context;
     static std::string disassembly;
     static std::string post_context;
@@ -268,17 +338,6 @@ int main(int argc, char* argv[]) {
         post_context = absl::StrJoin(post_context_range, "");
       }
     }
-    ImGui::SeparatorText("CPU State");
-    ImGui::Text(" A: 0x%02X", cpu_state.a);
-    ImGui::Text(" B: 0x%02X", cpu_state.b);
-    ImGui::Text(" X: 0x%04X", cpu_state.x);
-    ImGui::Text("PC: 0x%04X", cpu_state.pc);
-    ImGui::Text("SP: 0x%04X", cpu_state.sp);
-    int sr = cpu_state.sr;
-    ImGui::Text("SR: HINZVC\n    %d%d%d%d%d%d\n", (sr & 0x20) >> 5,
-                (sr & 0x10) >> 4, (sr & 0x08) >> 3, (sr & 0x04) >> 2,
-                (sr & 0x02) >> 1, sr & 0x01);
-    ImGui::SeparatorText("Disassembly");
     ImGui::Text("%s", pre_context.c_str());
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s",
                        disassembly.c_str());
