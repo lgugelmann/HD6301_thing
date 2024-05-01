@@ -24,8 +24,11 @@
 #include "ps2_keyboard.h"
 #include "ram.h"
 #include "rom.h"
+#include "sd_card_spi.h"
 #include "sound_opl3.h"
+#include "spi.h"
 #include "tl16c2550.h"
+#include "wd65c22.h"
 
 #ifdef HAVE_MIDI
 #include "midi_to_serial.h"
@@ -180,6 +183,15 @@ int main(int argc, char* argv[]) {
   auto tl16c2550 =
       eight_bit::TL16C2550::create(&address_space, 0x7f40, cpu->get_irq());
   QCHECK_OK(tl16c2550);
+
+  auto wd65c22 = eight_bit::WD65C22::Create(&address_space, 0x7f20);
+  QCHECK_OK(wd65c22);
+
+  auto spi = eight_bit::SPI::create((*wd65c22)->port_a(), 2, 0, 1, 7);
+  QCHECK_OK(spi);
+
+  auto sd_card_spi = eight_bit::SDCardSPI::create((*spi).get());
+  QCHECK_OK(sd_card_spi);
 
 #ifdef HAVE_MIDI
   auto midi_to_serial =

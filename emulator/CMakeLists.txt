@@ -54,9 +54,12 @@ set(emulator_SOURCES
     ps2_keyboard.cc
     ram.cc
     rom.cc
+    sd_card_spi.cc
     sound_opl3.cc
+    spi.cc
     timer.cc
     tl16c2550.cc
+    wd65c22.cc
 )
 if (RtMidi_FOUND)
     list(APPEND emulator_SOURCES midi_to_serial.cc)
