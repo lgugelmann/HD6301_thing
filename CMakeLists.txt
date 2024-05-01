@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.12)
 project(EightBitThings)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
 # Abseil
 set(ABSL_PROPAGATE_CXX_STD ON)
 add_subdirectory(emulator/abseil-cpp)

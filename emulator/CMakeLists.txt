@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 project(emulator)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
-
 option(GPERFTOOLS_BUILD "Enable profiling with gperftools" OFF)
 option(TSAN_BUILD "Set up a TSan build" OFF)
 option(USE_CLANG_TIDY "Use clang-tidy for static analysis" ON)
