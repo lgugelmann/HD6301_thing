@@ -6,6 +6,7 @@ __delays_inc = 1
         include macros
 
         SECTION delays
+        PUBLIC_SHARED delay_10ms
         PUBLIC_SHARED delay_100ms
         PUBLIC_SHARED delay_200ms
         PUBLIC_SHARED delay_500ms
@@ -40,6 +41,9 @@ delay_xx macro xx,bb
         pulx                    ; 4
         rts                     ; 5
         endm
+
+delay_10ms:
+        delay_xx 199,8
 
 delay_100ms:
         delay_xx 1999,8
