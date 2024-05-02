@@ -17,6 +17,8 @@ CS   = %00000100
 
 READ_COMMAND = %00000011
 
+        zp_var sd_read_address, 4
+
 io_test_start:
         jsr spi_init
 .loop:
@@ -111,6 +113,25 @@ sd_init:
         lda #KEY_ENTER
         jsr putchar
 
+        jsr sd_send_cmd10
+
+        lda #'r'
+        jsr putchar
+
+        clr sd_read_address
+        clr sd_read_address + 1
+        clr sd_read_address + 2
+        lda #$00
+        sta sd_read_address + 3
+
+        jsr sd_read_block
+        jsr putchar_hex
+
+        lda #'e'
+        jsr putchar
+        lda #KEY_ENTER
+        jsr putchar
+
         bra .end
 
 .failed_initialization:
@@ -143,6 +164,71 @@ sd_send_extra_clock:
 
         rts
 
+sd_get_r1:
+        ldx 10
+.loop:
+        jsr spi_read_byte
+        tst a
+        bpl .end                ; top bit is clear: R1
+        dex
+        bne .loop
+.end:
+        rts
+
+sd_get_start_block:
+        ldx 10
+.loop:
+        jsr spi_read_byte
+        cmp a,#$ff
+        bne .end
+        dex
+        bne .loop
+.end:
+        rts
+
+; Send CMD17 to read a single block with address sd_read_address
+sd_read_block:
+        jsr spi_start_command
+        lda #$40 + 17
+        jsr spi_send_byte
+
+        lda sd_read_address
+        jsr spi_send_byte
+        lda sd_read_address + 1
+        jsr spi_send_byte
+        lda sd_read_address + 2
+        jsr spi_send_byte
+        lda sd_read_address + 3
+        jsr spi_send_byte
+
+        jsr sd_get_r1
+        tst a
+        psh a
+        bne .end
+
+        jsr sd_get_start_block
+        ; If we got an error token instead of a block start the top bit is 0
+        bpl .end
+
+        ldx #512
+.loop:
+        jsr spi_read_byte
+        jsr putchar_hex
+        dex
+        bne .loop
+
+        ; 16-bit CRC
+        jsr spi_read_byte
+        jsr spi_read_byte
+
+.end:
+        jsr spi_end_command
+        jsr sd_send_extra_clock
+        pul a
+        rts
+
+
+; GO_IDLE_STATE, response R1
 sd_send_cmd0:
         jsr spi_start_command
         lda #$40
@@ -160,15 +246,14 @@ sd_send_cmd0:
         lda #$95
         jsr spi_send_byte
 
-        ; Discard a byte
-        jsr spi_read_byte
+        jsr sd_get_r1
 
-        jsr spi_read_byte
         jsr spi_end_command
 
         jsr sd_send_extra_clock
         rts
 
+; SEND_IF_COND, R7
 sd_send_cmd8:
         jsr spi_start_command
         lda #$48
@@ -188,11 +273,8 @@ sd_send_cmd8:
         lda #$87
         jsr spi_send_byte
 
-        ; Discard
-        jsr spi_read_byte
-
         ; 5 bytes of response, R1 + 4 bytes
-        jsr spi_read_byte
+        jsr sd_get_r1
         psh a
         jsr spi_read_byte
         jsr spi_read_byte
@@ -206,8 +288,48 @@ sd_send_cmd8:
         pul a
         rts
 
+; SEND_CID
+sd_send_cmd10:
+        jsr spi_start_command
+        lda #$40 + 10
+        jsr spi_send_byte
 
-; Send CMD55. Clobbers B, X, returns R1 in A.
+        ; Payload (don't care)
+        jsr spi_send_byte
+        jsr spi_send_byte
+        jsr spi_send_byte
+        jsr spi_send_byte
+        ; CRC (don't care)
+        jsr spi_send_byte
+
+        jsr sd_get_r1
+        bne .end                ; if non-zero we have an error
+        jsr putchar_hex
+        lda #' '
+        jsr putchar
+
+        jsr sd_get_start_block
+        bpl .end
+
+        ; CID is sent as a data token. 0xfe start block, 16 register bytes, 16
+        ; bit CRC.
+        ldb #18
+.loop:
+        psh b
+        jsr spi_read_byte
+        jsr putchar_hex
+        pul b
+        dec b
+        bne .loop
+
+        lda #KEY_ENTER
+        jsr putchar
+.end:
+        jsr spi_end_command
+        jsr sd_send_extra_clock
+        rts
+
+; Send CMD55 (APP_CMD). Clobbers B, X, returns R1 in A.
 sd_send_cmd55:
         jsr spi_start_command
         lda #$77
@@ -220,17 +342,15 @@ sd_send_cmd55:
 	; CRC (not checked)
         jsr spi_send_byte
 
-        ; Discard
-        jsr spi_read_byte
+        jsr sd_get_r1
 
-        jsr spi_read_byte
         jsr spi_end_command
 
         jsr sd_send_extra_clock
 
         rts
 
-; Send CMD58 (read OCR). Clobbers B, X. Returns the top OCR byte in A.
+; Send CMD58 (READ_OCR). Clobbers B, X. Returns the top OCR byte in A.
 sd_send_cmd58
         ; Send CMD58 (read OCR): $7a $xx $xx $xx $xx $xx
         ;   - Response R3: R1 + 32bit OCR
@@ -246,11 +366,7 @@ sd_send_cmd58
         ; CRC (not checked)
         jsr spi_send_byte
 
-        ; Discard
-        jsr spi_read_byte
-
-        ; R1
-        jsr spi_read_byte
+        jsr sd_get_r1
 
         jsr spi_read_byte
         psh a
@@ -266,7 +382,7 @@ sd_send_cmd58
 
         rts
 
-
+; SD_SEND_OP_COND
 sd_send_acmd41:
         jsr sd_send_cmd55
 
@@ -282,10 +398,8 @@ sd_send_acmd41:
 	; CRC (not checked)
         jsr spi_send_byte
 
-        ; Discard
-        jsr spi_read_byte
+        jsr sd_get_r1
 
-        jsr spi_read_byte
         jsr spi_end_command
 
         jsr sd_send_extra_clock
@@ -338,23 +452,91 @@ spi_send_byte:
 .end:
         rts
 
-; Read a byte and returns it in A. Clobbers B, X.
+; Read a byte and returns it in A. Clobbers B.
 spi_read_byte:
-        ldx #8
+        ; Unrolled 8 times to avoid having to use X or psh/pul
         ldb #(MOSI)
         stb IO_ORA
-.loop:
+
         eor b,#CLK
         stb IO_ORA              ; Raise clock
         asl a
         tst IO_IRA              ; Sets N to PA7
-        bpl .zero_in            ; On 0 we're done
+        bpl +                   ; On 0 we're done
         inc a
-.zero_in:
++
         eor b,#CLK
         stb IO_ORA              ; Lower clock
-        dex
-        bne .loop
+
+        eor b,#CLK
+        stb IO_ORA              ; Raise clock
+        asl a
+        tst IO_IRA              ; Sets N to PA7
+        bpl +                   ; On 0 we're done
+        inc a
++
+        eor b,#CLK
+        stb IO_ORA              ; Lower clock
+
+        eor b,#CLK
+        stb IO_ORA              ; Raise clock
+        asl a
+        tst IO_IRA              ; Sets N to PA7
+        bpl +                   ; On 0 we're done
+        inc a
++
+        eor b,#CLK
+        stb IO_ORA              ; Lower clock
+
+        eor b,#CLK
+        stb IO_ORA              ; Raise clock
+        asl a
+        tst IO_IRA              ; Sets N to PA7
+        bpl +                   ; On 0 we're done
+        inc a
++
+        eor b,#CLK
+        stb IO_ORA              ; Lower clock
+
+        eor b,#CLK
+        stb IO_ORA              ; Raise clock
+        asl a
+        tst IO_IRA              ; Sets N to PA7
+        bpl +                   ; On 0 we're done
+        inc a
++
+        eor b,#CLK
+        stb IO_ORA              ; Lower clock
+
+        eor b,#CLK
+        stb IO_ORA              ; Raise clock
+        asl a
+        tst IO_IRA              ; Sets N to PA7
+        bpl +                   ; On 0 we're done
+        inc a
++
+        eor b,#CLK
+        stb IO_ORA              ; Lower clock
+
+        eor b,#CLK
+        stb IO_ORA              ; Raise clock
+        asl a
+        tst IO_IRA              ; Sets N to PA7
+        bpl +                   ; On 0 we're done
+        inc a
++
+        eor b,#CLK
+        stb IO_ORA              ; Lower clock
+
+        eor b,#CLK
+        stb IO_ORA              ; Raise clock
+        asl a
+        tst IO_IRA              ; Sets N to PA7
+        bpl +                   ; On 0 we're done
+        inc a
++
+        eor b,#CLK
+        stb IO_ORA              ; Lower clock
 
         rts
 
