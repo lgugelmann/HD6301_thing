@@ -29,6 +29,8 @@ with enough accuracy that it can run all current code. In particular:
 - TL16C2550 emulation for the MIDI board. This one is really basic still and
   most of the features aren't there. Proper baud rate, buffers, etc. are not
   implemented. The second UART isn't implemented either.
+- Bare-bones WD65C22 VIA emulation (only port A/B)
+- Bare-bones emulation of an SD card SPI interface attached to WD65C22 port A
 
 The serial interfaces can be interacted with by reading/writing on the PTYs
 printed on the console when the emulator starts.
