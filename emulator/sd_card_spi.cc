@@ -10,7 +10,7 @@ namespace eight_bit {
 namespace {
 uint8_t kR1InIdleState = 0x01;
 // uint8_t kR1EraseReset = 0x02;
-// uint8_t kR1IllegalCommand = 0x04;
+uint8_t kR1IllegalCommand = 0x04;
 uint8_t kR1CommandCRCError = 0x08;
 // uint8_t kR1EraseSequenceError = 0x10;
 // uint8_t kR1AddressError = 0x20;
@@ -178,7 +178,8 @@ void SDCardSPI::handle_command(const Command& command) {
       }
       default: {
         LOG(ERROR) << "Unsupported SD card command: " << (int)command_number;
-        response_queue_.push(0xff);
+        uint8_t r1 = kR1IllegalCommand | (ready_ ? 0 : kR1InIdleState);
+        response_queue_.push(r1);
         break;
       }
     }
