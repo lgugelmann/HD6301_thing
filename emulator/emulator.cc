@@ -35,6 +35,11 @@
 #endif
 
 ABSL_FLAG(std::string, rom_file, "", "Path to the ROM file to load");
+ABSL_FLAG(std::string, sd_image_file, "",
+          "Path to an image to use in SD card emulation");
+ABSL_FLAG(
+    bool, sd_image_persist_writes, false,
+    "If true, writes to the SD card image are persisted in the image file");
 ABSL_FLAG(int, ticks_per_second, 1000000, "Number of CPU ticks per second");
 
 // SDL starts one timer thread that runs all timer callbacks. In theory
@@ -190,7 +195,18 @@ int main(int argc, char* argv[]) {
   auto spi = eight_bit::SPI::create((*wd65c22)->port_a(), 2, 0, 1, 7);
   QCHECK_OK(spi);
 
-  auto sd_card_spi = eight_bit::SDCardSPI::create((*spi).get());
+  std::string sd_image_file = absl::GetFlag(FLAGS_sd_image_file);
+  absl::StatusOr<std::unique_ptr<eight_bit::SDCardSPI>> sd_card_spi;
+  if (sd_image_file.empty()) {
+    sd_card_spi = eight_bit::SDCardSPI::create((*spi).get());
+  } else {
+    eight_bit::SDCardSPI::ImageMode mode =
+        absl::GetFlag(FLAGS_sd_image_persist_writes)
+            ? eight_bit::SDCardSPI::ImageMode::kPersistedWrites
+            : eight_bit::SDCardSPI::ImageMode::kEphemeralWrites;
+    sd_card_spi =
+        eight_bit::SDCardSPI::create((*spi).get(), sd_image_file, mode);
+  }
   QCHECK_OK(sd_card_spi);
 
 #ifdef HAVE_MIDI
