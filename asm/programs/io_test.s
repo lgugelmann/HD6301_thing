@@ -15,9 +15,9 @@ MOSI = %00000010
 MISO = %10000000
 CS   = %00000100
 
-READ_COMMAND = %00000011
-
-        zp_var sd_read_address, 4
+        zp_var spi_scratch, 1
+        zp_var sd_address, 4
+        reserve_memory sd_block_buffer, 512
 
 io_test_start:
         jsr spi_init
@@ -85,7 +85,9 @@ sd_init:
         ; Send CMD8
         jsr sd_send_cmd8
         cmp a,#1
-        bne .failed_initialization
+        beq .cmd8_success
+        jmp .failed_initialization
+.cmd8_success:
 
         ; Send ACMD41, wait until status is 0
 .acmd41:
@@ -118,20 +120,49 @@ sd_init:
         lda #'r'
         jsr putchar
 
-        clr sd_read_address
-        clr sd_read_address + 1
-        clr sd_read_address + 2
-        lda #$00
-        sta sd_read_address + 3
+        clr sd_address
+        clr sd_address + 1
+        clr sd_address + 2
+        lda #$01
+        sta sd_address + 3
 
         jsr sd_read_block
-        jsr putchar_hex
+        tst a
+        bne .error
+        jsr test_print_sd_block
 
         lda #'e'
         jsr putchar
         lda #KEY_ENTER
         jsr putchar
 
+        clr sd_address + 3
+        jsr sd_read_block
+        tst a
+        bne .error
+        jsr test_print_sd_block
+
+        lda #$01
+        sta sd_address + 3
+        jsr sd_write_block
+        tst a
+        bne .error
+
+        jsr sd_read_block
+        tst a
+        bne .error
+        jsr test_print_sd_block
+
+        bra .end
+
+.error:
+        psh a
+        ldx #.error_string
+        jsr putstring
+        pul a
+        jsr putchar_hex
+        lda #KEY_ENTER
+        jsr putchar
         bra .end
 
 .failed_initialization:
@@ -143,12 +174,26 @@ sd_init:
 .failed_string:
         byt "Failed to initialize SD card\n\0"
 
+.error_string:
+        byt "Error: \0"
+
 .success_string:
         byt "SD card initialized successfully\n\0"
 
 .sdhc_string:
         byt "SDHC card: \0"
 
+test_print_sd_block:
+        ldx #sd_block_buffer
+.loop:
+        lda 0,x
+        jsr putchar_hex
+        inx
+        cpx #sd_block_buffer+512
+        bne .loop
+        lda #KEY_ENTER
+        jsr putchar
+        rts
 
 ; Send 8 clock pulses while CS is high. This is required by the spec after every
 ; command ends. Clobbers B, X.
@@ -165,7 +210,7 @@ sd_send_extra_clock:
         rts
 
 sd_get_r1:
-        ldx 10
+        ldx #10
 .loop:
         jsr spi_read_byte
         tst a
@@ -176,7 +221,7 @@ sd_get_r1:
         rts
 
 sd_get_start_block:
-        ldx 10
+        ldx #100
 .loop:
         jsr spi_read_byte
         cmp a,#$ff
@@ -186,47 +231,131 @@ sd_get_start_block:
 .end:
         rts
 
-; Send CMD17 to read a single block with address sd_read_address
+sd_get_data_response:
+        ldx #10
+.loop:
+        jsr spi_read_byte
+        cmp a,#$ff
+        bne .end
+        dex
+        bne .loop
+.end
+        rts
+
+; Loop for as long as we get all 0
+sd_wait_busy:
+        jsr spi_read_byte
+        tst a
+        beq sd_wait_busy
+        rts
+
+; Send CMD17 to read a single block with address sd_address. Returns 0 on
+; success, R1 or a data error token on failure. The data error token has the top
+; bit set to 1 to distinguish it from R1.
 sd_read_block:
         jsr spi_start_command
         lda #$40 + 17
         jsr spi_send_byte
 
-        lda sd_read_address
+        lda sd_address
         jsr spi_send_byte
-        lda sd_read_address + 1
+        lda sd_address + 1
         jsr spi_send_byte
-        lda sd_read_address + 2
+        lda sd_address + 2
         jsr spi_send_byte
-        lda sd_read_address + 3
+        lda sd_address + 3
+        jsr spi_send_byte
+
+        ; CRC, ignored
         jsr spi_send_byte
 
         jsr sd_get_r1
         tst a
-        psh a
         bne .end
 
         jsr sd_get_start_block
-        ; If we got an error token instead of a block start the top bit is 0
-        bpl .end
+        ; If we got an error token instead of a block start, the top bit is 0
+        bmi .no_error
+        ora a,#$80              ; Set the top bit to distinguish it from R1
+        bra .end
 
-        ldx #512
+.no_error:
+        ldx #sd_block_buffer
 .loop:
         jsr spi_read_byte
-        jsr putchar_hex
-        dex
+        sta 0,x
+        inx
+        cpx #sd_block_buffer + 512
         bne .loop
 
         ; 16-bit CRC
         jsr spi_read_byte
         jsr spi_read_byte
 
+        clr a                   ; Clear A to indicate no error
+.end:
+        ; These both leave A untouched
+        jsr spi_end_command
+        jsr sd_send_extra_clock
+        rts
+
+sd_write_block:
+        jsr spi_start_command
+        lda #$40 + 24
+        jsr spi_send_byte
+
+        lda sd_address
+        jsr spi_send_byte
+        lda sd_address + 1
+        jsr spi_send_byte
+        lda sd_address + 2
+        jsr spi_send_byte
+        lda sd_address + 3
+        jsr spi_send_byte
+
+        ; CRC, ignored
+        jsr spi_send_byte
+
+        jsr sd_get_r1
+        tst a
+        bne .end
+
+        lda #$fe                ; start block token
+        jsr spi_send_byte
+
+        ldx #sd_block_buffer
+.loop:
+        lda 0,x
+        jsr spi_send_byte
+        inx
+        cpx #sd_block_buffer + 512
+        bne .loop
+
+        ; 16-bit CRC, not checked
+        jsr spi_send_byte
+        jsr spi_send_byte
+
+        jsr sd_get_data_response
+        tab
+        and a,#%00001010        ; If any of these are set we have an error
+        beq .no_error
+        ; We need to distinguish between R1 and the response here. R1 is
+        ; guaranteed to have a 0 in the top bit, so we put a 1 here. The data
+        ; response token has bit 7 unspecified.
+        tba
+        ora a,#$80
+        psh a
+        jsr sd_wait_busy
+        pul a
+        bra .end
+
+.no_error:
+        jsr sd_wait_busy
+        clr a
 .end:
         jsr spi_end_command
         jsr sd_send_extra_clock
-        pul a
         rts
-
 
 ; GO_IDLE_STATE, response R1
 sd_send_cmd0:
@@ -428,18 +557,19 @@ spi_end_command:
         stb IO_ORA
         rts
 
-; Sends the byte in A, clobbers A, B, and X.
+; Sends the byte in A, clobbers A and B.
 spi_send_byte:
-        ldx #8
+        sta spi_scratch
+        lda #8
 .loop:
-        asl a
+        asl spi_scratch
         bcc .send_zero
         ldb #MOSI
         stb IO_ORA
         ldb #(MOSI | CLK)
         stb IO_ORA
         clr IO_ORA
-        dex
+        dec a
         bne .loop
         bra .end
 .send_zero:
@@ -447,7 +577,7 @@ spi_send_byte:
         ldb #CLK
         stb IO_ORA
         clr IO_ORA
-        dex
+        dec a
         bne .loop
 .end:
         rts
