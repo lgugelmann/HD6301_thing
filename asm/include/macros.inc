@@ -1,6 +1,8 @@
         ifndef __macros_inc
 __macros_inc = 1
 
+        include memory_map
+
 ; orgsave/orgrestore save and restore the current program address. Saves /
 ; restores can't be nested.
 orgsave macro
@@ -15,7 +17,7 @@ orgrestore macro
 ; address
         ifndef __stdlib_inc
         SHARED zp_addr[]
-zp_addr[] set $0020
+zp_addr[] set ZP_START
         endif
 zp_var  macro name, size
         orgsave
@@ -51,11 +53,14 @@ name    label *
         ds.b size
 reserve_memory_addr[] set reserve_memory_addr[] + size
         orgrestore
+        if reserve_page_addr[] >= SYSTEM_MEMORY_START - MIN_USER_STACK_SIZE
+          error "Can't reserve memory, ran into stack!"
+        endif
         endm
 
 ; Reserves a block of memory of 'size' bytes in the 'system' area of memory
 ; above $7e00.
-reserve_system_memory_addr set $7e00
+reserve_system_memory_addr set SYSTEM_MEMORY_START
 reserve_system_memory macro name, size
         orgsave
         org reserve_system_memory_addr[]
@@ -63,7 +68,7 @@ name    label *
         ds.b size
 reserve_system_memory_addr[] set reserve_system_memory_addr[] + size
 
-        if * > $7eff - 64       ; Probably way more than needed
+        if * > MONITOR_STACK_START - 64 ; Probably way more than needed
           error "Not enough space for monitor stack left"
         endif
 

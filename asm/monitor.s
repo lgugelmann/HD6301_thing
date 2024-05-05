@@ -6,6 +6,7 @@
         include include/io
         include include/macros
         include include/map
+        include include/memory_map
         include include/midi_uart
         include include/registers
         include include/random
@@ -16,22 +17,6 @@
         SECTION monitor
 
 INPUT_BUFFER_SIZE = GRAPHICS_TERMINAL_WIDTH - 3
-USER_STACK_START = $7dff
-MONITOR_STACK_START = $7eff
-
-; Memory map:
-; 0000-001f  reserved, internal registers
-; 0020-7eff  RAM, of which
-;   20-00ff  Zero page addresses, program use
-;  100-7dff  Program memory, with stack at 7dff growing down
-; 7e00-7eff  Monitor memory, with stack at 7eff growing down
-; 7f00-7fff  I/O space, of which:
-;   00-  1f  [unused]
-;   20 - 3f  65C22 I/O            0111 1111 001x xxxx
-;   40-  7f  MIDI / UART          0111 1111 01xx xxxx
-;   80-  bf  OPL3 sound           0111 1111 10xx xxxx
-;   c0-  ff  Graphics registers   0111 1111 11xx xxxx
-; 8000-ffff  ROM
 
         ; Input buffer, holds one line
         reserve_system_memory input_buffer,INPUT_BUFFER_SIZE
