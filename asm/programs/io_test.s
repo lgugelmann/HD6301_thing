@@ -1,21 +1,11 @@
         cpu 6301
 
         include ../stdlib.inc
+        include ../include/spi.inc
 
         SECTION io_test
         PUBLIC io_test_start
 
-; - CLK is PA0
-; - MOSI is PA1
-; - MISO is PA7
-; - CS is PA2
-
-CLK  = %00000001
-MOSI = %00000010
-MISO = %10000000
-CS   = %00000100
-
-        zp_var spi_scratch, 1
         zp_var sd_address, 4
         reserve_memory sd_block_buffer, 512
 
@@ -63,7 +53,7 @@ sd_init:
         ; Need to provide >74 clock pulses while CS is high
         lda #10
 .clk_loop:
-        jsr sd_send_extra_clock
+        jsr spi_send_byte_ff
         dec a
         bne .clk_loop
 
@@ -195,24 +185,10 @@ test_print_sd_block:
         jsr putchar
         rts
 
-; Send 8 clock pulses while CS is high. This is required by the spec after every
-; command ends. Clobbers B, X.
-sd_send_extra_clock:
-        ldx #8
-.loop:
-        ldb #(CS | CLK | MOSI)
-        stb IO_ORA
-        ldb #(CS | MOSI)
-        stb IO_ORA
-        dex
-        bne .loop
-
-        rts
-
 sd_get_r1:
         ldx #10
 .loop:
-        jsr spi_read_byte
+        jsr spi_receive_byte
         tst a
         bpl .end                ; top bit is clear: R1
         dex
@@ -223,7 +199,7 @@ sd_get_r1:
 sd_get_start_block:
         ldx #100
 .loop:
-        jsr spi_read_byte
+        jsr spi_receive_byte
         cmp a,#$ff
         bne .end
         dex
@@ -234,7 +210,7 @@ sd_get_start_block:
 sd_get_data_response:
         ldx #10
 .loop:
-        jsr spi_read_byte
+        jsr spi_receive_byte
         cmp a,#$ff
         bne .end
         dex
@@ -244,7 +220,7 @@ sd_get_data_response:
 
 ; Loop for as long as we get all 0
 sd_wait_busy:
-        jsr spi_read_byte
+        jsr spi_receive_byte
         tst a
         beq sd_wait_busy
         rts
@@ -267,7 +243,7 @@ sd_read_block:
         jsr spi_send_byte
 
         ; CRC, ignored
-        jsr spi_send_byte
+        jsr spi_send_byte_ff
 
         jsr sd_get_r1
         tst a
@@ -282,21 +258,21 @@ sd_read_block:
 .no_error:
         ldx #sd_block_buffer
 .loop:
-        jsr spi_read_byte
+        jsr spi_receive_byte
         sta 0,x
         inx
         cpx #sd_block_buffer + 512
         bne .loop
 
         ; 16-bit CRC
-        jsr spi_read_byte
-        jsr spi_read_byte
+        jsr spi_discard_byte
+        jsr spi_discard_byte
 
         clr a                   ; Clear A to indicate no error
 .end:
         ; These both leave A untouched
         jsr spi_end_command
-        jsr sd_send_extra_clock
+        jsr spi_send_byte_ff
         rts
 
 sd_write_block:
@@ -314,7 +290,7 @@ sd_write_block:
         jsr spi_send_byte
 
         ; CRC, ignored
-        jsr spi_send_byte
+        jsr spi_discard_byte
 
         jsr sd_get_r1
         tst a
@@ -332,8 +308,8 @@ sd_write_block:
         bne .loop
 
         ; 16-bit CRC, not checked
-        jsr spi_send_byte
-        jsr spi_send_byte
+        jsr spi_discard_byte
+        jsr spi_discard_byte
 
         jsr sd_get_data_response
         tab
@@ -354,7 +330,7 @@ sd_write_block:
         clr a
 .end:
         jsr spi_end_command
-        jsr sd_send_extra_clock
+        jsr spi_send_byte_ff
         rts
 
 ; GO_IDLE_STATE, response R1
@@ -363,14 +339,10 @@ sd_send_cmd0:
         lda #$40
         jsr spi_send_byte
 
-        lda #$00
-        jsr spi_send_byte
-        lda #$00
-        jsr spi_send_byte
-        lda #$00
-        jsr spi_send_byte
-        lda #$00
-        jsr spi_send_byte
+        jsr spi_send_byte_00
+        jsr spi_send_byte_00
+        jsr spi_send_byte_00
+        jsr spi_send_byte_00
 
         lda #$95
         jsr spi_send_byte
@@ -379,7 +351,7 @@ sd_send_cmd0:
 
         jsr spi_end_command
 
-        jsr sd_send_extra_clock
+        jsr spi_send_byte_ff
         rts
 
 ; SEND_IF_COND, R7
@@ -389,10 +361,8 @@ sd_send_cmd8:
         jsr spi_send_byte
 
         ; Payload
-        lda #$00
-        jsr spi_send_byte
-        lda #$00
-        jsr spi_send_byte
+        jsr spi_send_byte_00
+        jsr spi_send_byte_00
         lda #$01
         jsr spi_send_byte
         lda #$AA
@@ -405,14 +375,14 @@ sd_send_cmd8:
         ; 5 bytes of response, R1 + 4 bytes
         jsr sd_get_r1
         psh a
-        jsr spi_read_byte
-        jsr spi_read_byte
-        jsr spi_read_byte
-        jsr spi_read_byte
+        jsr spi_discard_byte
+        jsr spi_discard_byte
+        jsr spi_discard_byte
+        jsr spi_discard_byte
 
         jsr spi_end_command
 
-        jsr sd_send_extra_clock
+        jsr spi_send_byte_ff
 
         pul a
         rts
@@ -424,12 +394,12 @@ sd_send_cmd10:
         jsr spi_send_byte
 
         ; Payload (don't care)
-        jsr spi_send_byte
-        jsr spi_send_byte
-        jsr spi_send_byte
-        jsr spi_send_byte
+        jsr spi_send_byte_00
+        jsr spi_send_byte_00
+        jsr spi_send_byte_00
+        jsr spi_send_byte_00
         ; CRC (don't care)
-        jsr spi_send_byte
+        jsr spi_send_byte_00
 
         jsr sd_get_r1
         bne .end                ; if non-zero we have an error
@@ -442,20 +412,18 @@ sd_send_cmd10:
 
         ; CID is sent as a data token. 0xfe start block, 16 register bytes, 16
         ; bit CRC.
-        ldb #18
+        ldx #18
 .loop:
-        psh b
-        jsr spi_read_byte
+        jsr spi_receive_byte
         jsr putchar_hex
-        pul b
-        dec b
+        dex
         bne .loop
 
         lda #KEY_ENTER
         jsr putchar
 .end:
         jsr spi_end_command
-        jsr sd_send_extra_clock
+        jsr spi_send_byte_ff
         rts
 
 ; Send CMD55 (APP_CMD). Clobbers B, X, returns R1 in A.
@@ -464,18 +432,18 @@ sd_send_cmd55:
         lda #$77
         jsr spi_send_byte
         ; 4 random bytes (command doesn't care)
-        jsr spi_send_byte
-        jsr spi_send_byte
-        jsr spi_send_byte
-        jsr spi_send_byte
+        jsr spi_send_byte_00
+        jsr spi_send_byte_00
+        jsr spi_send_byte_00
+        jsr spi_send_byte_00
 	; CRC (not checked)
-        jsr spi_send_byte
+        jsr spi_send_byte_00
 
         jsr sd_get_r1
 
         jsr spi_end_command
 
-        jsr sd_send_extra_clock
+        jsr spi_send_byte_ff
 
         rts
 
@@ -488,26 +456,23 @@ sd_send_cmd58
         lda #$7a
         jsr spi_send_byte
         ; 4x don't care
-        jsr spi_send_byte
-        jsr spi_send_byte
-        jsr spi_send_byte
-        jsr spi_send_byte
+        jsr spi_send_byte_00
+        jsr spi_send_byte_00
+        jsr spi_send_byte_00
+        jsr spi_send_byte_00
         ; CRC (not checked)
-        jsr spi_send_byte
+        jsr spi_send_byte_00
 
         jsr sd_get_r1
 
-        jsr spi_read_byte
-        psh a
-        jsr spi_read_byte
-        jsr spi_read_byte
-        jsr spi_read_byte
+        jsr spi_receive_byte
 
+        ; None of the commands below touch A
+        jsr spi_discard_byte
+        jsr spi_discard_byte
+        jsr spi_discard_byte
         jsr spi_end_command
-
-        jsr sd_send_extra_clock
-
-        pul a
+        jsr spi_send_byte_ff
 
         rts
 
@@ -521,152 +486,17 @@ sd_send_acmd41:
         lda #$40
         jsr spi_send_byte
         ; 3 more random bytes
-        jsr spi_send_byte
-        jsr spi_send_byte
-        jsr spi_send_byte
+        jsr spi_send_byte_00
+        jsr spi_send_byte_00
+        jsr spi_send_byte_00
 	; CRC (not checked)
-        jsr spi_send_byte
+        jsr spi_send_byte_00
 
         jsr sd_get_r1
 
         jsr spi_end_command
 
-        jsr sd_send_extra_clock
-
-        rts
-
-
-; Set port A up for SPI communication
-spi_init:
-        lda #CS
-        ; /CS high, CLK low, MOSI low (but that doesn't matter)
-        sta IO_ORA
-        lda #(CLK | MOSI | CS)
-        sta IO_DDRA
-        rts
-
-; Start a SPI command
-spi_start_command:
-        ; Set /CS low, CLK low (and assume we're the only ones on port A)
-        clr IO_ORA
-        rts
-
-; End a SPI command. Clobbers B.
-spi_end_command:
-        ldb #CS
-        stb IO_ORA
-        rts
-
-; Sends the byte in A, clobbers A and B.
-spi_send_byte:
-        sta spi_scratch
-        lda #8
-.loop:
-        asl spi_scratch
-        bcc .send_zero
-        ldb #MOSI
-        stb IO_ORA
-        ldb #(MOSI | CLK)
-        stb IO_ORA
-        clr IO_ORA
-        dec a
-        bne .loop
-        bra .end
-.send_zero:
-        ; clr IO_ORA    ; can assume this is already done
-        ldb #CLK
-        stb IO_ORA
-        clr IO_ORA
-        dec a
-        bne .loop
-.end:
-        rts
-
-; Read a byte and returns it in A. Clobbers B.
-spi_read_byte:
-        ; Unrolled 8 times to avoid having to use X or psh/pul
-        ldb #(MOSI)
-        stb IO_ORA
-
-        eor b,#CLK
-        stb IO_ORA              ; Raise clock
-        asl a
-        tst IO_IRA              ; Sets N to PA7
-        bpl +                   ; On 0 we're done
-        inc a
-+
-        eor b,#CLK
-        stb IO_ORA              ; Lower clock
-
-        eor b,#CLK
-        stb IO_ORA              ; Raise clock
-        asl a
-        tst IO_IRA              ; Sets N to PA7
-        bpl +                   ; On 0 we're done
-        inc a
-+
-        eor b,#CLK
-        stb IO_ORA              ; Lower clock
-
-        eor b,#CLK
-        stb IO_ORA              ; Raise clock
-        asl a
-        tst IO_IRA              ; Sets N to PA7
-        bpl +                   ; On 0 we're done
-        inc a
-+
-        eor b,#CLK
-        stb IO_ORA              ; Lower clock
-
-        eor b,#CLK
-        stb IO_ORA              ; Raise clock
-        asl a
-        tst IO_IRA              ; Sets N to PA7
-        bpl +                   ; On 0 we're done
-        inc a
-+
-        eor b,#CLK
-        stb IO_ORA              ; Lower clock
-
-        eor b,#CLK
-        stb IO_ORA              ; Raise clock
-        asl a
-        tst IO_IRA              ; Sets N to PA7
-        bpl +                   ; On 0 we're done
-        inc a
-+
-        eor b,#CLK
-        stb IO_ORA              ; Lower clock
-
-        eor b,#CLK
-        stb IO_ORA              ; Raise clock
-        asl a
-        tst IO_IRA              ; Sets N to PA7
-        bpl +                   ; On 0 we're done
-        inc a
-+
-        eor b,#CLK
-        stb IO_ORA              ; Lower clock
-
-        eor b,#CLK
-        stb IO_ORA              ; Raise clock
-        asl a
-        tst IO_IRA              ; Sets N to PA7
-        bpl +                   ; On 0 we're done
-        inc a
-+
-        eor b,#CLK
-        stb IO_ORA              ; Lower clock
-
-        eor b,#CLK
-        stb IO_ORA              ; Raise clock
-        asl a
-        tst IO_IRA              ; Sets N to PA7
-        bpl +                   ; On 0 we're done
-        inc a
-+
-        eor b,#CLK
-        stb IO_ORA              ; Lower clock
+        jsr spi_send_byte_ff
 
         rts
 
