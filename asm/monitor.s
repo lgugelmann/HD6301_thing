@@ -10,6 +10,7 @@
         include include/midi_uart
         include include/registers
         include include/random
+        include include/sd_card
         include include/sound
         include include/stdio
         include include/timer
@@ -101,6 +102,7 @@ start:
         jsr sound_init
         jsr stdio_init          ; Initializes serial, keyboard & graphics
         jsr timer_init
+        jsr sd_card_init
 
         ldx #0
         stx user_stack_ptr
