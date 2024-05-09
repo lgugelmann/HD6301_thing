@@ -49,7 +49,6 @@ set(emulator_SOURCES
     emulator.cc
     graphics.cc
     hd6301_serial.cc
-    hexdump.cc
     ioport.cc
     ps2_keyboard.cc
     ram.cc
@@ -85,6 +84,13 @@ else()
     message(STATUS "Not using clang-tidy for static analysis")
 endif()
 
+add_library(hexdump_lib STATIC
+    hexdump.cc
+)
+target_link_libraries(hexdump_lib
+    absl::strings
+)
+
 add_executable(emulator ${emulator_SOURCES})
 
 target_include_directories(emulator PUBLIC "${PROJECT_SOURCE_DIR}" ${SDL2_INCLUDE_DIRS})
@@ -103,6 +109,7 @@ target_link_libraries(emulator
     imgui
     nuked-opl3
     disassembler_lib
+    hexdump_lib
 )
 if (RtMidi_FOUND)
     target_link_libraries(emulator RtMidi::rtmidi)
@@ -110,3 +117,16 @@ endif()
 if (GPERFTOOLS_BUILD)
     target_link_libraries(emulator profiler)
 endif()
+
+enable_testing()
+
+include(GoogleTest)
+add_executable(hexdump_test
+    hexdump_test.cc
+    hexdump.cc
+)
+target_link_libraries(hexdump_test
+    GTest::gtest_main
+    hexdump_lib
+)
+gtest_discover_tests(hexdump_test)
