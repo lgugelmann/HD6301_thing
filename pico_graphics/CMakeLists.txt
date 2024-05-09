@@ -11,14 +11,24 @@ pico_sdk_init()
 
 add_subdirectory(../dependencies/PicoDVI/software/libdvi libdvi)
 
+# These files are not part of the PicoDVI library, but of example code in that
+# same repository. This library lets us use them in this project easily.
+add_library(tmds_encode_font_2bpp
+  ../dependencies/PicoDVI/software/apps/colour_terminal/tmds_encode_font_2bpp.S
+)
+target_include_directories(tmds_encode_font_2bpp PUBLIC
+  ../dependencies/PicoDVI/software/apps/colour_terminal
+)
+target_link_libraries(tmds_encode_font_2bpp
+  pico_stdlib
+)
+
 add_compile_options(-Wall)
 
 # ----------------------------------------
 
 add_executable(pico_graphics
   pico_graphics.cpp
-  tmds_encode_font_2bpp.S
-  tmds_encode_font_2bpp.h
 )
 
 pico_enable_stdio_usb(pico_graphics 1)
@@ -40,6 +50,7 @@ target_link_libraries(pico_graphics
   pico_util
   hardware_dma
   libdvi
+  tmds_encode_font_2bpp
 )
 
 pico_add_extra_outputs(pico_graphics)
