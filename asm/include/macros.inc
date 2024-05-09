@@ -53,7 +53,7 @@ name    label *
         ds.b size
 reserve_memory_addr[] set reserve_memory_addr[] + size
         orgrestore
-        if reserve_page_addr[] >= SYSTEM_MEMORY_START - MIN_USER_STACK_SIZE
+        if reserve_memory_addr[] >= SYSTEM_MEMORY_START - MIN_USER_STACK_SIZE
           error "Can't reserve memory, ran into stack!"
         endif
         endm

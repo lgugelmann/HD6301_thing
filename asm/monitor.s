@@ -132,7 +132,7 @@ line_start:
         cmp a,#KEY_DELETE
         bne .not_backspace
 
-.backspace
+.backspace:
         ; Nothing to do for empty input buffer.
         cpx #input_buffer
         beq .keyboard_in
