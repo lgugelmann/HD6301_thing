@@ -15,6 +15,7 @@ __stdio_inc = 1
         PUBLIC_SHARED putchar_bin
         PUBLIC_SHARED putchar_dec
         PUBLIC_SHARED putchar_hex
+        PUBLIC_SHARED put_newline
         PUBLIC_SHARED putstring
         PUBLIC_SHARED putx_hex
 
@@ -139,6 +140,14 @@ putchar_hex:
         bls .end
         add a,#("A" - "0" - 10)
 .end:
+        jsr putchar
+        pul a
+        rts
+
+; Outputs a KEY_ENTER character
+put_newline:
+        psh a
+        lda #KEY_ENTER
         jsr putchar
         pul a
         rts
