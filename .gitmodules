@@ -2,13 +2,13 @@
 	path = pico_graphics/PicoDVI
 	url = https://github.com/Wren6991/PicoDVI.git
 [submodule "emulator/Nuked-OPL3"]
-	path = emulator/Nuked-OPL3
+	path = dependencies/Nuked-OPL3
 	url = https://github.com/nukeykt/Nuked-OPL3.git
 [submodule "emulator/abseil-cpp"]
-	path = emulator/abseil-cpp
+	path = dependencies/abseil-cpp
 	url = https://github.com/abseil/abseil-cpp.git
 [submodule "emulator/imgui"]
-	path = emulator/imgui
+	path = dependencies/imgui
 	url = https://github.com/ocornut/imgui.git
 [submodule "dependencies/googletest"]
 	path = dependencies/googletest
