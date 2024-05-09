@@ -33,7 +33,9 @@ void Rom::load(uint16_t address, std::span<uint8_t> data) {
   }
 }
 
-void Rom::hexdump() const { std::cout << eight_bit::hexdump(data_) << "\n"; }
+void Rom::hexdump() const {
+  std::cout << eight_bit::hexdump(data_, base_address_) << "\n";
+}
 
 Rom::Rom(AddressSpace* address_space, uint16_t base_address, uint16_t size,
          uint8_t fill_byte)
