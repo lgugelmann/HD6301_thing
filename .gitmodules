@@ -1,5 +1,5 @@
 [submodule "pico_graphics/PicoDVI"]
-	path = pico_graphics/PicoDVI
+	path = dependencies/PicoDVI
 	url = https://github.com/Wren6991/PicoDVI.git
 [submodule "emulator/Nuked-OPL3"]
 	path = dependencies/Nuked-OPL3

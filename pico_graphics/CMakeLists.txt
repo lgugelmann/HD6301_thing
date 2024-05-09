@@ -9,7 +9,7 @@ set(PICO_COPY_TO_RAM 1)
 
 pico_sdk_init()
 
-add_subdirectory(PicoDVI/software/libdvi)
+add_subdirectory(../dependencies/PicoDVI/software/libdvi libdvi)
 
 add_compile_options(-Wall)
 
