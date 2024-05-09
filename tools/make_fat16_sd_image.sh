@@ -17,8 +17,9 @@ PATH=$PATH:/sbin:/usr/sbin
 # Using mkfs.fat as it stops if the parameters don't allow for a valid FAT16.
 # mformat would just pick FAT12 which is not our target. 8170 is the smallest
 # number of sectors for mkfs.fat to create a FAT16 filesystem.
-mkfs.fat -F 16 -n "EIGHTBIT" -C "$1" 8170
+mkfs.fat -F 16 -n "EIGHTBIT" -C "$1" 8208
 
-echo "This is a test" | mcopy -i "$1" - ::test.txt
-mmd -i "$1" ::dir
-echo "This is a test in a directory named dir" | mcopy -i "$1" - ::dir/dir_test.txt
+echo "This is a test" | mcopy -i "$1" - ::TEST.TXT
+echo "This is another test" | mcopy -i "$1" - ::FILETEST.BIN
+mmd -i "$1" ::TEST_DIR
+echo "This is a test in a directory named dir" | mcopy -i "$1" - ::TEST_DIR/DIR_TEST.txt
