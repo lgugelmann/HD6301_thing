@@ -330,22 +330,25 @@ int main(int argc, char* argv[]) {
 
     // CPU state
     ImGui::SeparatorText("CPU State");
-    ImGui::Text(" A: 0x%02X", cpu_state.a);
-    ImGui::Text(" B: 0x%02X", cpu_state.b);
+    ImGui::Text(" A: 0x%02X        ", cpu_state.a);
+    ImGui::SameLine();
     ImGui::Text(" X: 0x%04X", cpu_state.x);
+    ImGui::Text(" B: 0x%02X        ", cpu_state.b);
+    ImGui::SameLine();
     ImGui::Text("PC: 0x%04X", cpu_state.pc);
-    ImGui::Text("SP: 0x%04X", cpu_state.sp);
     int sr = cpu_state.sr;
-    ImGui::Text("SR: HINZVC\n    %d%d%d%d%d%d\n", (sr & 0x20) >> 5,
+    ImGui::Text("SR: HINZVC      \n    %d%d%d%d%d%d\n", (sr & 0x20) >> 5,
                 (sr & 0x10) >> 4, (sr & 0x08) >> 3, (sr & 0x04) >> 2,
                 (sr & 0x02) >> 1, sr & 0x01);
+    ImGui::SameLine();
+    ImGui::Text("SP: 0x%04X", cpu_state.sp);
 
     // Disassembly
     ImGui::SeparatorText("Disassembly");
     static std::string pre_context;
     static std::string disassembly;
     static std::string post_context;
-    if (cpu_running == false) {
+    if (!cpu_running) {
       static constexpr int kPreContext = 4;
       static constexpr int kPostContext = 7;
 
@@ -355,22 +358,35 @@ int main(int argc, char* argv[]) {
         disassembler.set_instruction_boundary_hint(cpu_state.pc);
         QCHECK_OK(disassembler.disassemble());
         const auto& disassembly_vector = disassembler.disassembly();
-        std::ranges::subrange pre_context_range(
-            disassembly_vector.begin() + std::max(0, last_pc - kPreContext),
-            disassembly_vector.begin() + last_pc);
-        std::ranges::subrange post_context_range(
-            disassembly_vector.begin() +
-                std::min((int)disassembly_vector.size(), last_pc + 1),
-            disassembly_vector.begin() +
-                std::min((int)disassembly_vector.size(),
-                         last_pc + kPostContext));
-        pre_context = absl::StrJoin(pre_context_range, "");
+        pre_context.clear();
+        // Find kPreContext many non-empty lines before the current PC
+        for (size_t i = 1, found = 0; found < kPreContext; ++i) {
+          if (i > last_pc) {
+            break;
+          }
+          if (!disassembly_vector[last_pc - i].empty()) {
+            // Not the most efficient way to do this, but good enough.
+            pre_context =
+                absl::StrCat(disassembly_vector[last_pc - i], pre_context);
+            ++found;
+          }
+        }
         disassembly = disassembly_vector[last_pc];
-        post_context = absl::StrJoin(post_context_range, "");
+        post_context.clear();
+        // Find kPostContext many non-empty lines after the current PC
+        for (size_t i = 1, found = 0; found < kPostContext; ++i) {
+          if (last_pc + i >= disassembly_vector.size()) {
+            break;
+          }
+          if (!disassembly_vector[last_pc + i].empty()) {
+            absl::StrAppend(&post_context, disassembly_vector[last_pc + i]);
+            ++found;
+          }
+        }
       }
     }
     ImGui::Text("%s", pre_context.c_str());
-    ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s",
+    ImGui::TextColored(ImVec4(1.0F, 1.0F, 0.0F, 1.0F), "%s",
                        disassembly.c_str());
     ImGui::Text("%s", post_context.c_str());
 
