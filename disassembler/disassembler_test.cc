@@ -87,7 +87,7 @@ absl::Status CompileAndDisassemble(std::string_view code,
   status = disassembler.disassemble();
 
   std::cout << "-------Full disassembly-------------\n";
-  disassembler.print();
+  std::cout << disassembler.print();
   std::cout << "------------------------------------\n";
 
   return status;
@@ -103,8 +103,8 @@ loop:
   Disassembler disassembler;
   ASSERT_TRUE(CompileAndDisassemble(code, disassembler).ok());
 
-  EXPECT_THAT(disassembler.print(0), testing::HasSubstr("loc_0000:"));
-  EXPECT_THAT(disassembler.print(2), testing::HasSubstr("bra  loc_0000"));
+  EXPECT_THAT(disassembler.print_line(0), testing::HasSubstr("loc_0000:"));
+  EXPECT_THAT(disassembler.print_line(2), testing::HasSubstr("bra  loc_0000"));
 }
 
 class DisassemblerTest
@@ -127,7 +127,12 @@ TEST_P(DisassemblerTest, RoundTripTest) {
   disassembler.set_instruction_boundary_hint(compiled->start_address);
   status = disassembler.disassemble();
   ASSERT_TRUE(status.ok()) << status;
-  auto disassembly = absl::StrJoin(disassembler.disassembly(), "\n");
+  auto disassembly = disassembler.print();
+
+  std::cout << absl::StreamFormat("-- Disassembly of %-60s --\n", GetParam());
+  std::cout << disassembly;
+  std::cout << "---------------------------------------------------------------"
+               "-----------------\n";
 
   // Recompile the disassembled code
   auto recompiled = Compile(disassembly);

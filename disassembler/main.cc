@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
   eight_bit::Disassembler disassembler;
   QCHECK_OK(disassembler.set_data(0x10000 - rom_data.size(), rom_data));
   QCHECK_OK(disassembler.disassemble());
-  disassembler.print();
+  std::cout << disassembler.print();
 
   return 0;
 }

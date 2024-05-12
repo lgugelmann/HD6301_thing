@@ -19,7 +19,7 @@ class Disassembler {
   ~Disassembler() = default;
 
   // Add data to disassemble
-  absl::Status set_data(uint16_t start_address, std::vector<uint8_t> data);
+  absl::Status set_data(uint16_t start_address, std::span<uint8_t> data);
 
   // Tell the disassembler that 'address' is the start of an instruction.
   // Disassembles that instruction during the call, but if more needs to be
@@ -32,10 +32,14 @@ class Disassembler {
   absl::Status disassemble();
 
   // Print the disassembled data at 'address'.
-  std::string print(uint16_t address);
+  std::string print_line(uint16_t address);
 
-  void print();
+  // Return the full disassembly as a string.
+  std::string print();
 
+  // Return the full disassembly as a vector of 64k strings, one per address.
+  // Addresses without data or which are part of the disassembly of an earlier
+  // line are empty.
   const std::vector<std::string>& disassembly() const;
 
  private:

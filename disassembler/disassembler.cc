@@ -4,6 +4,7 @@
 #include <optional>
 #include <ranges>
 #include <set>
+#include <span>
 #include <stack>
 #include <string>
 #include <vector>
@@ -22,7 +23,7 @@ Disassembler::Disassembler()
       disassembly_(0x10000) {}
 
 absl::Status Disassembler::set_data(uint16_t start_address,
-                                    std::vector<uint8_t> data) {
+                                    std::span<uint8_t> data) {
   if (start_address + data.size() - 1 > memory_.size()) {
     return absl::InvalidArgumentError("Data does not fit in memory");
   }
@@ -62,12 +63,25 @@ absl::Status Disassembler::disassemble() {
   return absl::OkStatus();
 }
 
-std::string Disassembler::print(uint16_t address) {
+std::string Disassembler::print_line(uint16_t address) {
   return disassembly_[address];
 }
 
-void Disassembler::print() {
-  std::cout << absl::StreamFormat("%s\n", absl::StrJoin(disassembly_, ""));
+std::string Disassembler::print() {
+  std::string disassembly;
+  bool previous_has_value = false;
+  for (size_t i = 0; i < memory_.size(); ++i) {
+    if (annotations_[i].has_value()) {
+      if (!previous_has_value) {
+        // This is an org boundary.
+        absl::StrAppend(&disassembly, "        org  $",
+                        absl::Hex(i, absl::kZeroPad4), "\n");
+        previous_has_value = true;
+      }
+      absl::StrAppend(&disassembly, disassembly_[i]);
+    }
+  }
+  return disassembly;
 }
 
 const std::vector<std::string>& Disassembler::disassembly() const {
