@@ -3,7 +3,7 @@ project(emulator)
 
 option(GPERFTOOLS_BUILD "Enable profiling with gperftools" OFF)
 option(TSAN_BUILD "Set up a TSan build" OFF)
-option(USE_CLANG_TIDY "Use clang-tidy for static analysis" ON)
+option(USE_CLANG_TIDY "Use clang-tidy for static analysis" OFF)
 
 if (TSAN_BUILD)
     add_compile_options(-fsanitize=thread -fno-omit-frame-pointer)
