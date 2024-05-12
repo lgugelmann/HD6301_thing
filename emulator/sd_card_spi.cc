@@ -265,12 +265,13 @@ void SDCardSPI::handle_command(const Command& command) {
         if (!ready_) {
           response_queue_.push(kR1IllegalCommand | kR1InIdleState);
           break;
-        } else if (address >= block_count_) {
+        }
+        if (address >= block_count_) {
           response_queue_.push(kR1ParameterError);
           break;
-        } else {
-          response_queue_.push(0);
         }
+        response_queue_.push(0);
+
         // Try to read the data
         card_image_->seekg(address * kBlockSize);
         std::array<char, kBlockSize> block;
@@ -300,12 +301,13 @@ void SDCardSPI::handle_command(const Command& command) {
         if (!ready_) {
           response_queue_.push(kR1IllegalCommand | kR1InIdleState);
           break;
-        } else if (address >= block_count_) {
+        }
+        if (address >= block_count_) {
           response_queue_.push(kR1ParameterError);
           break;
-        } else {
-          response_queue_.push(0);
         }
+        response_queue_.push(0);
+
         next_card_state_ = CardState::kDataToken;
         write_address_ = address;
         break;
