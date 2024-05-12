@@ -130,6 +130,9 @@ int main(int argc, char* argv[]) {
 
   ImGuiIO& io = ImGui::GetIO();
 
+  // Disable creation of imgui.ini files
+  io.IniFilename = nullptr;
+
   ImGui::StyleColorsDark();
   ImGui::GetStyle().ScaleAllSizes(scale);
 
