@@ -91,6 +91,7 @@ class Disassembler {
   std::string print_data_address(uint16_t address);
   std::string print_instruction(uint16_t address);
   std::string print_data(uint16_t address);
+  void print_unannotated();
 
   // Memory holds the data to disassemble
   std::vector<uint8_t> memory_;

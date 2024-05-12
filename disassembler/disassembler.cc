@@ -60,6 +60,7 @@ absl::Status Disassembler::disassemble() {
     annotations_[address]->decoded = true;
     disassembly_[address] = print_annotation(address);
   }
+  print_unannotated();
   return absl::OkStatus();
 }
 
@@ -404,4 +405,31 @@ std::string Disassembler::print_data(uint16_t address) {
   }
   return data_string;
 }
+
+// Go over bytes that are set but not annotated and print them as data.
+void Disassembler::print_unannotated() {
+  constexpr int kMaxBytesPerLine = 8;
+  for (size_t i = 0; i < memory_.size(); ++i) {
+    if (!annotations_[i].has_value() || annotations_[i]->skip ||
+        annotations_[i]->decoded) {
+      continue;
+    }
+    std::string data_string = "        byt  ";
+    // Look ahead up to kMaxBytesPerLine bytes to see if they can be merged into
+    // this line.
+    size_t j = i;
+    for (; j < i + kMaxBytesPerLine && j < memory_.size(); ++j) {
+      if (annotations_[j].has_value() &&
+          (annotations_[j]->skip || annotations_[j]->decoded)) {
+        break;
+      }
+      absl::StrAppendFormat(&data_string, "%s$%02x", j == i ? "" : ",",
+                            memory_[j]);
+    }
+    absl::StrAppendFormat(&data_string, " ; %04x\n", i);
+    disassembly_[i] = data_string;
+    i = j - 1;
+  }
+}
+
 }  // namespace eight_bit
