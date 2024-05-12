@@ -389,7 +389,7 @@ std::string Disassembler::print_data(uint16_t address) {
         data.data() + i + std::min<size_t>(8, data.size() - i)};
 
     absl::StrAppendFormat(
-        &data_string, "        byt %-20s ; %04x\n",
+        &data_string, "        byt  %-20s ; %04x\n",
         absl::StrJoin(range, ",",
                       [](std::string* out, uint8_t byte) {
                         absl::StrAppend(out, absl::Hex(byte, absl::kZeroPad2));
