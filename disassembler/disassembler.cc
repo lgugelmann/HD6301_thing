@@ -133,7 +133,6 @@ absl::Status Disassembler::decode_vectors() {
       {"sci", 0xfff0},
   };
 
-  bool vector_found = true;
   for (const auto& [label, address] : vectors) {
     if (!check16(address)) {
       continue;
@@ -141,28 +140,23 @@ absl::Status Disassembler::decode_vectors() {
     if (annotations_[address]->code_address.has_value()) {
       // We already decoded at least one vector - likely this is a second
       // disassembly pass.
-      vector_found = true;
       continue;
     }
     uint16_t destination = get16(address);
     if (!check(destination)) {
       continue;
     }
-    annotations_[address] = {
-        .code_address = Annotation::CodeAddress{destination}, .decoded = true};
+    annotations_[address]->code_address = {.address = destination};
     if (address == 0xfff0) {
       annotations_[address]->label = "startup_vectors";
     }
+    annotations_[address]->decoded = true;
+    annotations_[address + 1]->skip = true;
     disassembly_[address] = print_annotation(address);
-    annotations_[destination] = {
-        .instruction =
-            Annotation::InstructionAnnotation{.instruction = Instruction{}},
-        .label = absl::StrCat("vec_", label),
-    };
+
+    annotations_[destination]->instruction = {.instruction = Instruction{}};
+    annotations_[destination]->label = absl::StrCat("vec_", label);
     worklist_.push(destination);
-  }
-  if (!vector_found) {
-    return absl::InvalidArgumentError("Could not decode starutp vectors");
   }
   return absl::OkStatus();
 }
