@@ -236,8 +236,7 @@ void Disassembler::decode_instruction(uint16_t address) {
   uint16_t next = address + length;
   if (!next_is_not_always_code.contains(instruction.name) && check(next)) {
     if (!annotations_[next]->instruction.has_value()) {
-      annotations_[next] = {.instruction = Annotation::InstructionAnnotation{
-                                .instruction = Instruction{}}};
+      annotations_[next]->instruction = {.instruction = Instruction{}};
       worklist_.push(next);
     }
   }
