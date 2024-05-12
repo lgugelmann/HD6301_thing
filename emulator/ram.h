@@ -19,8 +19,8 @@ class Ram {
       AddressSpace* address_space, uint16_t base_address, uint16_t size,
       uint8_t fill_byte = 0);
 
-  // Print RAM contents to stdout
-  void hexdump() const;
+  // Return RAM contents as a hexdump.
+  std::string hexdump() const;
 
  private:
   Ram(AddressSpace* address_space, uint16_t base_address, uint16_t size,

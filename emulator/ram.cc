@@ -23,8 +23,8 @@ absl::StatusOr<std::unique_ptr<Ram>> Ram::create(AddressSpace* address_space,
   return ram;
 }
 
-void Ram::hexdump() const {
-  std::cout << eight_bit::hexdump(data_, base_address_);
+std::string Ram::hexdump() const {
+  return eight_bit::hexdump(data_, base_address_);
 }
 
 Ram::Ram(AddressSpace* address_space, uint16_t base_address, uint16_t size,

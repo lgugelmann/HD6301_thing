@@ -390,13 +390,29 @@ int main(int argc, char* argv[]) {
                        disassembly.c_str());
     ImGui::Text("%s", post_context.c_str());
 
-    ImGui::SetCursorPosY(
-        ImGui::GetWindowSize().y - ImGui::GetStyle().ItemSpacing.y -
-        ImGui::GetStyle().FramePadding.y - ImGui::GetFrameHeightWithSpacing());
+    ImGui::SetCursorPosY(ImGui::GetWindowSize().y -
+                         ImGui::GetFrameHeightWithSpacing() * 2 -
+                         ImGui::GetStyle().ItemSpacing.y);
+    static bool show_ram_hexdump = false;
+    if (ImGui::Button("RAM Hexdump", ImVec2(-1, 0))) {
+      show_ram_hexdump = true;
+      (*ram_or)->hexdump();
+    }
     if (ImGui::Button("Reset", ImVec2(-1, 0))) {
       absl::MutexLock lock(&callback_mutex_);
       cpu->reset();
       cpu_state = cpu->get_state();
+    }
+    if (show_ram_hexdump) {
+      static std::string ram_hexdump;
+      static uint16_t last_pc = 0;
+      if (last_pc != cpu_state.pc) {
+        last_pc = cpu_state.pc;
+        ram_hexdump = (*ram_or)->hexdump();
+      }
+      ImGui::Begin("RAM Hexdump", &show_ram_hexdump);
+      ImGui::Text("%s", ram_hexdump.c_str());
+      ImGui::End();
     }
 
     ImGui::EndDisabled();
