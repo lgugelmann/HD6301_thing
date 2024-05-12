@@ -33,3 +33,22 @@ target_link_libraries(disassembler_lib
     absl::status
     absl::statusor
 )
+
+# Tests
+enable_testing()
+include(GoogleTest)
+
+set(test_SOURCES
+  disassembler_test.cc
+)
+
+add_executable(disassembler_test ${test_SOURCES})
+set(TESTDATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/testdata")
+add_definitions(-DTESTDATA_DIR="${TESTDATA_DIR}")
+target_compile_options(disassembler_test PRIVATE -Wall -Wextra -Werror -Wno-gcc-compat)
+target_link_libraries(disassembler_test
+    GTest::gtest_main
+    GTest::gmock_main
+    disassembler_lib
+)
+gtest_discover_tests(disassembler_test)
