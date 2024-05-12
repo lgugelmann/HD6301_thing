@@ -340,13 +340,13 @@ std::string Disassembler::print_instruction(uint16_t address) {
       break;
     case kIDXBIT:
       disassembly = absl::StrFormat(
-          "        %-4s #$%02x,$%02x,X       ; %04x: %s\n", instruction.name,
-          data[2], data[3], address, byte_string);
+          "        %-4s #$%02x,$%02x,X      ; %04x: %s\n", instruction.name,
+          data[1], data[2], address, byte_string);
       break;
     case kDIRBIT:
       disassembly = absl::StrFormat(
           "        %-4s #$%02x,$%02x        ; %04x: %s\n", instruction.name,
-          data[2], data[3], address, byte_string);
+          data[1], data[2], address, byte_string);
       break;
     case kILL:
       disassembly = absl::StrFormat(
