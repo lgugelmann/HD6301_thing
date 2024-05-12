@@ -37,8 +37,9 @@ void Disassembler::set_instruction_boundary_hint(uint16_t address) {
   if (annotations_[address]->instruction.has_value()) {
     return;
   }
-  annotations_[address]->instruction = Instruction{};
+  annotations_[address]->instruction = {.instruction = Instruction{}};
   decode_instruction(address);
+  disassembly_[address] = print_annotation(address);
 }
 
 absl::Status Disassembler::disassemble() {
@@ -96,6 +97,15 @@ bool Disassembler::check16(uint16_t address) const {
          annotations_[address + 1].has_value();
 }
 
+void Disassembler::update_label(uint16_t address, std::string_view label) {
+  // We shouldn't update labels for addresses that have them already until we
+  // implement a way to go fix the references.
+  if (!annotations_[address]->label.has_value()) {
+    annotations_[address]->label = std::string(label);
+    disassembly_[address] = print_annotation(address);
+  }
+}
+
 absl::Status Disassembler::decode_vectors() {
   const auto vectors = std::vector<std::pair<std::string, uint16_t>>{
       {"start", 0xfffe},
@@ -130,7 +140,8 @@ absl::Status Disassembler::decode_vectors() {
     }
     disassembly_[address] = print_annotation(address);
     annotations_[destination] = {
-        .instruction = Instruction{},
+        .instruction =
+            Annotation::InstructionAnnotation{.instruction = Instruction{}},
         .label = absl::StrCat("vec_", label),
     };
     worklist_.push(destination);
@@ -157,7 +168,7 @@ void Disassembler::decode_instruction(uint16_t address) {
     annotations_[address]->instruction.reset();
     return;
   }
-  annotations_[address]->instruction = instruction;
+  annotations_[address]->instruction = {.instruction = instruction};
   uint8_t length = instruction.bytes;
   for (uint8_t i = 1; i < length; ++i) {
     if (!check(address + i)) {
@@ -197,13 +208,15 @@ void Disassembler::decode_instruction(uint16_t address) {
     }
     if (have_destination && check(destination)) {
       if (!annotations_[destination]->instruction.has_value()) {
-        annotations_[destination]->instruction = Instruction{};
+        annotations_[destination]->instruction = {.instruction = Instruction{}};
         worklist_.push(destination);
       }
       if (!annotations_[destination]->label.has_value()) {
-        annotations_[destination]->label =
-            absl::StrCat("loc_", absl::Hex(destination, absl::kZeroPad4));
+        update_label(
+            destination,
+            absl::StrCat("loc_", absl::Hex(destination, absl::kZeroPad4)));
       }
+      annotations_[address]->instruction->destination_address = destination;
     }
   }
 
@@ -214,7 +227,8 @@ void Disassembler::decode_instruction(uint16_t address) {
   uint16_t next = address + length;
   if (!next_is_not_always_code.contains(instruction.name) && check(next)) {
     if (!annotations_[next]->instruction.has_value()) {
-      annotations_[next] = {.instruction = Instruction{}};
+      annotations_[next] = {.instruction = Annotation::InstructionAnnotation{
+                                .instruction = Instruction{}}};
       worklist_.push(next);
     }
   }
@@ -252,8 +266,18 @@ std::string Disassembler::print_instruction(uint16_t address) {
         "Unexpected call to print_instruction at %04x", address);
     return "";
   }
-  const auto& instruction = annotations_[address]->instruction.value();
+  const auto& instruction =
+      annotations_[address]->instruction.value().instruction;
   const auto& data = annotations_[address]->data;
+  const auto& destination =
+      annotations_[address]->instruction.value().destination_address;
+  std::string destination_label;
+  if (destination.has_value()) {
+    uint16_t dest = destination.value();
+    if (annotations_[dest]->label.has_value()) {
+      destination_label = annotations_[dest]->label.value();
+    }
+  }
   std::string byte_string =
       absl::StrJoin(data, " ", [](std::string* out, uint8_t byte) {
         absl::StrAppend(out, absl::Hex(byte, absl::kZeroPad2));
@@ -284,15 +308,22 @@ std::string Disassembler::print_instruction(uint16_t address) {
           absl::StrFormat("        %-4s #$%04x          ; %04x: %s\n",
                           instruction.name, operand, address, byte_string);
       break;
+    case kREL:
     case kDIR:
+      if (destination_label.empty()) {
+        destination_label = absl::StrFormat("$%02x", operand);
+      }
       disassembly =
-          absl::StrFormat("        %-4s $%02x             ; %04x: %s\n",
-                          instruction.name, operand, address, byte_string);
+          absl::StrFormat("        %-4s %-16s; %04x: %s\n", instruction.name,
+                          destination_label, address, byte_string);
       break;
     case kEXT:
+      if (destination_label.empty()) {
+        destination_label = absl::StrFormat("$%04x", operand);
+      }
       disassembly =
-          absl::StrFormat("        %-4s $%04x           ; %04x: %s\n",
-                          instruction.name, operand, address, byte_string);
+          absl::StrFormat("        %-4s %-16s; %04x: %s\n", instruction.name,
+                          destination_label, address, byte_string);
       break;
     case kIDX:
       disassembly =
@@ -308,11 +339,6 @@ std::string Disassembler::print_instruction(uint16_t address) {
       disassembly = absl::StrFormat(
           "        %-4s #$%02x,$%02x        ; %04x: %s\n", instruction.name,
           data[2], data[3], address, byte_string);
-      break;
-    case kREL:
-      disassembly =
-          absl::StrFormat("        %-4s $%02x             ; %04x: %s\n",
-                          instruction.name, operand, address, byte_string);
       break;
     case kILL:
       disassembly = absl::StrFormat(

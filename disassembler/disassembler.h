@@ -47,10 +47,14 @@ class Disassembler {
     struct DataAddress {
       uint16_t address;
     };
+    struct InstructionAnnotation {
+      Instruction instruction;
+      std::optional<uint16_t> destination_address = std::nullopt;
+    };
 
     std::optional<CodeAddress> code_address = std::nullopt;
     std::optional<DataAddress> data_address = std::nullopt;
-    std::optional<Instruction> instruction = std::nullopt;
+    std::optional<InstructionAnnotation> instruction = std::nullopt;
     std::optional<std::string> label = std::nullopt;
 
     // Whether the data at this address has been fully decoded
@@ -68,6 +72,9 @@ class Disassembler {
   bool check(uint16_t address) const;
   // Like check, but checks for two bytes
   bool check16(uint16_t address) const;
+
+  // Set the label for the address.
+  void update_label(uint16_t address, std::string_view label);
 
   // Use known 6301 vectors to identify instruction boundaries. Returns an error
   // if the vectors are unset.
