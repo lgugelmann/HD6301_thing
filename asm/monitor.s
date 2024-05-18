@@ -78,9 +78,9 @@ commands:
         adr print
 +
         adr +
-        byt "ls\0"
+        byt "list\0"
         byt $00
-        adr ls_command
+        adr list_command
 +
         adr +
         byt "clear\0"
@@ -347,7 +347,7 @@ print:
 ; List all program names and their entry points in the program registry. The
 ; code is a bit more convoluted because it does not assume that all entries of
 ; the registry are contiguous. In theory they could be all over the place.
-ls_command:
+list_command:
 
         ; Program registry is at the start of ROM.
         ldx #$8002
