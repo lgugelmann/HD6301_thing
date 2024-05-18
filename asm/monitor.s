@@ -1,8 +1,9 @@
         cpu 6301
 
-        org $f000
+        org $e000
 
         include include/delays
+        include include/file
         include include/io
         include include/macros
         include include/map
@@ -87,6 +88,16 @@ commands:
         byt $00
         adr clear_command
 +
+        adr +
+        byt "cd\0"
+        byt $01
+        adr cd_command
++
+        adr +
+        byt "ls\0"
+        byt $00
+        adr ls_command
++
         adr $0000
 
 start:
@@ -103,6 +114,7 @@ start:
         jsr stdio_init          ; Initializes serial, keyboard & graphics
         jsr timer_init
         jsr sd_card_init
+        jsr file_init
 
         ldx #0
         stx user_stack_ptr
@@ -415,6 +427,16 @@ irq:
         bra invoke_monitor
 .handled:
         rti
+
+; List the contents of the current working directory.
+ls_command:
+        jmp file_ls
+
+; Change the current working directory to the one in the first parameter. Only
+; one hop is supported at a time.
+cd_command:
+        ldx input_buffer_param0_ptr
+        jmp file_cd
 
 invoke_monitor:
         ; Check whether we're already in the monitor program by looking at where
