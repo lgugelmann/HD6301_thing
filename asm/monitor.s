@@ -26,6 +26,10 @@ INPUT_BUFFER_SIZE = GRAPHICS_TERMINAL_WIDTH - 3
         reserve_system_memory command_ptr,2
         reserve_system_memory user_stack_ptr,2
         reserve_system_memory monitor_stack_ptr,2
+        ; Buffer to hold data for file I/O
+        reserve_system_memory file_io_buffer,512
+        ; Points 1 past the last valid byte of the buffer above
+        reserve_system_memory file_io_end_ptr,2
 
 terminal_string:
         byt KEY_ENTER
@@ -97,6 +101,11 @@ commands:
         byt "ls\0"
         byt $00
         adr ls_command
++
+        adr +
+        byt "cat\0"
+        byt $01
+        adr cat_command
 +
         adr $0000
 
@@ -404,6 +413,63 @@ clear_command:
         clr GRAPHICS_HIDE_CURSOR
         rts
 
+; List the contents of the current working directory.
+ls_command:
+        jmp file_ls
+
+; Change the current working directory to the one in the first parameter. Only
+; one hop is supported at a time.
+cd_command:
+        ldx input_buffer_param0_ptr
+        jmp file_cd
+
+; Print the contents of the file named in the argument on the terminal. The file
+; must be in the current directory.
+cat_command:
+        ldx input_buffer_param0_ptr
+        ldd #file_io_buffer
+        jsr file_open
+        tst a
+        bmi .file_open_error    ; V is set -> A > 127, i.e. error
+        psh a
+        jsr file_read
+        tst a
+        bmi .file_read_error    ; V is set -> A > 127, i.e. error
+        xgdx                    ; Put X (bytes read) into D
+        addd #file_io_buffer    ; Make D point one past the end of the data
+        std file_io_end_ptr
+        ldx #file_io_buffer
+        cpx file_io_end_ptr
+        beq .end
+.loop:
+        lda 0,x
+        jsr putchar
+        inx
+        cpx file_io_end_ptr
+        bne .loop
+.end:
+        pul a                   ; Get the file descritpor number back
+        jmp file_close
+        ; rts
+
+.file_open_error:
+        jsr putchar_hex
+        ldx #.file_open_error_string
+        jmp putstring
+
+.file_read_error:
+        jsr putchar_hex
+        pul a                   ; Get the FD number back
+        jsr file_close
+        ldx #.file_read_error_string
+        jmp putstring
+
+.file_open_error_string:
+        byt ": Failed to open file\n\0"
+
+.file_read_error_string:
+        byt ": Failed to read file\n\0"
+
 irq:
         ; The 6301 puts stack pointer, accumulators, register flags etc on the
         ; stack before entering an interrupt routine. We don't need to take
@@ -427,16 +493,6 @@ irq:
         bra invoke_monitor
 .handled:
         rti
-
-; List the contents of the current working directory.
-ls_command:
-        jmp file_ls
-
-; Change the current working directory to the one in the first parameter. Only
-; one hop is supported at a time.
-cd_command:
-        ldx input_buffer_param0_ptr
-        jmp file_cd
 
 invoke_monitor:
         ; Check whether we're already in the monitor program by looking at where
