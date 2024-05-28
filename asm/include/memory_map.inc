@@ -5,8 +5,8 @@ __memory_map_inc = 1
 ; 0000-001f  reserved, internal registers
 ; 0020-7eff  RAM, of which
 ;   20-00ff  Zero page addresses, program use
-;  100-7bff  Program memory, with stack at 7bff growing down
-; 7c00-7eff  Monitor memory, with stack at 7eff growing down
+;  100-79ff  Program memory, with stack at 79ff growing down
+; 7a00-7eff  Monitor memory, with stack at 7eff growing down
 ; 7f00-7fff  I/O space, of which:
 ;   00-  1f  [unused]
 ;   20 - 3f  65C22 I/O            0111 1111 001x xxxx
@@ -28,7 +28,7 @@ ROM_START              = $8000
 ROM_END                = $ffff
 
 MIN_USER_STACK_SIZE = $100
-SYSTEM_MEMORY_START = $7c00
+SYSTEM_MEMORY_START = $7a00
 USER_STACK_START    = SYSTEM_MEMORY_START - 1
 MONITOR_STACK_START = RAM_END
 
