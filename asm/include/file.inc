@@ -35,16 +35,17 @@ FAT_DIR_ATTR_SUBDIR  = $10
 FAT_DIR_ATTR_ARCHIVE = $20
 
         ;
-        ; Various buffers & scratch space
+        ; Current directory sector buffer
         ;
         reserve_system_memory fat_current_dir_buffer, FAT_SECTOR_SIZE
-        ; Some extra scratch space for various operations
-        reserve_system_memory fat_scratch, 6
+        ; A guard byte after the current dir buffer that we can use as a trap to
+        ; detect when we've gone over all entries. Is 0 for now to indicate 'no
+        ; more entries'.
+        reserve_system_memory fat_dir_guard_byte, 1
 
-        ; We make use of the specific layout above to place guard bytes into
-        ; fat_scratch.
-        if fat_scratch <> fat_current_dir_buffer + FAT_SECTOR_SIZE
-          error "fat_scratch needs to be right after fat_current_dir_buffer"
+        ; Check that we really did get the layout we want
+        if fat_dir_guard_byte <> fat_current_dir_buffer + FAT_SECTOR_SIZE
+          error "fat_dir_guard_byte not right after fat_current_dir_buffer"
         endif
 
         ;
@@ -118,6 +119,8 @@ file_init:
         dec a
         bne .loop
 
+        clr fat_dir_guard_byte
+
         jsr sd_card_initialize
 
         ; We're assuming the partition starts at the first sector, i.e. that the
@@ -161,7 +164,9 @@ file_init:
 
         ; Number of root directory entries. Don't support 2k or more. It's
         ; almost always 512, so this isn't a limitation.
-        read16_le $11, fat_scratch
+        ; We only need this temporarily - so we're using the start sector as
+        ; scratch space.
+        read16_le $11, fat_data_start_sector
         xgdx
         cpx #2047
         bgt .fat_root_directory_entries_error
@@ -181,7 +186,8 @@ file_init:
         ; We have less than 2048 entries, so the sector size always fits into
         ; one byte.
         xgdx                    ; Move fat_root_dir_start_sector to X
-        ldd fat_scratch         ; Holds the number of root dir entries
+        ; Holds the number of root dir entries, see above
+        ldd fat_data_start_sector
         lsrd
         lsrd
         lsrd
@@ -261,11 +267,6 @@ file_cd_cluster:
 ; List the contents of the current directory. Assumes that file_cd* has been
 ; called at least once. Clobbers A, B, X.
 file_ls:
-        ; Place a 0 guard byte into fat_scratch to ensure the loop below
-        ; terminates even if the directory table is full.
-	; TDOO: figure out a guard value for this and load the next sector if
-	; it's hit.
-        clr fat_scratch
         ldx #fat_current_dir_buffer
 .loop:
         ldb 0,x
@@ -287,7 +288,7 @@ file_ls:
 ; <=127 in A on success, or >127 if an error occurred.
 file_open:
         ; Store the inputs for later while we find an available FD
-        pshx
+        pshx                    ; Name pointer
         psh a
         psh b
 
@@ -307,60 +308,70 @@ file_open:
         ; Store the address for the I/O memory
         std FD_IO_ADDRESS_OFFSET,x
 
-        ; Put the FD pointer away for later - we need to avoid fat_scratch
-        ; because it's clobbered by find_dir_entry.
-        xgdx                    ; FD -> D
-        pulx                    ; Get the name pointer (NP)
-        xgdx                    ; NP -> D, FD -> X
-        pshx                    ; push FD
-        xgdx                    ; NP in X
+        pshx                    ; File descriptor pointer
+
+        ; Stack is now (top-of-stack at the bottom):
+        ; - Name pointer
+        ; - File descriptor pointer
 
         ; Get the directory entry for the file to open into X
+        tsx
+        ldx 2,x
         lda #FAT_DIR_ATTR_ARCHIVE ; See comments on .._ARCHIVE definition
         jsr find_dir_entry
 
         cpx #0
         beq .file_not_found_error
 
-        ; Get the cluster number, little endian
-        read16_le FAT_DIR_CLUSTER_OFFSET, fat_scratch + 2
+        pshx                    ; Put directory entry pointer on stack
 
-        ; Get the file size
-        read16_le FAT_DIR_SIZE_OFFSET, fat_scratch + 4
+        ; Put start cluster and sector numbers into FD struct
+        lda FAT_DIR_CLUSTER_OFFSET+1,x
+        ldb FAT_DIR_CLUSTER_OFFSET,x
 
-        pulx                    ; Get the file descriptor address in X
-        ldd fat_scratch + 4
-        std FD_FILE_SIZE_OFFSET,x
-        ldd fat_scratch + 2
+        tsx
+        ldx 2,x                 ; FD pointer
         std FD_START_CLUSTER_OFFSET,x
 
-        pshx                    ; Put away FD pointer
-        xgdx                    ; Put cluster offset into X
+        xgdx                    ; Cluster number -> X
         jsr fat_cluster_to_sector
         ; Store the start sector, it's put into D by the above.
-        pulx
+        tsx
+        ldx 2,x                 ; FD pointer
         std FD_START_SECTOR_OFFSET,x
+
+        ; Put the file size in FD struct
+        tsx
+        ldx 0,x                 ; Dir entry pointer
+        lda FAT_DIR_SIZE_OFFSET+1,x
+        ldb FAT_DIR_SIZE_OFFSET,x
+
+        tsx
+        ldx 2,x                 ; FD pointer
+        std FD_FILE_SIZE_OFFSET,x
 
         lda #FD_STATE_OPEN
         sta FD_STATE_OFFSET,x
         clr a
         sta FD_READ_PTR_OFFSET,x
         sta FD_READ_PTR_OFFSET+1,x
+
+        drop2                   ; Dir entry pointer
+        drop2                   ; FD pointer
+        drop2                   ; name pointer
         rts
 
 .file_not_found_error:
-        ins
-        ins                     ; Drop a pushx
         lda #128
+        drop2                   ; Drop dir entry pointer
+        drop2                   ; Drop FD pointer
         rts
 
 .no_free_fd_error:
-        ; Undo psh A, B, X
-        ins
-        ins
-        ins
-        ins
         lda #129
+        ; Undo psh A, B, X
+        drop2
+        drop2
         rts
 
 ; Closes the file with file descriptor A. Clobbers A, B.
@@ -530,12 +541,6 @@ fat_cluster_to_sector:
 ; passed into A. If a match is found, X contains the address of the start of
 ; that entry, if not, X is 0. Clobbers A, B, X.
 find_dir_entry:
-        ; fat_scratch is right after the directory entry table. We put a guard
-        ; byte there to ensure that we always hit a '0' entry to abort the loop
-        ; if the directory table is full. TODO: handle loading the next sector
-        ; of directory entries in that case.
-        clr fat_scratch
-
         psh a                   ; Attributes
         pshx                    ; Copy 1 of the search string pointer
         pshx                    ; Copy 2: this one gets incremented
