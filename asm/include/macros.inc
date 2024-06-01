@@ -88,6 +88,11 @@ nop10   macro
         nop
         endm
 
+drop2   macro
+        ins
+        ins
+        endm
+
 PUBLIC_SHARED macro name
         PUBLIC name
         SHARED name
