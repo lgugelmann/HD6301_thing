@@ -15,10 +15,6 @@ __map_inc = 1
 ; - The last entry only has the 'next' bytes, and those are $0000.
 ; - An empty map only contains those 2 bytes set to $0000.
 ;
-; This function uses local storage during operation. It should not be used
-; during interrupts or care needs to be taken that the user program is not
-; executing it.
-;
 ; Function parameters:
 ; - X: a pointer to an entry of the map (typically the first)
 ; - On the stack two bytes (high, low) pointing to a 0-terminated or
@@ -31,41 +27,41 @@ __map_inc = 1
 ;   - The top 2 bytes on the stack point to the first byte after the input
 ;     string. (This is be either a 0 byte or a space.)
 ; - If there was no match:
-;   - X is indetermined
+;   - X is undefined
 ;   - No values are put on the stack
-;
-        reserve_system_memory input_string_start,2
-        reserve_system_memory input_string_ptr,2
-        reserve_system_memory map_ptr,2
-        reserve_system_memory next_entry_ptr,2
-        reserve_system_memory return_ptr,2
+; - A, B are preserved
 map_find:
-        stx map_ptr
-
-        ldx 0,x                 ; Load the pointer to the next entry
-        stx next_entry_ptr
-
-        ; The pointer to the input string to match against keys is on the stack,
-        ; but so is the return address. Put that one away for later.
-        pulx
-        stx return_ptr
-        ; Get the actual input string
-        pulx
-        stx input_string_start
-        stx input_string_ptr
+        ; Stack layout (in memory order, top of stack at the bottom):
+        ; - Start of search string (from user call)
+        ; - Return address         (from jsr)
+        ; - A, B
+        ; - Map entry pointer
+        ; - Next entry pointer
+        ; - Search string pointer
         psh a
         psh b
 
-        ldx map_ptr
-        inx                     ; Skip the two 'next entry' bytes
-        inx
-        stx map_ptr
+        pshx                    ; Map entry pointer
+        ldx 0,x                 ; Load the pointer to the next entry
+        pshx                    ; Next entry pointer
+
+        tsx
+        ldx 8,x                 ; Start of search string
+        pshx                    ; A copy, used as a moving search string ptr
+
+        tsx
+        ldd 4,x                 ; Map entry pointer
+        addd #2                 ; Skip the two 'next entry' bytes
+        std 4,x                 ; Map entry pointer
 
 .entry_match_loop:
-        ldx input_string_ptr
-        lda 0,x
-        ldx map_ptr
-        ldb 0,x
+        tsx
+        ldx 0,x                 ; Search string pointer
+        lda 0,x                 ; Next search string character
+
+        tsx
+        ldx 4,x                 ; Map entry pointer
+        ldb 0,x                 ; Next map entry character
 
         ; If B is 0 we found a key boundary.
         beq .key_boundary
@@ -74,11 +70,9 @@ map_find:
         bne .next_entry         ; Mismatch, try the next map entry
 
         ; Character match, move on to the next character.
-        inx
-        stx map_ptr
-        ldx input_string_ptr
-        inx
-        stx input_string_ptr
+        tsx
+        inc16 4,x               ; Map entry pointer
+        inc16 0,x               ; Search string pointer
         bra .entry_match_loop
 
 .key_boundary:
@@ -89,47 +83,58 @@ map_find:
         bne .next_entry         ; No match, try the next entry
 
 .match:
+        ; We need to set things up such that:
+        ; - Map entry pointer +1 is in X
+        ; - Search string pointer is top of stack after return
+        ; - Restore A,B
+        inx                     ; X is now one byte past the key end.
+        xgdx                    ; X -> D
+        tsx
+        std 4,x                 ; Put it back on the stack
+
+        ldd 0,x                 ; Search string pointer
+        std 10,x                ; Put it above the return value
+
+        drop2                   ; Drop search string pointer
+        drop2                   ; Drop next entry pointer
+        pulx                    ; Map entry pointer + 1
+
         pul b
         pul a
 
-        inx
-        stx map_ptr             ; This is now one byte past the key end
-
-        ; Push our return value on the stack
-        ldx input_string_ptr
-        pshx
-
-        ; Put the return address back
-        ldx return_ptr
-        pshx
-
-        ; And finally restore X to one past the key
-        ldx map_ptr
         sec                     ; Indicate a match
         rts
 
 .next_entry:
         ; Reset the input string pointer to the start and try matching the next
         ; entry.
-        ldx input_string_start
-        stx input_string_ptr
+        tsx
+        ldd 10,x
+        std 0,x
 
-        ldx next_entry_ptr
-        ldd 0,x                 ; Load the next item pointer
+        ldd 2,x                 ; Next entry pointer
+        std 4,x                 ; Store as new map entry pointer
+        xgdx                    ; Map entry pointer -> X
+        ldd 0,x                 ; Load the next entry pointer
         beq .no_match           ; If it's $0000 we reached the end
-        std next_entry_ptr
 
-        inx
-        inx
-        stx map_ptr
+        tsx
+        std 2,x                 ; Store the new next entry pointer
+
+        ldd 4,x                 ; Map entry pointer
+        addd #2                 ; Increment past the next entry pointer bytes
+        std 4,x
         bne .entry_match_loop
 
 .no_match:
+        drop2                   ; Drop search string pointer
+        drop2                   ; Drop next entry pointer
+        drop2                   ; Drop map entry pointer
         pul b
         pul a
-        ; restore the return pointer we pulled off the stack earlier
-        ldx return_ptr
-        pshx
+        pulx                    ; Return address
+        drop2                   ; Drop user data on stack
+        pshx                    ; Put return address back
         clc                     ; Clear carry to indicate no match
         rts
 
