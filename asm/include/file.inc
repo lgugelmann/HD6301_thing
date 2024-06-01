@@ -590,13 +590,7 @@ find_dir_entry:
 .name_loop_tail:
         tsx
         ; Increment search string pointer. This needs 16 bit math.
-        lda 3,x
-        add a,#1
-        sta 3,x
-        bcc .name_loop_tail_no_str_increment
-        lda 2,x                 ; Increment the high byte in case of overflow
-        add a,#1
-        sta 2,x
+        inc16 2,x
 .name_loop_tail_no_str_increment:
         ; Increment dir entry pointer - it's safe to only do the low byte as
         ; they are 32-byte aligned and we only do this at most 11 times.
