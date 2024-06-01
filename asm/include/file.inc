@@ -504,72 +504,130 @@ fat_cluster_to_sector:
 ; passed into A. If a match is found, X contains the address of the start of
 ; that entry, if not, X is 0. Clobbers A, B, X.
 find_dir_entry:
-        ; We're going to use the 6 bytes of scratch as:
-	; 0  : $00 as guard byte so the directory loop terminates
-        ; 1  : file attributes mask
-        ; 2,3: address of the searched-for string
-        ; 4,5: scratch space
+        ; fat_scratch is right after the directory entry table. We put a guard
+        ; byte there to ensure that we always hit a '0' entry to abort the loop
+        ; if the directory table is full. TODO: handle loading the next sector
+        ; of directory entries in that case.
         clr fat_scratch
-        sta fat_scratch + 1
 
-        ; Ensure the name has a 0 within the first 12 bytes, we need this to be
-        ; true for the name loop below to terminate. Strings that don't meet
-        ; that also can't be valid file names.
-        jsr validate_name
-        bne .error
-
-        stx fat_scratch + 2
-        stx fat_scratch + 4
+        psh a                   ; Attributes
+        pshx                    ; Copy 1 of the search string pointer
+        pshx                    ; Copy 2: this one gets incremented
         ldx #fat_current_dir_buffer
-.loop:
-        ldb 0,x
+        pshx
+
+.dir_entry_loop:
+        ; Precondition: X points to the start of a directory entry
+        ldb 0,x                 ; First directory entry byte
         beq .error              ; 0 indicates that no more entries follow
 
         cmp b,#$e5              ; deleted entry
-        beq .next
+        beq .next_dir_entry
 
-        ; Look into the attributes bytes to see if they match.
         ldb FAT_DIR_ATTR_OFFSET,x
-        and b,fat_scratch + 1
-        beq .next
+        tsx
+        and b,6,x
+        beq .next_dir_entry     ; Attributes don't match
 
-        pshx                    ; Store the start of the directory entry
-        ; Check if the name matches. X is at the start of the directory entry.
+        ldb #8+3
 .name_loop:
+        tsx
+        ldx 2,x                 ; Load search string pointer
+        lda 0,x                 ; A is current search string char
+        beq .match_directory_space ; End of search string, look for spaces
+
+        tsx
+        ldx 0,x                 ; Load dir entry pointer
+        cmp a,0,x               ; Compare A to character at dir entry pointer
+        beq .name_loop_tail     ; Match: increment pointers, continue the name
+                                ; comparison loop.
+
+        ; Not equal, we could be dealing with an extension-separator dot. Note:
+        ; We don't do special extension dot handling for directories. Only exact
+        ; textual matches. That makes it easier to deal with '.' and '..' dirs.
+        cmp a,#'.'
+        bne .next_dir_entry     ; Search string has no dot, mismatch.
+
+        ; If we're looking for directories, don't do extension dot handling.
+        lda #FAT_DIR_ATTR_SUBDIR
+        tsx
+        and a,6,x
+        bne .next_dir_entry
+
+        bra .extension_dot_found
+
+.name_loop_tail:
+        tsx
+        ; Increment search string pointer. This needs 16 bit math.
+        lda 3,x
+        add a,#1
+        sta 3,x
+        bcc .name_loop_tail_no_str_increment
+        lda 2,x                 ; Increment the high byte in case of overflow
+        add a,#1
+        sta 2,x
+.name_loop_tail_no_str_increment:
+        ; Increment dir entry pointer - it's safe to only do the low byte as
+        ; they are 32-byte aligned and we only do this at most 11 times.
+        tsx
+        inc 1,x
+        dec b
+        bne .name_loop
+        ; We got past all 11 characters without bailing out. We found our entry!
+        ; Dir entry pointers are 32-byte aligned. We can get back to the start
+        ; of the entry by just clearing out the low 5 bits.
+        ldd 0,x                 ; Load dir entry pointer
+        and b,#$e0              ; Clear out low 32 bits
+        xgdx                    ; move to X
+        bra .end
+
+.extension_dot_found:
+        cmp b,#4                ; Still not in the extension part
+        bgt .match_directory_space
+        ; We now have two cases:
+        ; - The file name is <8 chars: 'TEST.TXT' / 'TEST    TXT'
+        ; - The file name is 8 chars:  'LONGTEST.TXT' / 'LONGTESTTXT'
+        ; We need to increment the dir entry pointer past a ' ' only in the
+        ; first case.
+        tsx
+        ldx 0,x                 ; Load the dir entry pointer
+        lda 0,x                 ; The current dir entry char
+        cmp a,#' '
+        beq .name_loop_tail     ; a space, skip it
+        ; A bit hacky...
+        tsx
+        dec 1,x                 ; Will be undone by .name_loop_tail.
+        bra .name_loop_tail
+
+; The search string has a 0 or '.', so the directory entry has to be ' ' or we
+; can't match.
+.match_directory_space:
+        tsx
+        ldx 0,x                 ; Dir entry pointer
         lda 0,x
-        inx
-        pshx
-
-        ldx fat_scratch + 4
-        ldb 0,x
-        ; We found the end of the searched-for string after we matched all
-        ; previous characters.
-        beq .found_match
-        inx
-        stx fat_scratch + 4
-        cba
-        bne .no_match
-
-        pulx
-        bra .name_loop
-.no_match:
-        ; Restore the scratch space to start of the searched-for string.
-        ldx fat_scratch + 2
-        stx fat_scratch + 4
-        pulx                    ; Pull the (dirtied) directory entry
-        pulx                    ; Get the clean one
-.next:
-        ldb #FAT_DIR_ENTRY_SIZE
-        abx
-        bra .loop
-
-.found_match:
-        pulx                    ; Get the dirtied directory entry
-        pulx                    ; Get the start of the dir entry
-        rts
+        cmp a,#' '
+        beq .name_loop_tail_no_str_increment
+        ; Mismatch: move to the next directory entry
+.next_dir_entry:
+        tsx
+        ldd 4,x                 ; Clean search string pointer
+        std 2,x
+        ldd 0,x                 ; Dir entry pointer -> D
+        and b,#$e0              ; Clear out the low 32 bits to get to the start
+                                ; of the entry.
+        addd #FAT_DIR_ENTRY_SIZE
+        std 0,x
+        xgdx                    ; .dir_entry_loop requires X to be a directory
+                                ; entry pointer.
+        bra .dir_entry_loop
 
 .error:
         ldx #0
+.end:
+        drop2                   ; Dir pointer
+        drop2                   ; String pointer, copy 2
+        drop2                   ; String pointer, copy 1
+        ins                     ; attributes
         rts
 
 ; Checks whether the string pointed to by X is 0 terminated at or before byte
