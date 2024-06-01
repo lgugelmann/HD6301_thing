@@ -93,6 +93,23 @@ drop2   macro
         ins
         endm
 
+; Increment the 16 bit value at either offset,x or an absolute address. This
+; cheats a bit by (ab)using the fact that inc16 2,x looks like 2 arguments to
+; the macro, whereas inc16 addr is just one. By naming just one argument we can
+; distinguis the 1-argument from the 2-argument case.
+inc16   macro param
+        if ARGCOUNT == 1
+          inc param+1           ; 6 cycles
+          bne +                 ; 3 cycles
+          inc param             ; 6 in rare cases of overflow
+        else
+          inc param+1,x         ; 6 cycles
+          bne +                 ; 3
+          inc param,x           ; 6 in rare cases
+        endif
++
+        endm
+
 PUBLIC_SHARED macro name
         PUBLIC name
         SHARED name
