@@ -10,6 +10,7 @@ __file_inc = 1
         PUBLIC file_open
         PUBLIC file_close
         PUBLIC file_read
+        PUBLIC file_at_eof
 
 ; Technically this can change, but it's almost always 512. The code assumes that
 ; the sector size is 512 and the init code bails out if the partition is set up
@@ -472,6 +473,31 @@ file_read:
         ldx #0
         lda #131
         rts
+
+; Looks at the file descriptor in A and sets Z if the read pointer is at the end
+; of the file, and clears it if not. A has to be valid. Keeps all registers
+; intact.
+file_at_eof:
+        pshx
+        psh b
+        psh a
+
+        ldb #FD_STRUCT_SIZE
+        mul                     ; Fits into B, max table size is 255
+
+        ; Point X to the start of the file descriptor table entry
+        ldx #fd_table
+        abx
+
+        ; Compare high bytes
+        ldd FD_FILE_SIZE_OFFSET,x
+        subd FD_READ_PTR_OFFSET,x ; Sets Z as per spec
+
+        pul a                   ; None of these touch Z
+        pul b
+        pulx
+        rts
+
 
 ; --- Internal helpers ---------------------------------------------------------
 
