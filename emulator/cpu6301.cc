@@ -188,10 +188,10 @@ void Cpu6301::sbc(uint8_t& dest, uint8_t mem) {
 }
 
 void Cpu6301::subd(uint16_t data) {
-  uint16_t d = get_d() - data;
+  uint16_t d = get_d();
   // cmp16() sets all flags correctly
   cmp16(d, data);
-  set_d(d);
+  set_d(d - data);
 }
 
 void Cpu6301::add(uint8_t& dest, bool carry, uint8_t mem) {
