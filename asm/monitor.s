@@ -431,24 +431,48 @@ cat_command:
         jsr file_open
         tst a
         bmi .file_open_error    ; V is set -> A > 127, i.e. error
-        psh a
+
+.read_loop:
+        psh a                   ; Store file descriptor
         jsr file_read
         tst a
         bmi .file_read_error    ; V is set -> A > 127, i.e. error
-        xgdx                    ; Put X (bytes read) into D
-        addd #file_io_buffer    ; Make D point one past the end of the data
-        std file_io_end_ptr
+
+        pshx                    ; Put X (bytes read) on the stack
         ldx #file_io_buffer
-        cpx file_io_end_ptr
-        beq .end
-.loop:
+        pshx                    ; Put file buffer pointer on the stack
+
+.high_loop:
+        tsx
+        ldd 2,x                 ; Bytes counter
+        beq .done_printing
+        tst b
+        ; If B is 0 and D isn't we can subtract 1 from the high byte and loop
+        ; 256 times.
+        beq .sub256
+        ; If B is nonzero we subtract the number we're about to loop over.
+        clr 3,x
+        bra .sub_done
+.sub256:
+        dec 2,x                 ; Decrement the high byte
+.sub_done:
+        pulx                    ; File buffer pointer
+.low_loop:
         lda 0,x
         jsr putchar
         inx
-        cpx file_io_end_ptr
-        bne .loop
-.end:
+        dec b
+        bne .low_loop
+        pshx                    ; File buffer pointer
+        bra .high_loop
+
+.done_printing:
+        drop2                   ; File buffer pointer
+        drop2                   ; Bytes read
         pul a                   ; Get the file descritpor number back
+        jsr file_at_eof         ; Sets Z if at EOF
+        bne .read_loop
+
         jmp file_close
         ; rts
 
