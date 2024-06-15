@@ -56,6 +56,7 @@ spi_end_command:
         rts
 
 ; Receives a byte and returns it in A. Clobbers B.
+; Cycles: 23 + 8*25 (worst case) = 223
 spi_receive_byte:
         pshx
         ldb #MOSI
