@@ -51,10 +51,10 @@ FAT_DIR_ATTR_ARCHIVE = $20
         ;
         ; Parameters of the current partition
         ;
-
-        ; sectors per cluster is actually 1 byte in FAT, but we use 2 so we can
-        ; load this in X easily.
-        reserve_system_memory fat_sectors_per_cluster, 2
+        reserve_system_memory fat_sectors_per_cluster, 1
+        ; Sectors per cluster is a power of 2, the mask below is used to easily
+        ; do a modulo of sectors per cluster.
+        reserve_system_memory fat_sectors_per_cluster_mask, 1
         reserve_system_memory fat_reserved_sectors, 2
         reserve_system_memory fat_sectors_per_fat, 2
         reserve_system_memory fat_root_dir_start_sector, 2
@@ -152,13 +152,17 @@ file_init:
         cmp a,#2
         bne .fat_copies_error
 
-        ; Sectors per cluster is just one byte, but we use 2 bytes here so we
-        ; can load it into X without jumping through hoops. That makes cluster
-        ; math easier later. The value from the parameter block goes into the
-        ; second byte.
-        clr fat_sectors_per_cluster
-        lda $0d,x
-        sta fat_sectors_per_cluster+1
+        ; Sectors per cluster + a mask to perform modulo operations on sector
+        ; per cluster.
+        ldb $0d,x
+        stb fat_sectors_per_cluster
+        clr a
+.mask_loop:
+        aba                     ; B+A -> A
+        lsr b
+        bne .mask_loop
+        sta fat_sectors_per_cluster_mask
+
         read16_le $0e, fat_reserved_sectors
         read16_le $16, fat_sectors_per_fat
 
@@ -402,65 +406,97 @@ file_read:
 
         ; Point X to the start of the file descriptor table entry
         ldx #fd_table
-        abx
+        abx                     ; FD entry -> X
 
         ; Get the status byte
         lda 0,x
         and a,#FD_STATE_OPEN
         beq .error_fd_not_open
 
-        ; Figure out which sector to read next. Easy case is read_ptr = 0, in
-        ; which case it's just start_sector.
-        ldd FD_READ_PTR_OFFSET,x
-        beq .read_at_start
+        pshx                    ; FD struct address
 
-        ; TODO: implement reading files longer than 512 bytes!
+        ldd FD_READ_PTR_OFFSET,x
+        ; read_ptr is either at 512 bytes offset, or at the end of the
+        ; file. Check if we're at the end-of-file case.
+        subd FD_FILE_SIZE_OFFSET,x
+        beq .no_bytes_to_read
+
+        ; read_ptr is a multiple of 512 here. We get the logical sector number
+        ; by dividing by 512.
+        lda FD_READ_PTR_OFFSET,x ; Get the high byte of read_ptr
+        lsr a                    ; A = read ptr / 512
+
+        psh a                   ; Store the sector offset
+
+        ; Divide by fat_sectors_per_cluster to get the cluster number. Sectors
+        ; per cluster is guaranteed to be a power of 2, at least 1, at most 128.
+        ldb fat_sectors_per_cluster
+        lsr b
+        beq +
+.sector_div_loop:
+        lsr a
+        lsr b
+        bne .sector_div_loop
++
+        tst a
+        ; If we're in the first cluster of the file we just need to add the
+        ; offset and don't need to go through the FAT.
+        bne .nonzero_cluster_offset
+
+        ldx FD_START_SECTOR_OFFSET,x
+        pul b                   ; Get the sector offset into B
+        abx
+        xgdx
+        bra .read
+
+.nonzero_cluster_offset:
+        ; TODO: implement reading files longer than one cluster
         bra .error_file_too_long
 
-.read_at_start:
-        ldd FD_IO_ADDRESS_OFFSET,x
-        std sd_card_io_buffer_address
-
-        ldd FD_START_SECTOR_OFFSET,x
+.read:
+        ; Assumes the block address is in D
         clr sd_card_block_address
         clr sd_card_block_address + 1
         std sd_card_block_address + 2
 
-        pshx
+        tsx
+        ldx 0,x
+        ldd FD_IO_ADDRESS_OFFSET,x
+        std sd_card_io_buffer_address
+
         jsr sd_card_read_block
-        pulx
         tst a
         bne .error_sd_issue
 
-        ; Move the read pointer. This is either a whole sector size, or (if we
-        ; reached the end of the file), the file size.
+        ; Move the read pointer. This is either a whole sector size, or - if we
+        ; reached the end of the file - the file size.
+        tsx
+        ldx 0,x                 ; FD struct address
         ldd FD_READ_PTR_OFFSET,x
-        addd #FAT_SECTOR_SIZE
-
-        ; The read_ptr is guaranteed to be at 512 byte boundaries here, so we
-        ; can ignore the low byte. Load the high byte of the file size and
-        ; compare.
-        ldb FD_FILE_SIZE_OFFSET,x
-        cba                     ; A-B
-        bgt .at_end             ; read_ptr high byte is above size high byte.
-
-        ; read_ptr is still at or below file size, so it's still at a 512 byte
-        ; boundary. We can just clear B to get back to the correct value
-        ; computed above.
-        clr b
+        add a,#2                ; Optimized addd #512
         std FD_READ_PTR_OFFSET,x
-        ldx #FAT_SECTOR_SIZE    ; We read 512 bytes
+
+        subd FD_FILE_SIZE_OFFSET,x
+        bgt .at_file_end
+
+        ldx #FAT_SECTOR_SIZE
         bra .end
 
-.at_end:
+.at_file_end
+        ; We're at the file end - the add 512 moved the read_ptr past the file
+        ; size. Fix that.
         ldd FD_FILE_SIZE_OFFSET,x
         std FD_READ_PTR_OFFSET,x
+        and a,#$01              ; read bytes count is D mod 512
         xgdx                    ; Put the read bytes in X
-        bra .end
-
 .end:
-        pul a
+        drop2                   ; Drop the FD struct address
+        pul a                   ; FD number
         rts
+
+.no_bytes_to_read:
+        ldx #0                  ; No bytes read
+        bra .end
 
 .error_invalid_fd:
         ldx #0
@@ -468,19 +504,22 @@ file_read:
         rts
 
 .error_fd_not_open:
-        pul a
+        ins                     ; drop A
         ldx #0
         lda #129
         rts
 
 .error_sd_issue:
-        pul a
+        drop2                   ; drop FD struct address
+        ins                     ; drop A
         ldx #0
         lda #130
         rts
 
 .error_file_too_long:
-        pul a
+        ins                     ; drop A
+        drop2                   ; drop FD struct address
+        ins                     ; drop A
         ldx #0
         lda #131
         rts
@@ -524,14 +563,19 @@ fat_cluster_to_sector:
         dex
         dex                     ; N-2
         stx sd_card_block_address + 2
-        xgdx
-        ldx fat_sectors_per_cluster
-        dex
-.loop:
-        addd sd_card_block_address + 2
-        dex
-        bne .loop
 
+        clr a
+        ldb fat_sectors_per_cluster ; Guaranteed to be a power of 2
+        lsr b
+        beq +
+.loop:
+        xgdx
+        asld
+        xgdx
+        lsr b
+        bne .loop
++
+        xgdx
         addd fat_data_start_sector
         std sd_card_block_address + 2
         rts
