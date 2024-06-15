@@ -24,4 +24,6 @@ echo "This is another test" | mcopy -i "$1" - ::FILETEST.BIN
 mmd -i "$1" ::TEST_DIR
 echo "This is a test in a directory named dir" | mcopy -i "$1" - ::TEST_DIR/DIR_TEST.txt
 seq -s '' -w 1 1000 | mcopy -i "$1" - ::4001.TXT
+seq -s '' -w 1 1000 | head -c 511 | mcopy -i "$1" - ::511.TXT
 seq -s '' -w 1 1000 | head -c 512 | mcopy -i "$1" - ::512.TXT
+seq -s '' -w 1 1000 | head -c 513 | mcopy -i "$1" - ::513.TXT
