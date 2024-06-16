@@ -12,6 +12,18 @@ __file_inc = 1
         PUBLIC file_read
         PUBLIC file_at_eof
 
+;
+; Module to handle FAT16 file I/O
+;
+; Limitations:
+; - The sector size has to be 512 (almost universally true).
+; - The number of FAT copies has to be exactly 2 (almost always true).
+; - At most 255 sectors per FAT
+; - At most 2047 root directory entries.
+; - File size at most 0xffff bytes (64k), this also implies at most 128 clusters
+;   per file.
+; - Only clusters 0..254 can be used in the FAT
+
 ; Technically this can change, but it's almost always 512. The code assumes that
 ; the sector size is 512 and the init code bails out if the partition is set up
 ; differently.
@@ -59,6 +71,15 @@ FAT_DIR_ATTR_ARCHIVE = $20
         reserve_system_memory fat_sectors_per_fat, 2
         reserve_system_memory fat_root_dir_start_sector, 2
         reserve_system_memory fat_data_start_sector, 2
+
+        ;
+        ; Buffer to hold the current FAT sector
+        ;
+        reserve_system_memory fat_buffer, FAT_SECTOR_SIZE
+        ; The FAT sector loaded in fat_buffer as an offset from the FAT
+        ; start. We only support up to 255 sectors per FAT so this is just one
+        ; byte. $ff is explicitly not a valid sector number.
+        reserve_system_memory fat_buffer_sector, 1
 
         ;
         ; Data structures for file descriptors
@@ -137,8 +158,10 @@ file_init:
 
         jsr sd_card_read_block
         tst a
-        bne read_error
+        beq .no_sd_error
+        jmp read_error
 
+.no_sd_error:
         ldx #fat_current_dir_buffer
         ; Bytes per sector. We only support 512, or $00 $02 little endian.
         lda $0b,x
@@ -156,29 +179,38 @@ file_init:
         ; per cluster.
         ldb $0d,x
         stb fat_sectors_per_cluster
+        lsr b
+        beq .mask_loop_end      ; in case fat_sectors_per_cluster is 1
         clr a
 .mask_loop:
         aba                     ; B+A -> A
         lsr b
         bne .mask_loop
+.mask_loop_end:
         sta fat_sectors_per_cluster_mask
 
         read16_le $0e, fat_reserved_sectors
+        read16_le $11, fat_data_start_sector
         read16_le $16, fat_sectors_per_fat
 
         ; Number of root directory entries. Don't support 2k or more. It's
         ; almost always 512, so this isn't a limitation.
         ; We only need this temporarily - so we're using the start sector as
         ; scratch space.
-        read16_le $11, fat_data_start_sector
-        xgdx
+        ldx fat_data_start_sector
         cpx #2047
         bgt .fat_root_directory_entries_error
 
+        ; For now we only support at most 255 sectors per FAT so the sector
+        ; number fits into one byte plus $ff as a guard value.
+        ldx fat_sectors_per_fat
+        cpx #254
+        bgt .fat_sectors_per_fat_error
+
         ; Compute the start of the root directory:
         ; fat_reserved_sectors + FAT region size
-        ldd fat_sectors_per_fat
-        asld                    ; multiply by 2
+        xgdx                    ; Optimized: ldd fat_sectors_per_fat
+        asld                    ; multiply fat_sectors_per_fat by 2 for 2 FATs
         addd fat_reserved_sectors
         std fat_root_dir_start_sector
         ; Compute the start of the data region:
@@ -199,6 +231,11 @@ file_init:
         abx                     ; And the addition is done here
         stx fat_data_start_sector
 
+        ; Put an invalid sector number fat_buffer_sector to make sure we load
+        ; a valid FAT sector the first time we need it.
+        lda #$ff
+        sta fat_buffer_sector
+
         ldx #0
         jmp file_cd_cluster
         ; rts
@@ -213,6 +250,10 @@ file_init:
 
 .fat_root_directory_entries_error:
         ldx #fat_root_directory_entries_error_string
+        jmp putstring
+
+.fat_sectors_per_fat_error:
+        ldx #fat_sectors_per_fat_error_string
         jmp putstring
 
 read_error:
@@ -442,17 +483,27 @@ file_read:
         ; If we're in the first cluster of the file we just need to add the
         ; offset and don't need to go through the FAT.
         bne .nonzero_cluster_offset
-
-        ldx FD_START_SECTOR_OFFSET,x
         pul b                   ; Get the sector offset into B
+        ldx FD_START_SECTOR_OFFSET,x
         abx
         xgdx
         bra .read
 
 .nonzero_cluster_offset:
-        ; TODO: implement reading files longer than one cluster
-        bra .error_file_too_long
+        ; X contains FD pointer
+        ; A contains the cluster offset from the start
+        ; We need to do A many jumps in the FAT
+        ldx FD_START_CLUSTER_OFFSET,x
+        jsr fat_cluster_offset
+        jsr fat_cluster_to_sector
 
+        ; We computed the start sector for the given cluster number, but we may
+        ; be a few sectors into that cluster already. Fix that here.
+        xgdx                    ; Sector number in D -> X
+        pul b                   ; Get the sector offset
+        and b,fat_sectors_per_cluster_mask
+        abx
+        xgdx                    ; Sector number -> D
 .read:
         ; Assumes the block address is in D
         clr sd_card_block_address
@@ -550,6 +601,86 @@ file_at_eof:
 
 
 ; --- Internal helpers ---------------------------------------------------------
+
+; Computes the cluster number corresponding to the A-th cluster in the FAT chain
+; starting at cluster X. Returns the cluster number in X. A is 0 on success, and
+; contains an error number >127 otherwise. Z is also guaranteed to be set on
+; success. Clobbers A, B.
+fat_cluster_offset:
+        ; Figure out if we have the right FAT sector loaded. Each sector holds
+        ; 256 clusters. For now we only support cluster numbers 2..254.
+        cpx #254
+        bgt .cluster_too_high_error
+
+        pshx                    ; Start cluster number
+        psh a                   ; Number of hops in the chain
+
+        cpx #0
+        beq .cluster_found
+
+        ; Make sure we have the right FAT sector loaded. For now that's always
+        ; sector 0 - we don't yet support more than that.
+        ldb fat_buffer_sector
+        cmp b,#0
+        beq .fat_buffer_ready
+
+        ; The FAT is stored after fat_reseved_sectors many sectors from the
+        ; start.
+        clr sd_card_block_address
+        clr sd_card_block_address + 1
+        ldx fat_reserved_sectors
+        stx sd_card_block_address + 2
+
+        ldx #fat_buffer
+        stx sd_card_io_buffer_address
+
+        jsr sd_card_read_block
+        tst a
+        bne .fat_buffer_read_error
+        clr fat_buffer_sector
+        bra .fat_buffer_ready
+
+.fat_buffer_read_error:
+        ; Error out in case of an SD card read error.
+        ; TODO: we really need better error handling / reporting.
+        ins                     ; Drop A
+        drop2                   ; Drop cluster number
+        lda #133
+        rts
+
+.fat_buffer_ready:
+        ; Hop around in the FAT until we reach the desired cluster. After this
+        ; code 1,x from top-of-stack will contain the correct cluster number.
+        tsx
+        ldd 1,x                 ; Current cluster number
+.loop:
+        ; Cluster N is stored at 2*N bytes from the start
+        asld
+        addd #fat_buffer
+        xgdx
+        ; Little-endian read of the next cluster number
+        lda 1,x
+        ldb 0,x
+        cmp a,#$ff              ; End-of-chain, kind of unexpected?
+        beq .cluster_found
+        tsx
+        std 1,x
+        dec 0,x                 ; Number of hops
+        bne .loop
+
+.cluster_found:
+        tsx
+        ldx 1,x
+
+        ins                     ; Drop hop count
+        drop2                   ; Drop cluster number
+        clr a                   ; Sets Z too
+        rts
+
+.cluster_too_high_error:
+        lda #132
+        rts
+
 
 ; Takes a cluster number in X and turns it into a sector number stored in
 ; sd_card_block_address. The sector number is also returned in D. Clobbers A, B,
@@ -763,6 +894,8 @@ fat_sector_size_error_string:
         byt "Wrong bytes per sector count. Only 512 is supported.\n\0"
 fat_root_directory_entries_error_string:
         byt "Too many root directory entries. Max is 2048.\n\0"
+fat_sectors_per_fat_error_string:
+        byt "Too many sectors per FAT. Max is 254.\n\0"
 read_error_string:
         byt "Failed to read from SD card\n\0"
 
