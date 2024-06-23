@@ -23,6 +23,10 @@ target_link_libraries(tmds_encode_font_2bpp
   pico_stdlib
 )
 
+# This needs to be after the pico sdk init to get a build that uses Pico-only
+# attributes to place code in RAM.
+add_subdirectory(../graphics_state graphics_state)
+
 add_compile_options(-Wall)
 
 # ----------------------------------------
@@ -51,6 +55,7 @@ target_link_libraries(pico_graphics
   hardware_dma
   libdvi
   tmds_encode_font_2bpp
+  graphics_state_lib
 )
 
 pico_add_extra_outputs(pico_graphics)
