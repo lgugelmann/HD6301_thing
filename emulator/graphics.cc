@@ -66,6 +66,12 @@ absl::Status Graphics::initialize() {
 
 absl::Status Graphics::render(SDL_Renderer* renderer,
                               SDL_Rect* destination_rect) {
+  {
+    absl::MutexLock lock(&graphics_state_mutex_);
+    if (graphics_state_dirty_) {
+      render_console();
+    }
+  }
   SDL_LockSurface(frame_surface_);
   SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, frame_surface_);
   SDL_UnlockSurface(frame_surface_);
@@ -81,23 +87,27 @@ absl::Status Graphics::render(SDL_Renderer* renderer,
 Graphics::Graphics(AddressSpace* address_space, uint16_t base_address)
     : address_space_(address_space), base_address_(base_address) {}
 
-void Graphics::render_character(int position, bool reverse_colors = false) {
+void Graphics::write(uint16_t address, uint8_t data) {
+  const uint8_t command = address - base_address_;
+  absl::MutexLock lock(&graphics_state_mutex_);
+  graphics_state_.HandleCommand(command, data);
+  graphics_state_dirty_ = true;
+}
+
+inline void Graphics::draw_character(int position) {
   const int row = position / kNumColumns;
   const int col = position % kNumColumns;
   const int x = col * kFontCharWidth;
   const int y = row * kFontCharHeight;
 
-  uint8_t foreground_color = foreground_color_[position];
-  uint8_t background_color = background_color_[position];
-  if (reverse_colors) {
-    std::swap(foreground_color, background_color);
-  }
+  const char* characters = graphics_state_.GetCharBuf();
+  uint8_t foreground_color = graphics_state_.GetForegroundColor(position);
+  uint8_t background_color = graphics_state_.GetBackgroundColor(position);
 
-  SDL_LockSurface(frame_surface_);
   SDL_Rect rect = {x, y, kFontCharWidth, kFontCharHeight};
   SDL_FillRect(frame_surface_, &rect, background_color);
 
-  const uint8_t character = characters_[position];
+  const uint8_t character = characters[position];
   // This simplifies the code below as we can just read a single byte.
   static_assert(kFontCharWidth == 8);
   // The font is stored as a 1bpp bitmap of size kFontNumChars*kFontCharHeight,
@@ -111,188 +121,17 @@ void Graphics::render_character(int position, bool reverse_colors = false) {
       }
     }
   }
-  SDL_UnlockSurface(frame_surface_);
 }
 
-void Graphics::write(uint16_t address, uint8_t data) {
-  const uint8_t command = address - base_address_;
-  switch (command) {
-    // write character, advance cursor
-    case 0: {
-      characters_[cursor_pos_] = data;
-      render_character(cursor_pos_);
-      if (++cursor_pos_ >= kCharBufSize) {
-        cursor_pos_ = 0;
-      }
-      if (!cursor_hidden_) {
-        // If showing cursor, render the cursor character inverted
-        render_character(cursor_pos_, true);
-      }
-      break;
+void Graphics::render_console() {
+  SDL_LockSurface(frame_surface_);
+  for (int i = 0; i < kNumRows; ++i) {
+    for (int j = 0; j < kNumColumns; ++j) {
+      const int position = i * kNumColumns + j;
+      draw_character(position);
     }
-    // clear commands
-    case 1: {
-      switch (data) {
-        // 0: clear all characters, cursor to 0, colors to default white on
-        // black
-        case 0:
-          std::fill(characters_.begin(), characters_.end(), ' ');
-          std::fill(foreground_color_.begin(), foreground_color_.end(), 0x3f);
-          std::fill(background_color_.begin(), background_color_.end(), 0);
-          SDL_LockSurface(frame_surface_);
-          SDL_FillRect(frame_surface_, nullptr, 0);
-          SDL_UnlockSurface(frame_surface_);
-          cursor_pos_ = 0;
-          render_character(cursor_pos_, !cursor_hidden_);
-          break;
-        // 1: clear current row, cursor to start of row, colors to default
-        case 1: {
-          cursor_pos_ -= cursor_pos_ % kNumColumns;
-          std::fill(characters_.begin() + cursor_pos_,
-                    characters_.begin() + cursor_pos_ + kNumColumns, ' ');
-          std::fill(foreground_color_.begin() + cursor_pos_,
-                    foreground_color_.begin() + cursor_pos_ + kNumColumns,
-                    0x3f);
-          std::fill(background_color_.begin() + cursor_pos_,
-                    background_color_.begin() + cursor_pos_ + kNumColumns, 0);
-          SDL_Rect rect = {0, cursor_pos_ / kNumColumns * kFontCharHeight,
-                           kFrameWidth, kFontCharHeight};
-          SDL_LockSurface(frame_surface_);
-          SDL_FillRect(frame_surface_, &rect, 0);
-          SDL_UnlockSurface(frame_surface_);
-          render_character(cursor_pos_, !cursor_hidden_);
-          break;
-        }
-        // 2: clear next row, cursor to start of next row, colors to default
-        case 2: {
-          int previous_cursor_pos = cursor_pos_;
-          cursor_pos_ =
-              (cursor_pos_ + kNumColumns - cursor_pos_ % kNumColumns) %
-              kCharBufSize;
-          std::fill(characters_.begin() + cursor_pos_,
-                    characters_.begin() + cursor_pos_ + kNumColumns, ' ');
-          std::fill(foreground_color_.begin() + cursor_pos_,
-                    foreground_color_.begin() + cursor_pos_ + kNumColumns,
-                    0x3f);
-          std::fill(background_color_.begin() + cursor_pos_,
-                    background_color_.begin() + cursor_pos_ + kNumColumns, 0);
-          SDL_Rect rect = {0, cursor_pos_ / kNumColumns * kFontCharHeight,
-                           kFrameWidth, kFontCharHeight};
-          SDL_LockSurface(frame_surface_);
-          SDL_FillRect(frame_surface_, &rect, 0);
-          SDL_UnlockSurface(frame_surface_);
-          if (!cursor_hidden_) {
-            // Restore the previous character to the non-inverted drawing state
-            render_character(previous_cursor_pos);
-          }
-          render_character(cursor_pos_, !cursor_hidden_);
-          break;
-        }
-        default:
-          LOG(ERROR) << "Unknown clear command: "
-                     << absl::Hex(data, absl::kZeroPad2);
-      }
-      break;
-    }
-    // Cursor position delta commands. Data contains signed delta to cursor
-    // position.
-    case 2: {
-      int previous_cursor_pos = cursor_pos_;
-      // We need to cast to signed to handle negative deltas
-      cursor_pos_ += (int8_t)data;
-      while (cursor_pos_ >= kCharBufSize) {
-        cursor_pos_ -= kCharBufSize;
-      }
-      while (cursor_pos_ < 0) {
-        cursor_pos_ += kCharBufSize;
-      }
-      if (!cursor_hidden_) {
-        // Restore the previous character to the non-inverted drawing state
-        render_character(previous_cursor_pos);
-      }
-      render_character(cursor_pos_, !cursor_hidden_);
-      break;
-    }
-    // Same as 0 but doesn't advance cursor
-    case 3:
-      characters_[cursor_pos_] = data;
-      render_character(cursor_pos_, !cursor_hidden_);
-      break;
-    // Set cursor column
-    case 4: {
-      int previous_cursor_pos = cursor_pos_;
-      cursor_pos_ =
-          cursor_pos_ - (cursor_pos_ % kNumColumns) + data % kNumColumns;
-      if (!cursor_hidden_) {
-        // Restore the previous character to the non-inverted drawing state
-        render_character(previous_cursor_pos);
-      }
-      render_character(cursor_pos_, !cursor_hidden_);
-      break;
-    }
-    // Set cursor row
-    case 5: {
-      int previous_cursor_pos = cursor_pos_;
-      cursor_pos_ =
-          (data % kNumRows) * kNumColumns + (cursor_pos_ % kNumColumns);
-      if (!cursor_hidden_) {
-        // Restore the previous character to the non-inverted drawing state
-        render_character(previous_cursor_pos);
-      }
-      render_character(cursor_pos_, !cursor_hidden_);
-      break;
-    }
-    // set cursor position high byte
-    case 6:
-      cursor_pos_high_ = data;
-      break;
-    // set cursor position low byte and update position as (high << 8) | low
-    case 7: {
-      int previous_cursor_pos = cursor_pos_;
-      cursor_pos_ = (cursor_pos_high_ << 8) | data;
-      if (!cursor_hidden_) {
-        // Restore the previous character to the non-inverted drawing state
-        render_character(previous_cursor_pos);
-      }
-      render_character(cursor_pos_, !cursor_hidden_);
-      break;
-    }
-    // Set cursor visibility: 0 = visible, 1 = hidden
-    case 8:
-      if (cursor_hidden_ != data) {
-        cursor_hidden_ = data;
-        render_character(cursor_pos_, !cursor_hidden_);
-      }
-      break;
-    // Set color at cursor position. Bit format is (MSB first) ABRRGGBB where if
-    // A is 1 the cursor advances after setting the color, B is either 0 for
-    // foreground or 1 for background. RR/GG/BB are 2-bit Red, Green, Blue
-    // channel colors.
-    case 9: {
-      bool background = data & 0x40;
-      if (background) {
-        background_color_[cursor_pos_] = data & 0x3f;
-      } else {
-        foreground_color_[cursor_pos_] = data & 0x3f;
-      }
-      bool advance_cursor = data & 0x80;
-      // We render with reverse colors if we're not advancing and the cursor
-      // isn't hidden.
-      render_character(cursor_pos_, (!advance_cursor) && (!cursor_hidden_));
-      if (advance_cursor) {
-        if (++cursor_pos_ >= kCharBufSize) {
-          cursor_pos_ = 0;
-        }
-        if (!cursor_hidden_) {
-          render_character(cursor_pos_, true);
-        }
-      }
-      break;
-    }
-    default:
-      LOG(ERROR) << "Unknown graphics command: "
-                 << absl::Hex(command, absl::kZeroPad2);
   }
+  SDL_UnlockSurface(frame_surface_);
 }
 
 }  // namespace eight_bit

@@ -22,6 +22,8 @@ else()
     message(STATUS "RtMidi not found, MIDI support disabled")
 endif()
 
+add_subdirectory(../graphics_state graphics_state)
+
 set(emulator_SOURCES
     address_space.cc
     cpu6301.cc
@@ -88,6 +90,7 @@ target_link_libraries(emulator
     imgui
     nuked-opl3
     disassembler_lib
+    graphics_state_lib
     hexdump_lib
 )
 if (RtMidi_FOUND)

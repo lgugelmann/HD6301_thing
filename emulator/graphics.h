@@ -9,7 +9,9 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/synchronization/mutex.h"
 #include "address_space.h"
+#include "graphics_state.h"
 
 namespace eight_bit {
 
@@ -26,41 +28,27 @@ class Graphics {
   // the screen will be scaled to fit within the given rectangle. Otherwise it
   // fills the entire renderer.
   absl::Status render(SDL_Renderer* renderer,
-                      SDL_Rect* destination_rect = nullptr);
+                      SDL_Rect* destination_rect = nullptr)
+      ABSL_LOCKS_EXCLUDED(graphics_state_mutex_);
 
  private:
   Graphics(AddressSpace* address_space, uint16_t base_address);
   absl::Status initialize();
 
-  void render_character(int position, bool reverse_colors);
-
   void write(uint16_t address, uint8_t data);
-
-  static constexpr int kFrameWidth = 800;
-  static constexpr int kFrameHeight = 600;
-
-  static constexpr int kFontCharWidth = 8;
-  static constexpr int kFontCharHeight = 15;
-  static constexpr int kFontNumChars = 128;
-
-  static constexpr int kNumColumns = kFrameWidth / kFontCharWidth;
-  static constexpr int kNumRows = kFrameHeight / kFontCharHeight;
-  static constexpr int kCharBufSize = kNumRows * kNumColumns;
-  static constexpr int kFrameSize = kFrameWidth * kFrameHeight;
-
-  int cursor_pos_ = 0;
-  int cursor_pos_high_ = 0;
-  bool cursor_hidden_ = false;
+  void draw_character(int position)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(graphics_state_mutex_);
+  void render_console() ABSL_EXCLUSIVE_LOCKS_REQUIRED(graphics_state_mutex_);
 
   AddressSpace* address_space_ = nullptr;
   uint16_t base_address_ = 0;
 
-  std::array<uint8_t, kCharBufSize> characters_ = {0};
-  // 0x3f is white, 0 is black
-  std::array<uint8_t, kCharBufSize> foreground_color_ = {0x3f};
-  std::array<uint8_t, kCharBufSize> background_color_ = {0};
   SDL_Palette* palette_ = nullptr;
   SDL_Surface* frame_surface_ = nullptr;
+
+  absl::Mutex graphics_state_mutex_;
+  GraphicsState graphics_state_ ABSL_GUARDED_BY(graphics_state_mutex_);
+  bool graphics_state_dirty_ = false ABSL_GUARDED_BY(graphics_state_mutex_);
 };
 
 }  // namespace eight_bit
