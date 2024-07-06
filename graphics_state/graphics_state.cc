@@ -22,6 +22,10 @@ GRAPHICS_NOFLASH void GraphicsState::HandleCommand(uint8_t command,
       charbuf_[cursor_pos_] = data & 0x7f;
       CursorColorFlip();
       cursor_pos_ = (cursor_pos_ + 1) % kCharBufSize;
+      if (cursor_pos_ % kNumColumns == 0 &&
+          cursor_pos_ / kNumColumns == ((kNumRows - row_roll_) % kNumRows)) {
+        row_roll_ = (row_roll_ - 1) % kNumRows;
+      }
       CursorColorFlip();
       break;
     }
@@ -33,6 +37,7 @@ GRAPHICS_NOFLASH void GraphicsState::HandleCommand(uint8_t command,
           memset(charbuf_, ' ', kCharBufSize);
           memset(colorbuf_, 0x33, 3 * kColorPlaneSizeWords * sizeof(uint32_t));
           cursor_pos_ = 0;
+          row_roll_ = 0;
           CursorColorFlip();
           break;
         }
@@ -48,6 +53,12 @@ GRAPHICS_NOFLASH void GraphicsState::HandleCommand(uint8_t command,
         }
         case 2: {  // Clear next row, reset cursor to next row start
           CursorColorFlip();
+          // If the cursor is on the last logical row (taking into account
+          // row_roll_) we need to roll the screen up one row.
+          if (cursor_pos_ / kNumColumns ==
+              ((kNumRows - 1 - row_roll_) % kNumRows)) {
+            row_roll_ = (row_roll_ - 1) % kNumRows;
+          }
           cursor_pos_ =
               (cursor_pos_ - (cursor_pos_ % kNumColumns) + kNumColumns) %
               kCharBufSize;
