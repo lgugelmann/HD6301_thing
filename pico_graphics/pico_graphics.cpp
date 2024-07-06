@@ -54,7 +54,14 @@ struct semaphore dvi_start_sem;
 GraphicsState* gstate = nullptr;
 
 static void __not_in_flash("main") core1_scanline_callback() {
-  static uint y = 0;
+  static uint screen_y = 0;
+  static int roll_y = 0;
+  // Only update roll at the beginning of the frame to avoid weird artifacts
+  if (screen_y == 0) {
+    roll_y = gstate->GetRowRoll() * kFontCharHeight;
+  }
+
+  uint logical_y = (screen_y - roll_y + kFrameHeight) % kFrameHeight;
 
   uint32_t* tmdsbuf;
   queue_remove_blocking(&dvi0.q_tmds_free, &tmdsbuf);
@@ -64,15 +71,15 @@ static void __not_in_flash("main") core1_scanline_callback() {
 
   for (int plane = 0; plane < 3; ++plane) {
     tmds_encode_font_2bpp(
-        (uint8_t*)&charbuf[(y / kFontCharHeight) * kNumColumns],
-        &colorbuf[(y / kFontCharHeight) * kColorPlaneLineWords] +
+        (uint8_t*)&charbuf[(logical_y / kFontCharHeight) * kNumColumns],
+        &colorbuf[(logical_y / kFontCharHeight) * kColorPlaneLineWords] +
             plane * kColorPlaneSizeWords,
         tmdsbuf + plane * (kFrameWidth / DVI_SYMBOLS_PER_WORD), kFrameWidth,
-        &font[(y % kFontCharHeight) * kFontNumChars]);
+        &font[(logical_y % kFontCharHeight) * kFontNumChars]);
   }
   queue_add_blocking(&dvi0.q_tmds_valid, &tmdsbuf);
 
-  y = (y + 1) % kFrameHeight;
+  screen_y = (screen_y + 1) % kFrameHeight;
 }
 
 void __not_in_flash("main") core1_main() {
