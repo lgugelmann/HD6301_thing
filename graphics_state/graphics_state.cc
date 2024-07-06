@@ -176,9 +176,25 @@ uint8_t GraphicsState::GetForegroundColor(int position) const {
   return color;
 }
 
-GRAPHICS_NOFLASH void GraphicsState::SetColorBits(unsigned int position,
-                                                  uint8_t color,
-                                                  uint8_t bit_offset) {
+GRAPHICS_NOFLASH void GraphicsState::SetFgColor(unsigned int position,
+                                                uint8_t fg) {
+  SetColorBits(position, fg, 0);
+}
+
+GRAPHICS_NOFLASH void GraphicsState::SetBgColor(unsigned int position,
+                                                uint8_t bg) {
+  SetColorBits(position, bg, 2);
+}
+
+GRAPHICS_NOFLASH void GraphicsState::SetColor(unsigned int position, uint8_t fg,
+                                              uint8_t bg) {
+  SetFgColor(position, fg);
+  SetBgColor(position, bg);
+}
+
+GRAPHICS_NOFLASH inline void GraphicsState::SetColorBits(unsigned int position,
+                                                         uint8_t color,
+                                                         uint8_t bit_offset) {
   if (position >= kCharBufSize) {
     return;
   }
@@ -194,22 +210,6 @@ GRAPHICS_NOFLASH void GraphicsState::SetColorBits(unsigned int position,
     color >>= 2;
     word_index += kColorPlaneSizeWords;
   }
-}
-
-GRAPHICS_NOFLASH inline void GraphicsState::SetFgColor(unsigned int position,
-                                                       uint8_t fg) {
-  SetColorBits(position, fg, 0);
-}
-
-GRAPHICS_NOFLASH inline void GraphicsState::SetBgColor(unsigned int position,
-                                                       uint8_t bg) {
-  SetColorBits(position, bg, 2);
-}
-
-GRAPHICS_NOFLASH inline void GraphicsState::SetColor(unsigned int position,
-                                                     uint8_t fg, uint8_t bg) {
-  SetFgColor(position, fg);
-  SetBgColor(position, bg);
 }
 
 // Flips fg/bg color at the cursor if needed

@@ -41,13 +41,15 @@ class GraphicsState {
 
   uint8_t GetBackgroundColor(int position) const;
   uint8_t GetForegroundColor(int position) const;
+  int GetRowRoll() const { return row_roll_; }
 
  protected:
-  void SetColorBits(unsigned int position, uint8_t color, uint8_t bit_offset);
   void SetFgColor(unsigned int position, uint8_t fg);
   void SetBgColor(unsigned int position, uint8_t bg);
   void SetColor(unsigned int position, uint8_t fg, uint8_t bg);
 
+ private:
+  void SetColorBits(unsigned int position, uint8_t color, uint8_t bit_offset);
   void CursorColorFlip();
 
   // 3 color planes, one each for B, G, R
@@ -56,6 +58,7 @@ class GraphicsState {
   int cursor_pos_ = 0;
   int cursor_pos_high_ = 0;
   bool cursor_hidden_ = false;
+  int row_roll_ = 0;
 };
 
 }  // namespace eight_bit
