@@ -97,8 +97,11 @@ void Graphics::write(uint16_t address, uint8_t data) {
 inline void Graphics::draw_character(int position) {
   const int row = position / kNumColumns;
   const int col = position % kNumColumns;
+  const int row_roll = graphics_state_.GetRowRoll();
   const int x = col * kFontCharWidth;
-  const int y = row * kFontCharHeight;
+  // The + kFrameHeight is to ensure that the modulo operation is positive.
+  const int y =
+      ((row + row_roll) * kFontCharHeight + kFrameHeight) % kFrameHeight;
 
   const char* characters = graphics_state_.GetCharBuf();
   uint8_t foreground_color = graphics_state_.GetForegroundColor(position);
