@@ -291,6 +291,11 @@ continue:
         cpx #0
         beq .error
 
+        ; The return address out of 'continue' is on the stack here, but we'll
+        ; never unwind that because we exit with 'rti' here and the user program
+        ; will 'rts' back to inside 'run'. Drop it to avoid leaking stack space.
+        drop2
+
         sts monitor_stack_ptr
         lds user_stack_ptr
         ; The user program was interrupted and still has program counter,
