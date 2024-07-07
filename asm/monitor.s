@@ -254,8 +254,6 @@ run:
         bcc .unknown_program_error
 
         ldx 0,x                 ; X is at the location of the start address
-        ins                     ; Discard the 2 byte return value on the stack
-        ins
         bra run_program_in_x
 
 .unknown_program_error_string:
@@ -271,8 +269,31 @@ run:
         rts
 
 run_program_in_x:
+        ; X contains the program address. From map_find above we still have the
+        ; pointer to the space before the first parameter (or 0) on the
+        ; stack. We want to pass that pointer to the user program.
+        pshx                    ; Store the program address
+        tsx
+        ldx 2,x                 ; X now contains the parameter pointer
+        lda 0,x                 ; Load the first character at the pointer
+        beq .run
+        ; In the nonzero case we advance the pointer by one to skip the space
+        ; it's pointing to (which is guaranteed to be there by map_find).
+        inx
+        xgdx                    ; pointer -> D
+        tsx
+        std 2,x
+.run:
+        tsx
+        ldd 0,x                 ; D has the program address
+        ldx 2,x                 ; X has the parameter pointer
+        drop2                   ; Drop the program address
+        drop2                   ; Drop the parameter pointer
         sts monitor_stack_ptr
         lds #USER_STACK_START
+        pshx                    ; Push the parameter pointer
+        xgdx                    ; X now contains the program address
+
         ; jsr and not jmp so the user program can rts back to the monitor.
         jsr 0,x
 
