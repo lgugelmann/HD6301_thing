@@ -7,10 +7,10 @@ __file_inc = 1
         PUBLIC file_init
         PUBLIC file_ls
         PUBLIC file_cd
-        PUBLIC file_open
-        PUBLIC file_close
-        PUBLIC file_read
-        PUBLIC file_at_eof
+        PUBLIC_SHARED file_open
+        PUBLIC_SHARED file_close
+        PUBLIC_SHARED file_read
+        PUBLIC_SHARED file_at_eof
 
 ;
 ; Module to handle FAT16 file I/O
