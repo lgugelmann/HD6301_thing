@@ -528,7 +528,7 @@ file_read:
         std FD_READ_PTR_OFFSET,x
 
         subd FD_FILE_SIZE_OFFSET,x
-        bgt .at_file_end
+        bcc .at_file_end
 
         ldx #FAT_SECTOR_SIZE
         bra .end
