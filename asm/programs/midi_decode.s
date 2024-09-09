@@ -7,7 +7,17 @@
 
         reserve_memory file_buffer, 512
 
+MIDI_PLAY_NOTE             = $90
+MIDI_STOP_NOTE             = $80
+MIDI_POLYPHONIC_AFTERTOUCH = $A0
+MIDI_CONTROL_CHANGE        = $B0
+MIDI_PROGRAM_CHANGE        = $C0
+MIDI_CHANNEL_AFTERTOUCH    = $D0
+MIDI_PITCH_BEND            = $E0
+
 midi_decode_start:
+        jsr midi_reset
+
         ; Get the parameter string. It should contain a MIDI file name.
         tsx
         ldx 2,x                 ; Get the parameter string
@@ -129,9 +139,8 @@ midi_decode:
         ; big endian, so we can read it straight from the file.
         ldd 2,x
 
-        ; We have 512 - (size of header until now) many bytes ready to be read.
-        ; TDOO: fix the assumption that the MIDI file is >512 bytes long.
-        subd #512-22
+        ; We have D - (size of header until now) many bytes ready to be read.
+        subd #22
 
         ; Put the remaining total track length onto the stack
         xgdx
@@ -149,7 +158,7 @@ byte_to_a macro
         inx
         cpx #file_buffer+512
         bne .byte_to_a
-        jmp .end
+        jsr .buffer_end
 .byte_to_a:
         lda 0,x
         endm
@@ -158,7 +167,7 @@ byte_to_b macro
         inx
         cpx #file_buffer+512
         bne .byte_to_b
-        jmp .end
+        jsr .buffer_end
 .byte_to_b:
         ldb 0,x
         endm
@@ -197,9 +206,18 @@ decode_variable_length macro
         drop2
         drop2
         rts
+
         ; Start decoding. Each event starts with a variable-length-encoded time
         ; delta, then a payload.
+	;
+        ; Here the stack looks like this:
+        ; 1 byte : FD
+        ; 2 bytes: midi_decode return address
+        ; 2 bytes: remaining bytes in the track
+        ; 2 bytes: remaining bytes in the buffer
+        ; -- top --
 .decoder_loop:
+        jsr delay_100ms
         lda #KEY_ENTER
         jsr putchar
         decode_variable_length
@@ -256,9 +274,115 @@ decode_variable_length macro
         bne .event_skip_loop2
         jmp .decoder_loop
 +
+        ; Actual MIDI event
+        tab
+        and a,#$F0              ; Top nibble = command, bottom = channel
+        and b,#$0F
+        stb midi_channel
 
+        cmp a,#MIDI_PLAY_NOTE
+        bne +
+        ; Read the MIDI note number
+        byte_to_a
+        sta midi_note
+        ; Read the third byte - velocity
+        byte_to_a
+        sta midi_velocity
+        pshx
+        jsr midi_play_note
+        pulx
+        jmp .decoder_loop
++
+        cmp a,#MIDI_STOP_NOTE
+        bne +
+        ; Read the note to stop
+        byte_to_a
+        tab
+        ; Discard the third byte
+        byte_to_a
+        pshx
+        jsr midi_stop_note
+        pulx
+        jmp .decoder_loop
++
+        cmp a,#MIDI_POLYPHONIC_AFTERTOUCH
+        bne +
+        byte_to_a
+        byte_to_a
+        jmp .decoder_loop
++
+        cmp a,#MIDI_CONTROL_CHANGE
+        bne +
+        byte_to_a
+        tab
+        byte_to_a
+        pshx
+        jsr midi_control_change
+        pulx
+        jmp .decoder_loop
++
+        cmp a,#MIDI_PROGRAM_CHANGE
+        bne +
+        byte_to_a
+        pshx
+        jsr midi_program_change
+        pulx
+        jmp .decoder_loop
++
+        cmp a,#MIDI_CHANNEL_AFTERTOUCH
+        bne +
+        byte_to_a
+        jmp .decoder_loop
++
+        cmp a,#MIDI_PITCH_BEND
+        bne +
+        byte_to_a
+        byte_to_a
+        jmp .decoder_loop
++
+        ; If we get here we have some unknown data bytes - end.
+        jmp .end
+
+        ; We jsr here, so rts!
+.buffer_end:
+        psh a
+        psh b
+        ; Here the stack looks like this:
+        ; 1 byte : FD
+        ; 2 bytes: midi_decode return address
+        ; 2 bytes: remaining bytes in the track
+        ; 2 bytes: remaining bytes in the buffer
+        ; return address
+        ; 2 bytes: A/B from psh above
+        ; -- top --
+
+        lda #KEY_ENTER
+        jsr putchar
+        lda #'F'
+        jsr putchar
+        lda #KEY_ENTER
+        jsr putchar
+
+        tsx
+        ldd 6,x                 ; Remaining bytes
+        subd #512
+        bcs .buffer_end_error   ; TODO: handle <512 byte chunks
+        std 6,x
+        ldd #512
+        std 4,x
+        lda 10,x
+        jsr file_read
+        tst a
+        bmi .buffer_end_error   ; Error reading file. TODO: make this noisy
+        ldx #file_buffer
+
+        pul b
+        pul a
+        rts
+.buffer_end_error:
+        drop2                   ; psh A, psh B
+        drop2                   ; return address
 .end:
-
         drop2                   ; remaining buffer bytes
         drop2                   ; total track length
         rts
