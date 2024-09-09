@@ -1,6 +1,6 @@
         cpu 6301
 
-        org $e000
+        org $d000
 
         include include/delays
         include include/file
@@ -8,6 +8,7 @@
         include include/macros
         include include/map
         include include/memory_map
+        include include/midi
         include include/midi_uart
         include include/registers
         include include/random
