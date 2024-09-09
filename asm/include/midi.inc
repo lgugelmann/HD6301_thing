@@ -516,14 +516,7 @@ MIDI_CONTROL_ALL_NOTES_OFF      = $7B
         sta midi_volume
         rts
 +
-        ; Unhandled CC message, print it out
-        lda #"C"
-        jsr putchar
-        jsr putchar
-        tba
-        jsr putchar_hex
-        lda #" "
-        jsr putchar
+        ; Unhandled CC message
         rts
 
 midi_synth_string:
