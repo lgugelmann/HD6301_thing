@@ -37,6 +37,9 @@ class Cpu6301 {
   };
   TickResult tick(int cycles_to_run, bool ignore_breakpoint = false);
 
+  // Registers a tick callback that will be called after each tick.
+  void register_tick_callback(std::function<void()> callback);
+
   // Set a breakpoint to stop execution if the PC reaches the given address.
   // 'address' has to be at an instruction boundary. If a breakpoint is already
   // set, it will be replaced.
@@ -193,6 +196,7 @@ class Cpu6301 {
   IOPort port2_;
   Timer timer_;
   std::unique_ptr<HD6301Serial> serial_;
+  std::vector<std::function<void()>> tick_callbacks_;
 
   uint8_t a = 0;
   uint8_t b = 0;

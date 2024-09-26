@@ -39,7 +39,7 @@ set(emulator_SOURCES
     spi.cc
     timer.cc
     tl16c2550.cc
-    wd65c22.cc
+    w65c22.cc
 )
 if (RtMidi_FOUND)
     list(APPEND emulator_SOURCES midi_to_serial.cc)
@@ -103,12 +103,24 @@ endif()
 enable_testing()
 
 include(GoogleTest)
-add_executable(hexdump_test
+add_executable(emulator_tests
+    address_space.cc
     hexdump_test.cc
+    ioport.cc
     hexdump.cc
+    w65c22.cc
+    w65c22_test.cc
 )
-target_link_libraries(hexdump_test
+target_link_libraries(emulator_tests
     GTest::gtest_main
     hexdump_lib
+    absl::strings
+    absl::flags_parse
+    absl::log
+    absl::log_initialize
+    absl::log_flags
+    absl::status
+    absl::statusor
+    absl::synchronization
 )
-gtest_discover_tests(hexdump_test)
+gtest_discover_tests(emulator_tests)

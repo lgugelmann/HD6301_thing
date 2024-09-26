@@ -61,12 +61,19 @@ Cpu6301::TickResult Cpu6301::tick(int cycles_to_run, bool ignore_breakpoint) {
     for (int i = 0; i < opcode_cycles; ++i) {
       timer_.tick();
       serial_->tick();
+      for (const auto& callback : tick_callbacks_) {
+        callback();
+      }
     }
     cycles_run += opcode_cycles;
 
     execute(opcode);
   }
   return {.cycles_run = cycles_run, .breakpoint_hit = false};
+}
+
+void Cpu6301::register_tick_callback(std::function<void()> callback) {
+  tick_callbacks_.push_back(callback);
 }
 
 void Cpu6301::set_breakpoint(uint16_t address) { breakpoint_ = address; }

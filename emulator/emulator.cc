@@ -28,7 +28,7 @@
 #include "sound_opl3.h"
 #include "spi.h"
 #include "tl16c2550.h"
-#include "wd65c22.h"
+#include "w65c22.h"
 
 #ifdef HAVE_MIDI
 #include "midi_to_serial.h"
@@ -192,8 +192,10 @@ int main(int argc, char* argv[]) {
       eight_bit::TL16C2550::create(&address_space, 0x7f40, cpu->get_irq());
   QCHECK_OK(tl16c2550);
 
-  auto wd65c22 = eight_bit::WD65C22::Create(&address_space, 0x7f20);
+  auto wd65c22 =
+      eight_bit::W65C22::Create(&address_space, 0x7f20, cpu->get_irq());
   QCHECK_OK(wd65c22);
+  cpu->register_tick_callback([&wd65c22]() { wd65c22.value()->tick(); });
 
   auto spi = eight_bit::SPI::create((*wd65c22)->port_a(), 2, 0, 1, 7);
   QCHECK_OK(spi);
