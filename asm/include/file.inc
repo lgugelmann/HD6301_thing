@@ -528,12 +528,14 @@ file_read:
         std FD_READ_PTR_OFFSET,x
 
         subd FD_FILE_SIZE_OFFSET,x
+        beq .last_sector_is_512_bytes
         bcc .at_file_end
 
+.last_sector_is_512_bytes:
         ldx #FAT_SECTOR_SIZE
         bra .end
 
-.at_file_end
+.at_file_end:
         ; We're at the file end - the add 512 moved the read_ptr past the file
         ; size. Fix that.
         ldd FD_FILE_SIZE_OFFSET,x
