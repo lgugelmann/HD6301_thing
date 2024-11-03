@@ -71,6 +71,10 @@ program_registry:
         byt "volume_test\0"
         adr volume_test_start
 +
+        adr +
+        byt "w65c22_timer\0"
+        adr w65c22_timer_start
++
         adr $0000               ; End marker
 
         include programs/edi.s
@@ -87,3 +91,4 @@ program_registry:
         include programs/snake.s
         include programs/test.s
         include programs/volume_test.s
+        include programs/w65c22_timer.s
