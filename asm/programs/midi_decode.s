@@ -15,6 +15,10 @@ MIDI_PROGRAM_CHANGE        = $C0
 MIDI_CHANNEL_AFTERTOUCH    = $D0
 MIDI_PITCH_BEND            = $E0
 
+        ; TODO: this is a fixed value. Make it variable according to set_tempo
+        ; messages.
+CLOCK_CYCLES_PER_MIDI_TICK_H = 6 ; High byte of 1536 = 256*6
+
 midi_decode_start:
         jsr midi_reset
 
@@ -217,24 +221,27 @@ decode_variable_length macro
         ; 2 bytes: remaining bytes in the buffer
         ; -- top --
 .decoder_loop:
-        jsr delay_100ms
-        lda #KEY_ENTER
-        jsr putchar
         decode_variable_length
-        ; TODO: do something with the delta
-        psh a
-        lda #"D"
-        jsr putchar
-        pul a
-        jsr putchar_hex
-        tba
-        jsr putchar_hex
-        lda #" "
-        jsr putchar
 
+        ; Wait the required delta
+        ; TODO: we assume that the max delta is 8-bit wide. Fix that.
+        tst b
+        beq .delta_wait_done
+.delta_wait:
+        clr IO_T1C_L
+        lda #CLOCK_CYCLES_PER_MIDI_TICK_H
+        sta IO_T1C_H
+.timeout_wait:
+        lda IO_IFR
+        and A,#%01000000
+        beq .timeout_wait
+
+        dec b
+        bne .delta_wait
+
+.delta_wait_done:
         ; Get the event type into A
         byte_to_a
-        jsr putchar_hex
 
         ; Handle the various event types. TODO: sort them by frequency for max
         ; performance.
@@ -249,6 +256,8 @@ decode_variable_length macro
         jsr putchar_hex
         tba
         jsr putchar_hex
+        lda #KEY_ENTER
+        jsr putchar
 .event_skip_loop:
         ; TODO optimize this
         byte_to_a
@@ -267,6 +276,8 @@ decode_variable_length macro
         jsr putchar_hex
         tba
         jsr putchar_hex
+        lda #KEY_ENTER
+        jsr putchar
 .event_skip_loop2:
         ; TODO optimize this
         byte_to_a
@@ -355,10 +366,7 @@ decode_variable_length macro
         ; return address
         ; 2 bytes: A/B from psh above
         ; -- top --
-
-        lda #KEY_ENTER
-        jsr putchar
-        lda #'F'
+        lda #'D'
         jsr putchar
         lda #KEY_ENTER
         jsr putchar
