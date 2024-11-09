@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <functional>
-#include <map>
 #include <memory>
 #include <string>
 
@@ -113,10 +112,10 @@ class Cpu6301 {
   };
 
   struct Instruction {
-    std::string name;
-    uint8_t bytes;
-    uint8_t cycles;
-    AddressingMode mode;
+    std::string name = "illegal";
+    uint8_t bytes = 1;
+    uint8_t cycles = 1;
+    AddressingMode mode = kILL;
     std::function<void(uint16_t)> exec;
   };
 
