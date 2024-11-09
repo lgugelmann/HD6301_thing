@@ -214,6 +214,11 @@ void W65C22::set_irq_flag(uint8_t mask) {
       timer1_interrupt_id_ == 0) {
     timer1_interrupt_id_ = interrupt_->set_interrupt();
   }
+  // Fire the timer2 interrupt if it's not already set and is enabled.
+  if (irq_flag_register_ & kIrqTimer2 && irq_enable_register_ & kIrqTimer2 &&
+      timer2_interrupt_id_ == 0) {
+    timer2_interrupt_id_ = interrupt_->set_interrupt();
+  }
 }
 
 void eight_bit::W65C22::clear_irq_flag(uint8_t mask) {
@@ -227,6 +232,11 @@ void eight_bit::W65C22::clear_irq_flag(uint8_t mask) {
   if (irq_flag_register_ & kIrqTimer1 && timer1_interrupt_id_ != 0) {
     interrupt_->clear_interrupt(timer1_interrupt_id_);
     timer1_interrupt_id_ = 0;
+  }
+  // Clear the timer2 interrupt if it's still outstanding.
+  if (irq_flag_register_ & kIrqTimer2 && timer2_interrupt_id_ != 0) {
+    interrupt_->clear_interrupt(timer2_interrupt_id_);
+    timer2_interrupt_id_ = 0;
   }
 }
 
