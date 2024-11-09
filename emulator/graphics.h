@@ -35,7 +35,8 @@ class Graphics {
   Graphics(AddressSpace* address_space, uint16_t base_address);
   absl::Status initialize();
 
-  void write(uint16_t address, uint8_t data);
+  void write(uint16_t address, uint8_t data)
+      ABSL_LOCKS_EXCLUDED(graphics_state_mutex_);
   void draw_character(int position)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(graphics_state_mutex_);
   void render_console() ABSL_EXCLUSIVE_LOCKS_REQUIRED(graphics_state_mutex_);
@@ -48,7 +49,7 @@ class Graphics {
 
   absl::Mutex graphics_state_mutex_;
   GraphicsState graphics_state_ ABSL_GUARDED_BY(graphics_state_mutex_);
-  bool graphics_state_dirty_ = false ABSL_GUARDED_BY(graphics_state_mutex_);
+  bool graphics_state_dirty_ ABSL_GUARDED_BY(graphics_state_mutex_) = false;
 };
 
 }  // namespace eight_bit
