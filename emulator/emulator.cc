@@ -431,7 +431,7 @@ int main(int argc, char* argv[]) {
     if (!status.ok()) {
       LOG(ERROR) << "Failed to render graphics: " << status;
       break;
-    };
+    }
     ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
     SDL_RenderPresent(renderer);
   }
