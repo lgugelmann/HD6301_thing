@@ -73,7 +73,7 @@ Cpu6301::TickResult Cpu6301::tick(int cycles_to_run, bool ignore_breakpoint) {
 }
 
 void Cpu6301::register_tick_callback(std::function<void()> callback) {
-  tick_callbacks_.push_back(callback);
+  tick_callbacks_.push_back(std::move(callback));
 }
 
 void Cpu6301::set_breakpoint(uint16_t address) { breakpoint_ = address; }
@@ -81,8 +81,10 @@ void Cpu6301::set_breakpoint(uint16_t address) { breakpoint_ = address; }
 void Cpu6301::clear_breakpoint() { breakpoint_.reset(); }
 
 void Cpu6301::print_state() const {
-  printf("A: %02x B: %02x X: %04x SP: %04x PC: %04x CC: 11%d%d%d%d%d%d\n", a, b,
-         x, sp, pc, sr.H, sr.I, sr.N, sr.Z, sr.V, sr.C);
+  std::println(std::cout,
+               "A: {:02x} B: {:02x} X: {:04x} SP: {:04x} PC: {:04x} CC: "
+               "11{:d}{:d}{:d}{:d}{:d}{:d}",
+               a, b, x, sp, pc, sr.H, sr.I, sr.N, sr.Z, sr.V, sr.C);
 }
 
 Cpu6301::CpuState Cpu6301::get_state() const {

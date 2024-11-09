@@ -9,7 +9,7 @@ namespace {
 
 class W65C22Test : public ::testing::Test {
  protected:
-  W65C22Test() {}
+  W65C22Test() = default;
 
   void SetUp() override {
     auto wdc_or = W65C22::Create(&address_space_, 0, &irq_);

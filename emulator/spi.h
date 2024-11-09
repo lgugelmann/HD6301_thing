@@ -45,7 +45,7 @@ class SPI {
 
   absl::Status initialize();
 
-  uint8_t sub_data_out();
+  uint8_t sub_data_out() const;
   void sub_data_in(uint8_t data);
 
   IOPort* port_;

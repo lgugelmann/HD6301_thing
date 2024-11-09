@@ -45,7 +45,7 @@ absl::Status SPI::initialize() {
   return absl::OkStatus();
 }
 
-uint8_t SPI::sub_data_out() { return state_.port_data & miso_mask_; }
+uint8_t SPI::sub_data_out() const { return state_.port_data & miso_mask_; }
 
 void SPI::sub_data_in(uint8_t data) {
   // Check for chip select (CS) transitions.
