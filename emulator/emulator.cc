@@ -1,9 +1,11 @@
 #include <SDL.h>
 
+#include <atomic>
 #include <cstdint>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <thread>
 #include <vector>
 
 #include "../disassembler/disassembler.h"
@@ -42,38 +44,48 @@ ABSL_FLAG(
     "If true, writes to the SD card image are persisted in the image file");
 ABSL_FLAG(int, ticks_per_second, 1000000, "Number of CPU ticks per second");
 
-// SDL starts one timer thread that runs all timer callbacks. In theory
-// SDL_Quit() should shut it down, but instead it seems to just stop running the
-// callbacks while the thread itself sticks around. With the thread still active
-// TSan can't see that accesses from timer_callback and the destructors from the
-// main thread do not interact with each other and freks out at shoutdown time.
-// This mutex is cheap and avoids the false positive.
-ABSL_CONST_INIT absl::Mutex callback_mutex_(absl::kConstInit);
-// Taking the mutext above is too expensive, and we don't actually need to have
-// any ordering guarantees. As long as the flip is atomic we don't care when
-// exactly we see it.
-std::atomic_flag breakpoint_hit = ATOMIC_FLAG_INIT;
-
 constexpr int kDebugWindowWidth = 400;
 constexpr int kGraphicsFrameWidth = 800;
 constexpr int kGraphicsFrameHeight = 600;
 
-// This gets called every millisecond, which corresponds to 1000 CPU ticks.
-// TODO: figure out how to do this faster
-Uint32 timer_callback(Uint32 interval, void* param) {
+ABSL_CONST_INIT absl::Mutex emulator_mutex_(absl::kConstInit);
+std::atomic<bool> cpu_running(true);
+std::atomic<bool> emulator_running(true);
+
+// We run the emulator in a separate thread with some signaling variables
+// instead of e.g. SDL timer callbacks as it makes profiling a lot easier. With
+// SDL timers we'd need debugging symbols all the way into the graphics stack as
+// timers go through that in some circumstances.
+void emulator_loop(eight_bit::Cpu6301* cpu) {
   static const int ticks_to_run = absl::GetFlag(FLAGS_ticks_per_second) / 1000;
   static int extra_ticks = 0;  // How many extra ticks we ran last time
 
-  absl::MutexLock lock(&callback_mutex_);
-  auto* cpu = static_cast<eight_bit::Cpu6301*>(param);
-  auto result = cpu->tick(ticks_to_run - extra_ticks);
-  extra_ticks = result.cycles_run - ticks_to_run;
-  if (result.breakpoint_hit) {
-    // Stop the timer if we hit a breakpoint
-    breakpoint_hit.test_and_set(std::memory_order_relaxed);
-    return 0;
+  while (emulator_running) {
+    static auto next_loop =
+        std::chrono::steady_clock::now() + std::chrono::milliseconds(1);
+    std::this_thread::sleep_until(next_loop);
+    next_loop += std::chrono::milliseconds(1);
+
+    // Warn if the emulator can't keep up with real time.
+    if (next_loop <
+        std::chrono::steady_clock::now() - std::chrono::milliseconds(100)) {
+      LOG_EVERY_N_SEC(ERROR, 1)
+          << "Emulator is running behind real time by "
+          << std::chrono::duration_cast<std::chrono::milliseconds>(
+                 std::chrono::steady_clock::now() - next_loop)
+                 .count()
+          << "ms";
+    }
+
+    if (cpu_running) {
+      absl::MutexLock lock(&emulator_mutex_);
+      auto result = cpu->tick(ticks_to_run - extra_ticks);
+      extra_ticks = result.cycles_run - ticks_to_run;
+      if (result.breakpoint_hit) {
+        cpu_running = false;
+      }
+    }
   }
-  return interval;
 }
 
 int main(int argc, char* argv[]) {
@@ -220,25 +232,19 @@ int main(int argc, char* argv[]) {
   QCHECK_OK(midi_to_serial);
 #endif
 
-  // Add a timer callback to call cpu.tick() once every millisecond
-  SDL_TimerID timer = SDL_AddTimer(1, timer_callback, cpu.get());
-  if (timer == 0) {
-    LOG(FATAL) << absl::StreamFormat("Failed to create timer: %s",
-                                     SDL_GetError());
-  }
+  std::thread emulator_thread(emulator_loop, cpu.get());
 
   // Create an event handler
   SDL_Event event;
 
   // Main loop
-  bool running = true;
-  while (running) {
+  while (emulator_running) {
     // Handle events
     while (SDL_PollEvent(&event)) {
       ImGui_ImplSDL2_ProcessEvent(&event);
 
       if (event.type == SDL_QUIT) {
-        running = false;
+        emulator_running = false;
       }
       if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
         // Only pass keyboard events if Dear ImGui doesn't want them
@@ -262,38 +268,31 @@ int main(int argc, char* argv[]) {
                      ImGuiWindowFlags_NoFocusOnAppearing);
 
     static std::string button_text = "Pause";
-    static bool cpu_running = true;
     static eight_bit::Cpu6301::CpuState cpu_state;
-    bool to_stop_state = false;
-    bool to_run_state = false;
+    static bool ui_in_running_state = true;
     if (ImGui::Button(button_text.c_str(), ImVec2(-1, 0))) {
+      if (!cpu_running) {
+        // If we're paused we might be on a breakpoint and the program would
+        // immediately stop again on the same instruction. Make sure we move one
+        // instruction past the breakpoint.
+        cpu->tick(1, true /* ignore_breakpoint */);
+      }
+      cpu_running = !cpu_running;
+    }
+    if (cpu_running != ui_in_running_state) {
       if (cpu_running) {
-        to_stop_state = true;
+        button_text = "Pause";
       } else {
-        to_run_state = true;
+        cpu_running = false;
+        button_text = "Run";
+        absl::MutexLock lock(&emulator_mutex_);
+        cpu_state = cpu->get_state();
       }
-    }
-    {
-      if (breakpoint_hit.test()) {
-        to_stop_state = true;
-        breakpoint_hit.clear();
-      }
-    }
-    if (to_stop_state) {
-      SDL_RemoveTimer(timer);
-      timer = 0;
-      cpu_running = false;
-      button_text = "Run";
-      absl::MutexLock lock(&callback_mutex_);
-      cpu_state = cpu->get_state();
-    } else if (to_run_state) {
-      timer = SDL_AddTimer(1, timer_callback, cpu.get());
-      button_text = "Pause";
-      cpu_running = true;
+      ui_in_running_state = cpu_running;
     }
     ImGui::BeginDisabled(cpu_running);
     if (ImGui::Button("Step", ImVec2(-1, 0))) {
-      absl::MutexLock lock(&callback_mutex_);
+      absl::MutexLock lock(&emulator_mutex_);
       cpu->tick(1, true /* ignore_breakpoint */);
       cpu_state = cpu->get_state();
     }
@@ -309,7 +308,7 @@ int main(int argc, char* argv[]) {
       int breakpoint;
       if (absl::SimpleHexAtoi(breakpoint_str, &breakpoint) && breakpoint >= 0 &&
           breakpoint <= 0xffff) {
-        absl::MutexLock lock(&callback_mutex_);
+        absl::MutexLock lock(&emulator_mutex_);
         cpu->set_breakpoint((uint16_t)breakpoint);
         cpu_state = cpu->get_state();
       } else {
@@ -322,7 +321,7 @@ int main(int argc, char* argv[]) {
       ImGui::Text("Breakpoint set at 0x%04X", cpu_state.breakpoint.value());
       ImGui::SameLine();
       if (ImGui::Button("Clear breakpoint")) {
-        absl::MutexLock lock(&callback_mutex_);
+        absl::MutexLock lock(&emulator_mutex_);
         cpu->clear_breakpoint();
         cpu_state = cpu->get_state();
       }
@@ -401,7 +400,7 @@ int main(int argc, char* argv[]) {
       (*ram_or)->hexdump();
     }
     if (ImGui::Button("Reset", ImVec2(-1, 0))) {
-      absl::MutexLock lock(&callback_mutex_);
+      absl::MutexLock lock(&emulator_mutex_);
       cpu->reset();
       cpu_state = cpu->get_state();
     }
@@ -436,10 +435,8 @@ int main(int argc, char* argv[]) {
     ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
     SDL_RenderPresent(renderer);
   }
-  SDL_RemoveTimer(timer);
-
-  // This makes sure that the timer callback has finished before we exit.
-  absl::MutexLock lock(&callback_mutex_);
+  emulator_running = false;
+  emulator_thread.join();
 
   return 0;
 }
