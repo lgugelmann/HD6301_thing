@@ -204,12 +204,13 @@ int main(int argc, char* argv[]) {
       eight_bit::TL16C2550::create(&address_space, 0x7f40, cpu->get_irq());
   QCHECK_OK(tl16c2550);
 
-  auto wd65c22 =
+  auto wd65c22_or =
       eight_bit::W65C22::Create(&address_space, 0x7f20, cpu->get_irq());
-  QCHECK_OK(wd65c22);
-  cpu->register_tick_callback([&wd65c22]() { wd65c22.value()->tick(); });
+  QCHECK_OK(wd65c22_or);
+  auto& wd65c22 = *std::move(wd65c22_or.value());
+  cpu->register_tick_callback([&wd65c22]() { wd65c22.tick(); });
 
-  auto spi = eight_bit::SPI::create((*wd65c22)->port_a(), 2, 0, 1, 7);
+  auto spi = eight_bit::SPI::create(wd65c22.port_a(), 2, 0, 1, 7);
   QCHECK_OK(spi);
 
   std::string sd_image_file = absl::GetFlag(FLAGS_sd_image_file);
