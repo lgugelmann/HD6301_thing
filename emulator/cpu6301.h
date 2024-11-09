@@ -187,7 +187,7 @@ class Cpu6301 {
   // Enters an interrupt handler at the given vector address. Returns the number
   // of cycles entering the interrupt takes.
   int enter_interrupt(uint16_t vector);
-  uint8_t execute(uint8_t opcode);
+  uint8_t execute(const Instruction& instruction);
 
   Interrupt interrupt_;
   Interrupt timer_interrupt_;
@@ -207,7 +207,7 @@ class Cpu6301 {
   std::optional<uint16_t> breakpoint_;
 
   AddressSpace* memory_ = nullptr;
-  std::map<uint8_t, Instruction> instructions_;
+  std::map<uint8_t, const Instruction> instructions_;
 };
 
 }  // namespace eight_bit

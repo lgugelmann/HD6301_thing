@@ -49,25 +49,25 @@ Cpu6301::TickResult Cpu6301::tick(int cycles_to_run, bool ignore_breakpoint) {
       return {.cycles_run = cycles_run, .breakpoint_hit = true};
     }
     uint8_t opcode = fetch();
-    if (!instructions_.contains(opcode)) {
+    auto instruction_it = instructions_.find(opcode);
+    if (instruction_it == instructions_.end()) {
       LOG(ERROR) << "Invalid instruction: " << absl::Hex(opcode) << " at "
                  << absl::Hex(pc, absl::kZeroPad4);
       reset();
       cycles_run += 1;
       continue;
     }
-    int opcode_cycles = instructions_[opcode].cycles;
+    const auto& instruction = instruction_it->second;
 
-    for (int i = 0; i < opcode_cycles; ++i) {
+    for (int i = 0; i < instruction.cycles; ++i) {
       timer_.tick();
       serial_->tick();
       for (const auto& callback : tick_callbacks_) {
         callback();
       }
+      cycles_run += 1;
     }
-    cycles_run += opcode_cycles;
-
-    execute(opcode);
+    execute(instruction);
   }
   return {.cycles_run = cycles_run, .breakpoint_hit = false};
 }
@@ -433,13 +433,7 @@ int Cpu6301::enter_interrupt(uint16_t vector) {
   return 9;
 }
 
-uint8_t Cpu6301::execute(uint8_t opcode) {
-  if (!instructions_.contains(opcode)) {
-    LOG(ERROR) << "Invalid instruction: " << absl::Hex(opcode) << " at "
-               << absl::Hex(pc, absl::kZeroPad4);
-    return -1;
-  }
-  auto instruction = instructions_[opcode];
+uint8_t Cpu6301::execute(const Instruction& instruction) {
   uint16_t data = 0;
   switch (instruction.mode) {
     case kIMM:
