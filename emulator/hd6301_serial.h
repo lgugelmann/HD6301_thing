@@ -62,6 +62,10 @@ class HD6301Serial {
   std::thread read_thread_;
 
   absl::Mutex mutex_;
+  // The queue is empty almost all of the time. Locking the mutex on each tick
+  // just to find out the queue is empty is expensive enough to show up on
+  // CPU profiles. This atomic flag is much cheaper for this.
+  std::atomic_flag rx_fifo_empty_ = ATOMIC_FLAG_INIT;
   std::queue<uint8_t> rx_fifo_ ABSL_GUARDED_BY(mutex_);
 };
 

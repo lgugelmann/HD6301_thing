@@ -127,15 +127,21 @@ void HD6301Serial::tick() {
   if (receive_register_full_countdown_ > 0) {
     receive_register_full_countdown_ -= 1;
   }
-  absl::MutexLock lock(&mutex_);
-  if (!rx_fifo_.empty() && receive_register_full_countdown_ == 0) {
-    receive_data_register_ = rx_fifo_.front();
-    rx_fifo_.pop();
-    trcsr_ |= kReceiveDataRegisterFull;
-    if (trcsr_ & kReceiveInterruptEnable && receive_interrupt_id_ == 0) {
-      receive_interrupt_id_ = interrupt_->set_interrupt();
+  if (receive_register_full_countdown_ == 0 &&
+      !rx_fifo_empty_.test(std::memory_order_relaxed)) {
+    absl::MutexLock lock(&mutex_);
+    if (!rx_fifo_.empty()) {
+      receive_data_register_ = rx_fifo_.front();
+      rx_fifo_.pop();
+      trcsr_ |= kReceiveDataRegisterFull;
+      if (trcsr_ & kReceiveInterruptEnable && receive_interrupt_id_ == 0) {
+        receive_interrupt_id_ = interrupt_->set_interrupt();
+      }
+      receive_register_full_countdown_ = ticks_per_bit(rmcr_) * 10;
     }
-    receive_register_full_countdown_ = ticks_per_bit(rmcr_) * 10;
+    if (rx_fifo_.empty()) {
+      rx_fifo_empty_.test_and_set();
+    }
   }
 }
 
@@ -153,6 +159,7 @@ void HD6301Serial::write(uint16_t address, uint8_t data) {
         std::queue<uint8_t> empty;
         absl::MutexLock lock(&mutex_);
         std::swap(rx_fifo_, empty);
+        rx_fifo_empty_.test_and_set();
       }
     } break;
     case 2:
@@ -264,6 +271,7 @@ absl::Status HD6301Serial::initialize() {
           if (::read(our_fd_, &data, 1) > 0) {
             absl::MutexLock lock(&mutex_);
             rx_fifo_.push(data);
+            rx_fifo_empty_.clear();
           }
         }
         if (fds[0].revents & POLLHUP) {

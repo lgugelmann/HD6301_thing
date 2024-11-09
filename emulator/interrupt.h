@@ -28,6 +28,7 @@ class Interrupt {
       next_interrupt_id_ = 1;
     }
     interrupts_.insert(interrupt_id);
+    has_interrupt_.test_and_set();
     return interrupt_id;
   }
 
@@ -35,19 +36,22 @@ class Interrupt {
   void clear_interrupt(int interrupt) {
     absl::MutexLock lock(&mutex_);
     interrupts_.erase(interrupt);
+    if (interrupts_.empty()) {
+      has_interrupt_.clear();
+    }
   }
 
   // Returns true if this interrupt is firing (i.e. has outstanding interrupts),
   // false otherwise.
-  bool has_interrupt() {
-    absl::MutexLock lock(&mutex_);
-    return interrupts_.size() > 0;
-  }
+  bool has_interrupt() { return has_interrupt_.test(); }
 
  private:
   // The next interrupt ID to use. Value 0 is never a valid interrupt ID and can
   // be used as a sentinel for 'no interrupt set'.
   absl::Mutex mutex_;
+  // Locking the mutex on each emulator cycle is expensive enough to show up on
+  // profiles. An atomic flag is much cheaper for this.
+  std::atomic_flag has_interrupt_ = ATOMIC_FLAG_INIT;
   int next_interrupt_id_ ABSL_GUARDED_BY(mutex_) = 1;
   std::set<int> interrupts_ ABSL_GUARDED_BY(mutex_);
 };
