@@ -49,16 +49,14 @@ Cpu6301::TickResult Cpu6301::tick(int cycles_to_run, bool ignore_breakpoint) {
       return {.cycles_run = cycles_run, .breakpoint_hit = true};
     }
     uint8_t opcode = fetch();
-    auto instruction_it = instructions_.find(opcode);
-    if (instruction_it == instructions_.end()) {
+    const auto& instruction = instructions_[opcode];
+    if (instruction.mode == kILL) {
       LOG(ERROR) << "Invalid instruction: " << absl::Hex(opcode) << " at "
                  << absl::Hex(pc, absl::kZeroPad4);
       reset();
       cycles_run += 1;
       continue;
     }
-    const auto& instruction = instruction_it->second;
-
     for (int i = 0; i < instruction.cycles; ++i) {
       timer_.tick();
       serial_->tick();
@@ -482,7 +480,7 @@ Cpu6301::Cpu6301(AddressSpace* memory)
       memory_(memory) {
 #define COMMA ,
 #define OP(expr) [this](uint16_t __attribute__((unused)) d) { expr; }
-  instructions_ = {
+  std::map<uint8_t, const Instruction> instructions = {
       {0x01, {"nop", 1, 1, kIMP, [](uint16_t) {}}},
       {0x04, {"lsrd", 1, 1, kACD, OP(lsrd(d))}},
       {0x05, {"asld", 1, 1, kACD, OP(asld(d))}},
@@ -759,6 +757,14 @@ Cpu6301::Cpu6301(AddressSpace* memory)
   };
 #undef OP
 #undef COMMA
+  for (int i = 0; i <= 0xff; ++i) {
+    auto it = instructions.find(i);
+    if (it != instructions.end()) {
+      instructions_[i] = it->second;
+    } else {
+      instructions_[i] = {"illegal", 1, 1, kILL, [](uint16_t) {}};
+    }
+  }
 }
 
 absl::Status Cpu6301::initialize() {

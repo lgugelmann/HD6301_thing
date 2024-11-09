@@ -109,6 +109,7 @@ class Cpu6301 {
     kIDX,
     kIMP,
     kREL,
+    kILL,  // not a real mode, used for illegal instructions
   };
 
   struct Instruction {
@@ -139,7 +140,7 @@ class Cpu6301 {
   uint16_t set_d(uint16_t d);
 
   //
-  // Instruction implementaions
+  // Instruction implementations
   //
   void mem_op(uint16_t address, void (Cpu6301::*op)(uint8_t&), bool do_set);
   void set_op(uint16_t address, void (Cpu6301::*op)(uint8_t&));
@@ -207,7 +208,7 @@ class Cpu6301 {
   std::optional<uint16_t> breakpoint_;
 
   AddressSpace* memory_ = nullptr;
-  std::map<uint8_t, const Instruction> instructions_;
+  std::array<Instruction, 256> instructions_;
 };
 
 }  // namespace eight_bit
