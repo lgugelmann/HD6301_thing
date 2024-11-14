@@ -160,6 +160,37 @@ TEST_F(W65C22Test, AnyInterruptFlagSetIfInterruptEnabled) {
   EXPECT_EQ(w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqAny, 0);
 }
 
+TEST_F(W65C22Test, Timer1InterruptFiresIfEnabled) {
+  // Enable timer 1 IRQ
+  w65c22_->write(W65C22::kInterruptEnableRegister, W65C22::kIrqTimer1 | 0x80);
+  ASSERT_EQ(w65c22_->read(W65C22::kInterruptEnableRegister),
+            W65C22::kIrqTimer1);
+  w65c22_->write(W65C22::kTimer1LatchLow, 0x01);
+  w65c22_->write(W65C22::kTimer1CounterHigh, 0x00);
+  // Make sure the interrupt hasn't fired yet
+  ASSERT_FALSE(irq_.has_interrupt());
+  w65c22_->tick();
+
+  EXPECT_TRUE(irq_.has_interrupt());
+}
+
+TEST_F(W65C22Test, Timer1InterruptClearedOnCounteRead) {
+  // Enable timer 1 IRQ
+  w65c22_->write(W65C22::kInterruptEnableRegister, W65C22::kIrqTimer1 | 0x80);
+  ASSERT_EQ(w65c22_->read(W65C22::kInterruptEnableRegister),
+            W65C22::kIrqTimer1);
+  w65c22_->write(W65C22::kTimer1LatchLow, 0x01);
+  w65c22_->write(W65C22::kTimer1CounterHigh, 0x00);
+  // Make sure the interrupt hasn't fired yet
+  ASSERT_FALSE(irq_.has_interrupt());
+  w65c22_->tick();
+  ASSERT_TRUE(irq_.has_interrupt());
+  // Clear the interrupt by reading the low counter
+  w65c22_->read(W65C22::kTimer1CounterLow);
+
+  EXPECT_FALSE(irq_.has_interrupt());
+}
+
 TEST_F(W65C22Test, InterruptsClearedViaIFRWrites) {
   w65c22_->write(W65C22::kTimer1LatchLow, 0x01);
   w65c22_->write(W65C22::kTimer1CounterHigh, 0x00);

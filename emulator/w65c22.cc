@@ -192,8 +192,6 @@ void W65C22::write(uint16_t address, uint8_t value) {
         // bit.
         clear_irq_flag(0);
       }
-      // This recomputes the
-
       break;
     default:
       LOG(ERROR) << "Write to unimplemented 65C22 register: "
@@ -229,12 +227,12 @@ void eight_bit::W65C22::clear_irq_flag(uint8_t mask) {
     irq_flag_register_ |= 0x80;
   }
   // Clear the timer1 interrupt if it's still outstanding.
-  if (irq_flag_register_ & kIrqTimer1 && timer1_interrupt_id_ != 0) {
+  if ((irq_flag_register_ & kIrqTimer1) == 0 && timer1_interrupt_id_ != 0) {
     interrupt_->clear_interrupt(timer1_interrupt_id_);
     timer1_interrupt_id_ = 0;
   }
   // Clear the timer2 interrupt if it's still outstanding.
-  if (irq_flag_register_ & kIrqTimer2 && timer2_interrupt_id_ != 0) {
+  if ((irq_flag_register_ & kIrqTimer2) == 0 && timer2_interrupt_id_ != 0) {
     interrupt_->clear_interrupt(timer2_interrupt_id_);
     timer2_interrupt_id_ = 0;
   }
