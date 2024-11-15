@@ -8,6 +8,9 @@ __io_inc = 1
         SECTION io
         PUBLIC io_init
         PUBLIC io_irq
+        PUBLIC_SHARED io_timer1_callback
+
+        zp_var io_timer1_callback,2
 
 IO_IRQ_CA2 = %00000001
 IO_IRQ_CA1 = %00000010
@@ -30,8 +33,16 @@ io_init:
 io_irq:
         lda IO_IFR
         bpl .end                ; bit 7 is not set, not our irq
-        ; A 1 in an IFR bit clears that interrupt
-        lda #(~IO_IRQ_ANY & $ff)
+
+        ; Handle timer 1 by calling the relevant callback if provided
+        bit a,IO_IRQ_T1
+        bne +
+        ldx io_timer1_callback
+        beq +
+        jsr 0,x
++
+        ; Clear all interrupt flags
+        lda #$7f
         sta IO_IFR
         sec
 .end:
