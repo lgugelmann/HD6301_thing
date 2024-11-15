@@ -17,6 +17,7 @@ __stdio_inc = 1
         PUBLIC_SHARED putchar_hex
         PUBLIC_SHARED put_newline
         PUBLIC_SHARED putstring
+        PUBLIC_SHARED putx_dec
         PUBLIC_SHARED putx_hex
 
 stdio_init:
@@ -160,6 +161,58 @@ putx_hex:
         tba
         jsr putchar_hex
         xgdx                    ; restore A, B
+        pulx
+        rts
+
+; Output the two bytes in X as 5 decimal digits, 0-padded
+putx_dec:
+        pshx
+        psh a
+        psh b
+
+        lda #"0" - 1
+.10k_loop:
+        inc a
+        xgdx
+        subd #10000
+        xgdx
+        bcc .10k_loop
+        jsr putchar
+
+        lda #"9" + 1
+.1k_loop:
+        dec a
+        xgdx
+        addd #1000
+        xgdx
+        bmi .1k_loop
+        jsr putchar
+
+        lda #"0" - 1
+.100_loop:
+        inc a
+        xgdx
+        subd #100
+        xgdx
+        bcc .100_loop
+        jsr putchar
+
+        lda #"9" + 1
+.10_loop:
+        dec a
+        xgdx
+        addd #10
+        xgdx
+        bmi .10_loop
+        jsr putchar             ; Write tens digit
+
+        xgdx
+        add b,#"0"
+        tba
+        jsr putchar             ; Write last digit
+
+        pul b
+        pul a
         pulx
         rts
 
