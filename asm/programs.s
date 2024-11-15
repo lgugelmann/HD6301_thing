@@ -52,6 +52,10 @@ program_registry:
         adr sci_echo_start
 +
         adr +
+        byt "sdbench\0"
+        adr sdbench_start
++
+        adr +
         byt "seq\0"
         adr seq_start
 +
@@ -86,6 +90,7 @@ program_registry:
         include programs/opl3_test.s
         include programs/random.s
         include programs/sci_echo.s
+        include programs/sdbench.s
         include programs/seq.s
         include programs/serial_opl3.s
         include programs/snake.s
