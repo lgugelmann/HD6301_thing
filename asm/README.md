@@ -56,7 +56,7 @@ the monitor. See that file for details.
 and start addresses for all programs in the ROM. That's the structure the
 monitor programs `list` and `run` use to do their thing.
 
-By convention, and to vaoid conflicts, each program has a `SECTION` named after
+By convention, and to avoid conflicts, each program has a `SECTION` named after
 itself, and exports only a `program_name_start` function outside of itself. This
 makes it easier to bundle all programs together.
 
@@ -74,7 +74,7 @@ the 'break' key to get back into the monitor at any time.
 
 ## I/O
 
-Output routinges of the "standard library" like `putchar`, `putstring` etc. work
+Output routines of the "standard library" like `putchar`, `putstring` etc. work
 both over serial and graphical output. Input can come from both serial and
 keyboard. However note that there is no "break" key over serial - that requires
 a physical keyboard to be connected.
@@ -104,7 +104,7 @@ This "dual stack" setup makes I/O a bit slow, but it's also very convenient. One
 ## Programs
 
 See `programs.s` and the `programs/` folder. Follow the examples in those files
-for how to add a new one. You baiscally need to both include the program in
+for how to add a new one. You basically need to both include the program in
 `programs.s` and also add it to the program registry in that same file.
 
 ## Memory map
