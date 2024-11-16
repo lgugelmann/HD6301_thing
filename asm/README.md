@@ -139,3 +139,17 @@ addresses will have moved around. To program both at once use `make prog`.
 - A `help` command for the monitor.
 - Make I/O over graphics, serial, keyboard or all of them selectable at compile
   or runtime to avoid any speed penalties.
+
+### Project: Making SD Card reads *fast*
+
+SD card reads are currently relatively slow. Reading a single page currently
+takes ~120ms according to the `sdbench.s` program run in the emulator and
+assuming 1MHz clock. This is much slower than a theoretical target of
+e.g. reading one bit per cycle, which would take 8µs * 512 = 4096µs or ~4ms.
+
+There are multiple ways to address this, from faster software to better hardware
+tricks like using a wider bus, offloading some SPI processing etc.
+
+For record keeping, before any optimizations, the `sdbench.s` numbers are:
+
+- `57058 01`, i.e. 57058 + 65536 = 122594 cycles.
