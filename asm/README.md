@@ -150,6 +150,31 @@ e.g. reading one bit per cycle, which would take 8µs * 512 = 4096µs or ~4ms.
 There are multiple ways to address this, from faster software to better hardware
 tricks like using a wider bus, offloading some SPI processing etc.
 
-For record keeping, before any optimizations, the `sdbench.s` numbers are:
+For record keeping, the optimizations so far - in `sdbench.s` numbers - are:
 
-- `57058 01`, i.e. 57058 + 65536 = 122594 cycles.
+- `57058 01`, baseline. That's 57058 + 65536 = 122594 cycles, or ~122ms.
+- `51426 01`, saved 6ms by inlining the hot SPI byte reads.
+- `30221 01`, saved 21ms by unrolling the 8 bit loop and saving `pushx`/`pulx`
+  pairs.
+- `22029 01`, saved 8ms by using the fact that CLK is bit 0 and `inc b` / `dec
+  b` is 2 cycles shorter than two `eor b,#CLK` to raise / lower the clock.
+- `25884 01`, lost 4ms again by choosing to not inline the `spi_receive_byte`
+  but moving the above optimizations there. Cleaner code wins over a small speed
+  bump. Total now at ~91ms, or a 25% improvement.
+
+The current bitbang code for each bit is this:
+```
+        inc b                   ; 1 cycle
+        stb IO_ORA              ; 4 cycles, raise clock
+        asl a                   ; 1 cycle
+        tst IO_IRA              ; 4 cycles, sets N to PA7
+        bpl +                   ; 3 cycles, On 0 we don't need the 'inc a'
+        inc a                   ; 1 cycle
++
+        dec b                   ; 1 cycle
+        stb IO_ORA              ; 4 cycles, Lower clock
+```
+
+It doesn't look like it can be simplified much, and it's 19 cycles long. That's
+8\*512\*19 = 86016, or `12288 01` in benchmark-speak. We can shave off at most
+another 10ms without improving the bit cost.

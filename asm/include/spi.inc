@@ -56,26 +56,32 @@ spi_end_command:
         rts
 
 ; Receives a byte and returns it in A. Clobbers B.
-; Cycles: 23 + 8*25 (worst case) = 223
+; Cycles: 8 + 8*19 (worst case) + 11 (jsr,rts) = 171
 spi_receive_byte:
-        pshx
         ldb #MOSI
         stb IO_ORA
-        ldx #8
-.loop:
-        eor b,#CLK
+
+getbit  macro
+        inc b                   ; CLK is bit 0
         stb IO_ORA              ; Raise clock
         asl a
         tst IO_IRA              ; Sets N to PA7
         bpl +                   ; On 0 we don't need the 'inc a'
         inc a
 +
-        eor b,#CLK
+        dec b
         stb IO_ORA              ; Lower clock
-        dex
-        bne .loop
+        endm
 
-        pulx
+        getbit                  ; bit 0
+        getbit                  ; bit 1
+        getbit                  ; bit 2
+        getbit                  ; bit 3
+        getbit                  ; bit 4
+        getbit                  ; bit 5
+        getbit                  ; bit 6
+        getbit                  ; bit 7
+
         rts
 
 ; Sends the byte in A, clobbers A and B.
@@ -114,9 +120,9 @@ spi_discard_byte:
 
         ldx #8
 .loop:
-        eor b,#CLK              ; clock up
+        inc b                   ; clock up
         stb IO_ORA
-        eor b,#CLK              ; clock down
+        dec b                   ; clock down
         stb IO_ORA
         dex
         bne .loop
@@ -130,9 +136,9 @@ spi_send_byte_00:
 
         ldx #8
 .loop:
-        eor b,#CLK              ; clock up
+        inc b                   ; clock up
         stb IO_ORA
-        eor b,#CLK              ; clock down
+        dec b                   ; clock down
         stb IO_ORA
         dex
         bne .loop
