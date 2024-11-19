@@ -135,16 +135,17 @@ absl::StatusOr<std::unique_ptr<HD6301Thing>> HD6301Thing::create(
 }
 
 void HD6301Thing::load_rom(uint16_t address, std::span<uint8_t> data) {
+  absl::MutexLock lock(&emulator_mutex_);
   rom_->load(address, data);
 }
 
 void HD6301Thing::load_sd_image(
     std::unique_ptr<std::basic_iostream<char>> image) {
+  absl::MutexLock lock(&emulator_mutex_);
   sd_card_spi_->set_image(std::move(image));
 }
 
 void HD6301Thing::handle_keyboard_event(SDL_KeyboardEvent event) {
-  absl::MutexLock lock(&emulator_mutex_);
   keyboard_->handle_keyboard_event(event);
 }
 

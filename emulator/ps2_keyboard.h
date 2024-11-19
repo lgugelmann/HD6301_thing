@@ -12,6 +12,10 @@
 
 namespace eight_bit {
 
+// Emulates a PS/2 keyboard connected to an 8-bit I/O port for parallel data
+// communication (some other hardware converts the serial data to parallel) and
+// another I/O port for interrupt handling (data present bit, and a clear signal
+// for that bit). Thread safe.
 class PS2Keyboard {
  public:
   PS2Keyboard(Interrupt* irq, IOPort* data_port, IOPort* irq_status_port);

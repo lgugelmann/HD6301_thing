@@ -1,6 +1,7 @@
 #ifndef EIGHT_BIT_COMPUTER_INTERRUPT_H
 #define EIGHT_BIT_COMPUTER_INTERRUPT_H
 
+#include <atomic>
 #include <set>
 
 #include "absl/base/thread_annotations.h"
@@ -28,7 +29,7 @@ class Interrupt {
       next_interrupt_id_ = 1;
     }
     interrupts_.insert(interrupt_id);
-    has_interrupt_.test_and_set();
+    has_interrupt_ = true;
     return interrupt_id;
   }
 
@@ -37,21 +38,21 @@ class Interrupt {
     absl::MutexLock lock(&mutex_);
     interrupts_.erase(interrupt);
     if (interrupts_.empty()) {
-      has_interrupt_.clear();
+      has_interrupt_ = false;
     }
   }
 
   // Returns true if this interrupt is firing (i.e. has outstanding interrupts),
   // false otherwise.
-  bool has_interrupt() { return has_interrupt_.test(); }
+  bool has_interrupt() { return has_interrupt_; }
 
  private:
   // The next interrupt ID to use. Value 0 is never a valid interrupt ID and can
   // be used as a sentinel for 'no interrupt set'.
   absl::Mutex mutex_;
   // Locking the mutex on each emulator cycle is expensive enough to show up on
-  // profiles. An atomic flag is much cheaper for this.
-  std::atomic_flag has_interrupt_ = ATOMIC_FLAG_INIT;
+  // profiles. An atomic bool is much cheaper for this.
+  std::atomic<bool> has_interrupt_ = false;
   int next_interrupt_id_ ABSL_GUARDED_BY(mutex_) = 1;
   std::set<int> interrupts_ ABSL_GUARDED_BY(mutex_);
 };

@@ -57,7 +57,8 @@ class HD6301Thing {
 
   void emulator_loop();
 
-  // Protects access to the emulator state.
+  // Protects access to the emulator state for parts that aren't already
+  // thread-safe.
   absl::Mutex emulator_mutex_;
 
   AddressSpace address_space_ ABSL_GUARDED_BY(emulator_mutex_);
@@ -65,7 +66,9 @@ class HD6301Thing {
   std::unique_ptr<Ram> ram_ ABSL_GUARDED_BY(emulator_mutex_);
   std::unique_ptr<Graphics> graphics_ ABSL_GUARDED_BY(emulator_mutex_);
   std::unique_ptr<Cpu6301> cpu_ ABSL_GUARDED_BY(emulator_mutex_);
-  std::unique_ptr<PS2Keyboard> keyboard_ ABSL_GUARDED_BY(emulator_mutex_);
+  // Thread safe. For the responsiveness of the UI, we don't want to block
+  // keycode handling on the emulator running a large number of cycles.
+  std::unique_ptr<PS2Keyboard> keyboard_;
   std::unique_ptr<SoundOPL3> sound_opl3_ ABSL_GUARDED_BY(emulator_mutex_);
   std::unique_ptr<TL16C2550> tl16c2550_ ABSL_GUARDED_BY(emulator_mutex_);
   std::unique_ptr<W65C22> w65c22_ ABSL_GUARDED_BY(emulator_mutex_);
