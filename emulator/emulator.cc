@@ -17,20 +17,12 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include "address_space.h"
 #include "cpu6301.h"
 #include "graphics.h"
+#include "hd6301_thing.h"
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
-#include "ps2_keyboard.h"
-#include "ram.h"
-#include "rom.h"
-#include "sd_card_spi.h"
-#include "sound_opl3.h"
-#include "spi.h"
-#include "tl16c2550.h"
-#include "w65c22.h"
 
 #ifdef HAVE_MIDI
 #include "midi_to_serial.h"
@@ -47,46 +39,6 @@ ABSL_FLAG(int, ticks_per_second, 1000000, "Number of CPU ticks per second");
 constexpr int kDebugWindowWidth = 400;
 constexpr int kGraphicsFrameWidth = 800;
 constexpr int kGraphicsFrameHeight = 600;
-
-ABSL_CONST_INIT absl::Mutex emulator_mutex_(absl::kConstInit);
-std::atomic<bool> cpu_running(true);
-std::atomic<bool> emulator_running(true);
-
-// We run the emulator in a separate thread with some signaling variables
-// instead of e.g. SDL timer callbacks as it makes profiling a lot easier. With
-// SDL timers we'd need debugging symbols all the way into the graphics stack as
-// timers go through that in some circumstances.
-void emulator_loop(eight_bit::Cpu6301* cpu) {
-  static const int ticks_to_run = absl::GetFlag(FLAGS_ticks_per_second) / 1000;
-  static int extra_ticks = 0;  // How many extra ticks we ran last time
-
-  while (emulator_running) {
-    static auto next_loop =
-        std::chrono::steady_clock::now() + std::chrono::milliseconds(1);
-    std::this_thread::sleep_until(next_loop);
-    next_loop += std::chrono::milliseconds(1);
-
-    // Warn if the emulator can't keep up with real time.
-    if (next_loop <
-        std::chrono::steady_clock::now() - std::chrono::milliseconds(100)) {
-      LOG_EVERY_N_SEC(ERROR, 1)
-          << "Emulator is running behind real time by "
-          << std::chrono::duration_cast<std::chrono::milliseconds>(
-                 std::chrono::steady_clock::now() - next_loop)
-                 .count()
-          << "ms";
-    }
-
-    if (cpu_running) {
-      absl::MutexLock lock(&emulator_mutex_);
-      auto result = cpu->tick(ticks_to_run - extra_ticks);
-      extra_ticks = result.cycles_run - ticks_to_run;
-      if (result.breakpoint_hit) {
-        cpu_running = false;
-      }
-    }
-  }
-}
 
 int main(int argc, char* argv[]) {
   absl::ParseCommandLine(argc, argv);
@@ -159,98 +111,62 @@ int main(int argc, char* argv[]) {
   absl::Cleanup imgui_renderer_cleanup(
       [] { ImGui_ImplSDLRenderer2_Shutdown(); });
 
-  eight_bit::AddressSpace address_space;
+  auto hd6301_thing =
+      eight_bit::HD6301Thing::create(absl::GetFlag(FLAGS_ticks_per_second));
+  QCHECK_OK(hd6301_thing);
 
-  constexpr uint rom_start = 0x8000;
-  constexpr uint rom_size = 0x8000;
-  auto rom_or = eight_bit::Rom::create(&address_space, rom_start, rom_size);
-  QCHECK_OK(rom_or);
-  auto rom = std::move(rom_or.value());
-
+  // Prepare ROM image file
   QCHECK(!absl::GetFlag(FLAGS_rom_file).empty()) << "No ROM file specified.";
   const std::string rom_file_name = absl::GetFlag(FLAGS_rom_file);
   std::ifstream rom_file(rom_file_name, std::ios::binary);
   QCHECK(rom_file.is_open()) << "Failed to open file: " << rom_file_name;
-
   std::vector<uint8_t> rom_data(std::istreambuf_iterator<char>(rom_file), {});
+  constexpr uint rom_size = 0x8000;
+  constexpr uint rom_start = 0x8000;
   uint16_t rom_load_address = rom_size - rom_data.size();
-  rom->load(rom_load_address, rom_data);
+  (*hd6301_thing)->load_rom(rom_load_address, rom_data);
+
+  // Prepare SD card image file, if provided
+  if (!absl::GetFlag(FLAGS_sd_image_file).empty()) {
+    const std::string image_file_name = absl::GetFlag(FLAGS_sd_image_file);
+    bool persist_writes = absl::GetFlag(FLAGS_sd_image_persist_writes);
+    auto file_stream = std::make_unique<std::fstream>();
+    file_stream->open(std::string(image_file_name),
+                      std::ios::in | std::ios::out | std::ios::binary);
+    QCHECK(file_stream->is_open())
+        << "Failed to open file: " << image_file_name;
+    if (persist_writes) {
+      LOG(WARNING) << "Persisting writes to the SD card image file";
+      (*hd6301_thing)->load_sd_image(std::move(file_stream));
+    } else {
+      auto string_stream = std::make_unique<std::stringstream>();
+      (*string_stream) << file_stream->rdbuf();
+      file_stream->close();
+      (*hd6301_thing)->load_sd_image(std::move(string_stream));
+    }
+  }
 
   eight_bit::Disassembler disassembler;
   QCHECK_OK(disassembler.set_data(rom_start + rom_load_address, rom_data));
   QCHECK_OK(disassembler.disassemble());
 
-  // 0..1f is internal CPU registers and otherwise reserved
-  auto ram_or = eight_bit::Ram::create(&address_space, 0x0020, 0x7f00 - 0x0020);
-  QCHECK_OK(ram_or);
-
-  auto graphics_or = eight_bit::Graphics::create(0x7fc0, &address_space);
-  QCHECK_OK(graphics_or);
-  auto graphics = std::move(graphics_or.value());
-
-  auto cpu_or = eight_bit::Cpu6301::create(&address_space);
-  QCHECK_OK(cpu_or);
-  auto cpu = std::move(cpu_or.value());
-  cpu->reset();
-  std::cout << "CPU serial port: " << cpu->get_serial()->get_pty_name() << "\n";
-
-  eight_bit::PS2Keyboard keyboard(cpu->get_irq(), cpu->get_port1(),
-                                  cpu->get_port2());
-
-  auto sound_opl3 = eight_bit::SoundOPL3::create(&address_space, 0x7f80);
-  QCHECK_OK(sound_opl3);
-
-  auto tl16c2550 =
-      eight_bit::TL16C2550::create(&address_space, 0x7f40, cpu->get_irq());
-  QCHECK_OK(tl16c2550);
-
-  auto wd65c22_or =
-      eight_bit::W65C22::Create(&address_space, 0x7f20, cpu->get_irq());
-  QCHECK_OK(wd65c22_or);
-  auto& wd65c22 = *std::move(wd65c22_or.value());
-  cpu->register_tick_callback([&wd65c22]() { wd65c22.tick(); });
-
-  auto spi = eight_bit::SPI::create(wd65c22.port_a(), 2, 0, 1, 7);
-  QCHECK_OK(spi);
-
-  std::string sd_image_file = absl::GetFlag(FLAGS_sd_image_file);
-  absl::StatusOr<std::unique_ptr<eight_bit::SDCardSPI>> sd_card_spi;
-  if (sd_image_file.empty()) {
-    sd_card_spi = eight_bit::SDCardSPI::create((*spi).get());
-  } else {
-    eight_bit::SDCardSPI::ImageMode mode =
-        absl::GetFlag(FLAGS_sd_image_persist_writes)
-            ? eight_bit::SDCardSPI::ImageMode::kPersistedWrites
-            : eight_bit::SDCardSPI::ImageMode::kEphemeralWrites;
-    sd_card_spi =
-        eight_bit::SDCardSPI::create((*spi).get(), sd_image_file, mode);
-  }
-  QCHECK_OK(sd_card_spi);
-
-#ifdef HAVE_MIDI
-  auto midi_to_serial =
-      eight_bit::MidiToSerial::create((*tl16c2550)->get_pty_name(0));
-  QCHECK_OK(midi_to_serial);
-#endif
-
-  std::thread emulator_thread(emulator_loop, cpu.get());
-
-  // Create an event handler
-  SDL_Event event;
+  (*hd6301_thing)->run();
 
   // Main loop
-  while (emulator_running) {
+  SDL_Event event;
+  bool running = true;
+  while (running) {
     // Handle events
     while (SDL_PollEvent(&event)) {
       ImGui_ImplSDL2_ProcessEvent(&event);
 
       if (event.type == SDL_QUIT) {
-        emulator_running = false;
+        running = false;
       }
       if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
         // Only pass keyboard events if Dear ImGui doesn't want them
         if (!io.WantCaptureKeyboard) {
-          keyboard.handle_keyboard_event(event.key);
+          (*hd6301_thing)->handle_keyboard_event(event.key);
         }
       }
     }
@@ -271,31 +187,37 @@ int main(int argc, char* argv[]) {
     static std::string button_text = "Pause";
     static eight_bit::Cpu6301::CpuState cpu_state;
     static bool ui_in_running_state = true;
+    static bool cpu_running = true;
+
+    cpu_running = (*hd6301_thing)->is_cpu_running();
     if (ImGui::Button(button_text.c_str(), ImVec2(-1, 0))) {
-      if (!cpu_running) {
+      if (cpu_running) {
+        (*hd6301_thing)->stop();
+        cpu_running = false;
+      } else {
         // If we're paused we might be on a breakpoint and the program would
-        // immediately stop again on the same instruction. Make sure we move one
-        // instruction past the breakpoint.
-        cpu->tick(1, true /* ignore_breakpoint */);
+        // immediately stop again on the same instruction. Make sure we move
+        // one instruction past the breakpoint.
+        (*hd6301_thing)->tick(1, true /* ignore_breakpoint */);
+        (*hd6301_thing)->run();
+        cpu_running = true;
       }
-      cpu_running = !cpu_running;
     }
+    // Note: the CPU could be stopped by the user or by hitting a breakpoint,
+    // not just the button above.
     if (cpu_running != ui_in_running_state) {
       if (cpu_running) {
         button_text = "Pause";
       } else {
-        cpu_running = false;
         button_text = "Run";
-        absl::MutexLock lock(&emulator_mutex_);
-        cpu_state = cpu->get_state();
+        cpu_state = (*hd6301_thing)->get_cpu_state();
       }
       ui_in_running_state = cpu_running;
     }
     ImGui::BeginDisabled(cpu_running);
     if (ImGui::Button("Step", ImVec2(-1, 0))) {
-      absl::MutexLock lock(&emulator_mutex_);
-      cpu->tick(1, true /* ignore_breakpoint */);
-      cpu_state = cpu->get_state();
+      (*hd6301_thing)->tick(1, true /* ignore_breakpoint */);
+      cpu_state = (*hd6301_thing)->get_cpu_state();
     }
 
     // Breakpoint handling
@@ -305,16 +227,16 @@ int main(int argc, char* argv[]) {
                      breakpoint_str.size() + 1,
                      ImGuiInputTextFlags_CharsHexadecimal);
     if (ImGui::Button("Set breakpoint", ImVec2(-1, 0))) {
-      // SimleAtoi only works with 32 or 64 bit ints.
+      // SimpleAtoi only works with 32 or 64 bit ints.
       int breakpoint;
       if (absl::SimpleHexAtoi(breakpoint_str, &breakpoint) && breakpoint >= 0 &&
           breakpoint <= 0xffff) {
-        absl::MutexLock lock(&emulator_mutex_);
-        cpu->set_breakpoint((uint16_t)breakpoint);
-        cpu_state = cpu->get_state();
+        (*hd6301_thing)->set_breakpoint((uint16_t)breakpoint);
+        cpu_state = (*hd6301_thing)->get_cpu_state();
       } else {
-        // Bare-bones error handling as the ImGuiInputTextFlags_CharsHexadecimal
-        // above should prevent an invalid address from being settable.
+        // Bare-bones error handling as the
+        // ImGuiInputTextFlags_CharsHexadecimal above should prevent an
+        // invalid address from being settable.
         LOG(ERROR) << "Invalid breakpoint address: " << breakpoint_str;
       }
     }
@@ -322,9 +244,8 @@ int main(int argc, char* argv[]) {
       ImGui::Text("Breakpoint set at 0x%04X", cpu_state.breakpoint.value());
       ImGui::SameLine();
       if (ImGui::Button("Clear breakpoint")) {
-        absl::MutexLock lock(&emulator_mutex_);
-        cpu->clear_breakpoint();
-        cpu_state = cpu->get_state();
+        (*hd6301_thing)->clear_breakpoint();
+        cpu_state = (*hd6301_thing)->get_cpu_state();
       }
     } else {
       ImGui::Text("No breakpoint set");
@@ -351,8 +272,8 @@ int main(int argc, char* argv[]) {
     static std::string disassembly;
     static std::string post_context;
     if (!cpu_running) {
-      static constexpr int kPreContext = 4;
-      static constexpr int kPostContext = 7;
+      constexpr int kPreContext = 4;
+      constexpr int kPostContext = 7;
 
       static uint16_t last_pc = 0;
       if (last_pc != cpu_state.pc) {
@@ -398,19 +319,17 @@ int main(int argc, char* argv[]) {
     static bool show_ram_hexdump = false;
     if (ImGui::Button("RAM Hexdump", ImVec2(-1, 0))) {
       show_ram_hexdump = true;
-      (*ram_or)->hexdump();
     }
     if (ImGui::Button("Reset", ImVec2(-1, 0))) {
-      absl::MutexLock lock(&emulator_mutex_);
-      cpu->reset();
-      cpu_state = cpu->get_state();
+      (*hd6301_thing)->reset();
+      cpu_state = (*hd6301_thing)->get_cpu_state();
     }
     if (show_ram_hexdump) {
       static std::string ram_hexdump;
       static uint16_t last_pc = 0;
       if (last_pc != cpu_state.pc) {
         last_pc = cpu_state.pc;
-        ram_hexdump = (*ram_or)->hexdump();
+        ram_hexdump = (*hd6301_thing)->get_ram_hexdump();
       }
       ImGui::Begin("RAM Hexdump", &show_ram_hexdump);
       ImGui::Text("%s", ram_hexdump.c_str());
@@ -428,7 +347,7 @@ int main(int argc, char* argv[]) {
     //
     SDL_Rect graphics_rect = {0, 0, kGraphicsFrameWidth * scale,
                               kGraphicsFrameHeight * scale};
-    auto status = graphics->render(renderer, &graphics_rect);
+    auto status = (*hd6301_thing)->render_graphics(renderer, &graphics_rect);
     if (!status.ok()) {
       LOG(ERROR) << "Failed to render graphics: " << status;
       break;
@@ -436,8 +355,5 @@ int main(int argc, char* argv[]) {
     ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
     SDL_RenderPresent(renderer);
   }
-  emulator_running = false;
-  emulator_thread.join();
-
   return 0;
 }

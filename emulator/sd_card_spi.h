@@ -19,26 +19,13 @@ class SDCardSPI {
   ~SDCardSPI() = default;
   SDCardSPI(const SDCardSPI&) = delete;
 
-  // Create an emulated SD Card backed by 4MB of storage that's initially all
-  // zeros.
-  static absl::StatusOr<std::unique_ptr<SDCardSPI>> create(SPI* spi);
-
-  enum class ImageMode {
-    // The image file is loaded from disk, but changes are in-memory only. Note:
-    // requires as much RAM as the size of the image file.
-    kEphemeralWrites,
-    // The image file is loaded from disk, and changes are written back to it.
-    kPersistedWrites,
-  };
-  // Create an emulated SD Card loaded from a file on disk. The file must exist.
-  // If mode is kPersistedWrites, changes will be written back to the file.
+  // Create an emulated SD Card that reads and writes to the given stream.
   static absl::StatusOr<std::unique_ptr<SDCardSPI>> create(
-      SPI* spi, std::string_view image_file_name, ImageMode mode);
+      SPI* spi, std::unique_ptr<std::basic_iostream<char>> image);
+
+  void set_image(std::unique_ptr<std::basic_iostream<char>> image);
 
  private:
-  using stream_type = std::basic_iostream<char>;
-  using backing_buffer_type = std::vector<char>;
-
   struct Command {
     static absl::StatusOr<Command> create(
         const std::vector<uint8_t>& input_buffer);
@@ -60,18 +47,13 @@ class SDCardSPI {
 
   SDCardSPI(SPI* spi);
 
-  absl::Status initialize(std::unique_ptr<stream_type> card_image,
-                          std::unique_ptr<backing_buffer_type> backing_buffer);
   uint8_t handle_byte_in(uint8_t data);
   uint8_t handle_enable(bool enabled);
 
   void handle_command(const Command& command);
 
   SPI* spi_;
-  // Note: card_image_ is defined after backing buffer to ensure it's deleted
-  // first
-  std::unique_ptr<backing_buffer_type> backing_buffer_;
-  std::unique_ptr<stream_type> card_image_;
+  std::unique_ptr<std::basic_iostream<char>> card_image_;
   int block_count_ = 0;
   bool enabled_ = false;
 

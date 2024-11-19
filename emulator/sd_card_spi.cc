@@ -38,61 +38,22 @@ uint8_t kDataErrorTokenError = 0x01;
 constexpr int kBlockSize = 512;
 }  // namespace
 
-absl::StatusOr<std::unique_ptr<SDCardSPI>> SDCardSPI::create(SPI* spi) {
+absl::StatusOr<std::unique_ptr<SDCardSPI>> SDCardSPI::create(
+    SPI* spi, std::unique_ptr<std::basic_iostream<char>> image) {
   auto sd_card_spi = std::unique_ptr<SDCardSPI>(new SDCardSPI(spi));
-
-  // Create an empty 4MB backing buffer and an iostream over it.
-  auto empty_image = std::make_unique<backing_buffer_type>(4 * 1024 * 1024, 0);
-  auto stream =
-      std::make_unique<std::basic_spanstream<char>>(std::span{*empty_image});
-
-  auto status =
-      sd_card_spi->initialize(std::move(stream), std::move(empty_image));
-  if (!status.ok()) {
-    return status;
-  }
+  sd_card_spi->set_image(std::move(image));
   return sd_card_spi;
 }
 
-absl::StatusOr<std::unique_ptr<SDCardSPI>> SDCardSPI::create(
-    SPI* spi, std::string_view image_file_name, ImageMode mode) {
-  auto file_stream = std::make_unique<std::fstream>();
-  file_stream->open(std::string(image_file_name),
-                    mode == ImageMode::kPersistedWrites
-                        ? std::ios::in | std::ios::out | std::ios::binary
-                        : std::ios::in | std::ios::binary);
-
-  if (!file_stream->is_open()) {
-    return absl::NotFoundError(
-        absl::StrCat("Failed to open file: ", std::string(image_file_name)));
-  }
-
-  std::unique_ptr<stream_type> stream;
-  std::unique_ptr<backing_buffer_type> backing_buffer;
-  switch (mode) {
-    case ImageMode::kEphemeralWrites: {
-      // Ephemeral writes means we need to load the entire file into memory.
-      backing_buffer = std::make_unique<backing_buffer_type>(
-          std::istreambuf_iterator<char>(*file_stream),
-          std::istreambuf_iterator<char>());
-      stream = std::make_unique<std::basic_spanstream<char>>(
-          std::span{*backing_buffer});
-      break;
-    }
-    case ImageMode::kPersistedWrites: {
-      // Persisted writes means we can stream the file directly.
-      stream = std::move(file_stream);
-      break;
-    }
-  }
-
-  auto sd_card_spi = std::unique_ptr<SDCardSPI>(new SDCardSPI(spi));
-  auto status =
-      sd_card_spi->initialize(std::move(stream), std::move(backing_buffer));
-  if (!status.ok()) {
-    return status;
-  }
-  return sd_card_spi;
+void SDCardSPI::set_image(std::unique_ptr<std::basic_iostream<char>> image) {
+  card_image_ = std::move(image);
+  // Compute the number of blocks in the file or image.
+  card_image_->seekg(0);
+  card_image_->ignore(std::numeric_limits<std::streamsize>::max());
+  block_count_ = card_image_->gcount() / kBlockSize;
+  // Clear the EOF flag.
+  card_image_->clear();
+  card_image_->seekg(0);
 }
 
 absl::StatusOr<SDCardSPI::Command> SDCardSPI::Command::create(
@@ -108,26 +69,11 @@ absl::StatusOr<SDCardSPI::Command> SDCardSPI::Command::create(
   return command;
 }
 
-SDCardSPI::SDCardSPI(SPI* spi) : spi_(spi) {}
-
-absl::Status SDCardSPI::initialize(
-    std::unique_ptr<stream_type> card_image,
-    std::unique_ptr<backing_buffer_type> backing_buffer) {
-  backing_buffer_ = std::move(backing_buffer);
-  card_image_ = std::move(card_image);
+SDCardSPI::SDCardSPI(SPI* spi) : spi_(spi) {
   spi_->set_byte_received_callback(
       [this](uint8_t data) { return handle_byte_in(data); });
   spi_->set_chip_select_callback(
       [this](bool enabled) { return handle_enable(enabled); });
-
-  // Compute the number of blocks in the file or image.
-  card_image_->seekg(0);
-  card_image_->ignore(std::numeric_limits<std::streamsize>::max());
-  block_count_ = card_image_->gcount() / kBlockSize;
-  // Clear the EOF flag.
-  card_image_->clear();
-  card_image_->seekg(0);
-  return absl::OkStatus();
 }
 
 uint8_t SDCardSPI::handle_byte_in(uint8_t data) {

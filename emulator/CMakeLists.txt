@@ -24,6 +24,7 @@ set(emulator_SOURCES
     emulator.cc
     graphics.cc
     hd6301_serial.cc
+    hd6301_thing.cc
     ioport.cc
     ps2_keyboard.cc
     ram.cc
