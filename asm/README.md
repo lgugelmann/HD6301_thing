@@ -150,6 +150,8 @@ e.g. reading one bit per cycle, which would take 8µs * 512 = 4096µs or ~4ms.
 There are multiple ways to address this, from faster software to better hardware
 tricks like using a wider bus, offloading some SPI processing etc.
 
+#### Bit-banging approach
+
 For record keeping, the optimizations so far - in `sdbench.s` numbers - are:
 
 - `57058 01`, baseline. That's 57058 + 65536 = 122594 cycles, or ~122ms.
@@ -163,18 +165,42 @@ For record keeping, the optimizations so far - in `sdbench.s` numbers - are:
   bump. Total now at ~91ms, or a 25% improvement.
 
 The current bitbang code for each bit is this:
-```
+
+```asm
         inc b                   ; 1 cycle
         stb IO_ORA              ; 4 cycles, raise clock
         asl a                   ; 1 cycle
         tst IO_IRA              ; 4 cycles, sets N to PA7
         bpl +                   ; 3 cycles, On 0 we don't need the 'inc a'
         inc a                   ; 1 cycle
-+
-        dec b                   ; 1 cycle
++       dec b                   ; 1 cycle
         stb IO_ORA              ; 4 cycles, Lower clock
 ```
 
-It doesn't look like it can be simplified much, and it's 19 cycles long. That's
-8\*512\*19 = 86016, or `12288 01` in benchmark-speak. We can shave off at most
-another 10ms without improving the bit cost.
+It doesn't look like it can be simplified much, and it's 19 cycles long. With a
+few extra instructions for setup that's 160 cycles per byte. Assuming no extra
+cost that works out to ~81ms per sector as a hard limit.
+
+#### Shift-register approach
+
+The W65C22 has a shift register that can work as fast as half the system
+clock. That's potentially 16 cycles per byte plus code to read them. CB1 outputs
+a clock signal, CB2 receives input data. The clock is high when idle, data is
+supposed to be prepared on the falling edge, and the W65C22 samples it on the
+rising clock edge.
+
+The issue is that SD Cards speak SPI mode 0, which requires a clock that's low
+when idle, and samples on the rising edge. Inverting the '22 clock makes it low
+on idle, but the sampling happens on the wrong edge.
+
+For communication from the '22 to the SD card one can invert the clock and delay
+it by ~1 cycle to make it work.
+
+For communication from the SD card to the '22 we can use something like a
+74xx164 shift register for serial to parallel conversion and connect the 8 bits
+to a full port. It's clocked the same way as the write side.
+
+Sending data is then a write into the SR + 17 cycles to clock it out (accounting
+for the clock delay), so 21 cycles. Receiving data requires a write into the SR
+to get the clock going, then a 17 cycles delay, then a read on the port, which
+is 25 cycles total.
