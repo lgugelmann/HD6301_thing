@@ -298,5 +298,51 @@ TEST_F(W65C22Test, Timer2DoesNotFireAgainWithoutReset) {
             0);
 }
 
+TEST_F(W65C22Test, ShiftRegisterWriteInPhi2ModeShiftsOut) {
+  // Set up a callback to get the state of the two CB bits. This works because
+  // the code is synchronous - but this will need some notifications to be
+  // correct if we ever make port callbacks async.
+  uint8_t cb_state = 0;
+  w65c22_->port_cb()->register_write_callback(
+      [&cb_state](uint8_t data) { cb_state = data; });
+
+  w65c22_->write(W65C22::kAuxiliaryControlRegister,
+                 W65C22::kAcrShiftRegisterOutPhi2);
+  w65c22_->write(W65C22::kShiftRegister, 0xc5);
+  EXPECT_EQ(w65c22_->read(W65C22::kShiftRegister), 0xc5);
+  // No change for 3 cycles after the write.
+  for (int i = 0; i < 3; ++i) {
+    uint8_t prev_cb_state = cb_state;
+    w65c22_->tick();
+    EXPECT_EQ(prev_cb_state, cb_state);
+  }
+  w65c22_->tick();
+  // On the fourth cycle we start shifting. Expect the clock line to go down,
+  // and the first bit (a 1) of 0b11000101 to be shifted out.
+  EXPECT_EQ(cb_state, 0b00000010);
+  w65c22_->tick();
+  // Clock goes up
+  EXPECT_EQ(cb_state, 0b00000011);
+  w65c22_->tick();
+  // Clock goes down, second bit is shifted out.
+  EXPECT_EQ(cb_state, 0b00000000);
+  w65c22_->tick();
+  // Clock goes up
+  EXPECT_EQ(cb_state, 0b00000001);
+
+  // Continue for the remaining 6 bits.
+  for (int i = 0; i < 2 * 6; ++i) {
+    w65c22_->tick();
+  }
+  // Final state is clock up, last bit on the line, and no further changes on
+  // ticks.
+  w65c22_->tick();
+  EXPECT_EQ(w65c22_->port_cb()->read(), 0x01);
+  w65c22_->tick();
+  EXPECT_EQ(w65c22_->port_cb()->read(), 0x01);
+  w65c22_->tick();
+  EXPECT_EQ(w65c22_->port_cb()->read(), 0x01);
+}
+
 }  // namespace
 }  // namespace eight_bit

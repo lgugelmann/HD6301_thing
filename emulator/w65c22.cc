@@ -52,11 +52,39 @@ void W65C22::tick() {
       timer2_active_ = false;
     }
   }
+  if (shift_register_shifts_remaining_ > 0) {
+    --shift_register_ticks_to_next_edge_;
+    if (shift_register_ticks_to_next_edge_ == 0) {
+      if (cb_port_state_ & 1) {
+        // Clock is up, so we're at the start of a shift cycle. First lower the
+        // clock line (CB1), then shift out the bit (CB2). We do this in two
+        // steps to make sure we're not depending on the data being ready on the
+        // falling edge already.
+        cb_port_state_ &= ~1;
+        port_cb_.write(cb_port_state_);
+        // Shift out the next bit. The SR is LSB first.
+        uint8_t bit =
+            shift_register_ >> (shift_register_shifts_remaining_ - 8) & 1;
+        cb_port_state_ = bit << 1;  // Clock is 0 here, only need to write bit 1
+        port_cb_.write(cb_port_state_);
+        shift_register_ticks_to_next_edge_ = 1;
+      } else {
+        // Clock is down, so we're at the end of a shift cycle. Raise the clock
+        // line (CB1) again.
+        cb_port_state_ |= 1;
+        port_cb_.write(cb_port_state_);
+        --shift_register_shifts_remaining_;
+        shift_register_ticks_to_next_edge_ = 1;
+      }
+    }
+  }
 }
 
 IOPort* W65C22::port_a() { return &port_a_; }
 
 IOPort* W65C22::port_b() { return &port_b_; }
+
+IOPort* W65C22::port_cb() { return &port_cb_; }
 
 W65C22::W65C22(AddressSpace* address_space, uint16_t base_address,
                Interrupt* interrupt)
@@ -64,7 +92,8 @@ W65C22::W65C22(AddressSpace* address_space, uint16_t base_address,
       base_address_(base_address),
       interrupt_(interrupt),
       port_a_("65C22 Port A"),
-      port_b_("65C22 Port B") {}
+      port_b_("65C22 Port B"),
+      port_cb_("65C22 Port CB") {}
 
 absl::Status W65C22::Initialize() {
   auto status = address_space_->register_read(
@@ -111,6 +140,9 @@ uint8_t W65C22::read(uint16_t address) {
       // Clear the timer 2 IFR bit when reading the counter.
       clear_irq_flag(kIrqTimer2);
       return timer2_counter_ >> 8;
+    case kShiftRegister:
+      clear_irq_flag(kIrqShiftRegister);
+      return shift_register_;
     case kAuxiliaryControlRegister:
       return auxiliary_control_register_;
     case kInterruptEnableRegister:
@@ -168,8 +200,29 @@ void W65C22::write(uint16_t address, uint8_t value) {
       timer2_active_ = true;
       clear_irq_flag(kIrqTimer2);
       break;
+    case kShiftRegister:
+      shift_register_ = value;
+      if ((auxiliary_control_register_ & kAcrShiftRegisterBits) ==
+          kAcrShiftRegisterOutPhi2) {
+        // Shift out under phi2 control
+        shift_register_shifts_remaining_ = 8;
+        shift_register_ticks_to_next_edge_ = 4;
+      } else {
+        // Warn about a SR write while it's in an unimplemented mode.
+        LOG(ERROR) << "Shift register write while in unimplemented mode. ACR: "
+                   << absl::Hex(auxiliary_control_register_, absl::kZeroPad2);
+      }
+      clear_irq_flag(kIrqShiftRegister);
+      break;
     case kAuxiliaryControlRegister:
       auxiliary_control_register_ = value;
+      if ((auxiliary_control_register_ & kAcrShiftRegisterBits) ==
+          kAcrShiftRegisterOutPhi2) {
+        // Shift out under phi2 control, set CB bits to outputs
+        port_cb_.set_direction(0x03);
+        port_cb_.write(0x01);  // Clock is high when idle
+        cb_port_state_ = 0x01;
+      }
       break;
     case kInterruptFlagRegister:
       // The datasheet isn't explicit on this, but it seems that one can clear
