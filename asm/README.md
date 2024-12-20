@@ -198,9 +198,13 @@ it by ~1 cycle to make it work.
 
 For communication from the SD card to the '22 we can use something like a
 74xx164 shift register for serial to parallel conversion and connect the 8 bits
-to a full port. It's clocked the same way as the write side.
+to a full port. It's clocked the same way as the write side. The data would be
+ready one cycle after the SR output done flag is set.
+
+The CS line can be handled with CA2 for example to avoid using up an additional
+pin on a port.
 
 Sending data is then a write into the SR + 17 cycles to clock it out (accounting
 for the clock delay), so 21 cycles. Receiving data requires a write into the SR
 to get the clock going, then a 17 cycles delay, then a read on the port, which
-is 25 cycles total.
+is 25 cycles total. For 512 bytes that works out to roughly 13ms.
