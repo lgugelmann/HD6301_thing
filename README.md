@@ -189,3 +189,62 @@ the next module is the overriding concern here.
 | Pin number | Function | Notes                                                                            |
 |------------|----------|----------------------------------------------------------------------------------|
 | 38         | STBYB    | Active low standby signal. For Pico Programmer to make HD6301 let go of the bus. |
+
+## Work log
+
+This section contains possible projects and the state of the current in-progress
+pieces of work.
+
+### Faster SD card reads
+
+The next goal is to get faster SD card reads as described in `asm/README.md`.
+This means emulating the schematic in `io_board` in the emulator.
+
+Tasks:
+
+- Emulator:
+  - Create basic shift register output support in W65C22 \[done\]
+  - Figure out how to emulate clock inversion and delay
+  - Emulate a serial-in, parallel-out shift register like 74'164 series.
+  - Connect the above two pieces in-between the W65C22 and the current SPI emulation.
+- ASM
+  - Update the code to use SR instead of bit-banging on a port for SPI
+- Hardware
+  - Actually try the approach in real hardware
+
+### Documentation and repository cleanup
+
+Any day now! This README file is badly outdated vs the state of the project. It
+doesn't mention the emulator at all for example. The various hardware modules
+should also be listed and better documented.
+
+Tasks:
+
+- Pick a standard for how to structure the individual module folders and stick to it
+  - Put a README.md with each module, and document all known hardware issues.
+  - I don't like the catch-all `greenpak` folder. That should go with the modules.
+- Get rid of the `ft231x_programmer` stuff. It's an early idea that's now badly
+  outdated.
+- Rename `board` to something better.
+- Add README.md to the `tools` folder.
+- Update this file with a better overall description. It's very very out of date.
+
+### General ASM improvements
+
+Tasks:
+
+- Define and implement a standard for error reporting. With FAT16, MIDI decoding
+  etc there is some complex logic that could benefit from a standard way to pass
+  around errors and refer to standard error strings for them.
+
+### FAT16 improvements
+
+The current FAT16 code is read-only and is limited to using only one sector of
+FAT (so only 254 clusters). This is not an actual limitation yet. The APIs are a
+bit wonky, the error reporting inconsistent.
+
+Tasks:
+
+- Implement write support
+  - Goal: Snake should get persistent high scores.
+- Implement support for using more than just the first FAT sector

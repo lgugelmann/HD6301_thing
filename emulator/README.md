@@ -25,12 +25,13 @@ with enough accuracy that it can run all current code. In particular:
     time characterizing this exactly, so who knows?)
 - OPL3 chip emulation courtesy of the Nuked-OPL3 emulator.
   - Due to the way sound is generated in batches, the OPL3 commands might be
-    slighly misaligned vs actual hardware.
+    slightly misaligned vs actual hardware.
 - TL16C2550 emulation for the MIDI board. This one is really basic still and
   most of the features aren't there. Proper baud rate, buffers, etc. are not
   implemented. The second UART isn't implemented either.
-- Bare-bones WD65C22 VIA emulation (only port A/B)
-- Bare-bones emulation of an SD card SPI interface attached to WD65C22 port A
+- Incomplete WD65C22 VIA emulation
+  - Ports A/B, some shift register output support.
+- Bare-bones emulation of an SD card SPI interface attached to WD65C22 port A.
 
 The serial interfaces can be interacted with by reading/writing on the PTYs
 printed on the console when the emulator starts.
@@ -45,7 +46,7 @@ The emulator has a hard dependency on SDL2, and an optional one on RtMidi. It
 can be built using CMake. Create a build directory somewhere, e.g.
 `emulator/build`. Then in that directory run `cmake [path to CMakeList.txt]`. In
 the example before that's `cmake ..`. After successfully configuring, run `make`
-to create the `emulator` binary.
+(or `ninja` if that's what your CMake does) to create the `emulator` binary.
 
 Alternatively, open the project in VSCode and hit F7 (assuming you have the
 CMake extensions installed - which is very likely).
@@ -65,12 +66,16 @@ See the documentation there for the prerequisites for assembling a ROM image.
 ## Running the emulator
 
 ```sh
-./emulator --rom_file=[rom file]
+./emulator --rom_file=[rom file] --sd_image_file=[sd card image]
 ```
+
+The `--sd_image_file` part is optional. The current ROM will just throw an
+SD-related error at startup if you don't pass one. You can generate an image by
+running the `make_fat16_sd_image.sh` command in the `../tools/` directory.
 
 There are a few extra command line options. To see them, run `./emulator
 --helpfull`. There are somewhat verbose `VLOG()` statements sprinkled in the
-codebase for some debugging help, levle 3 and above prints every instruction
+codebase for some debugging help, level 3 and above prints every instruction
 that's being run for example. For that, add `-v 3 --stderrthreshold 0` to the
 command line for example.
 
@@ -80,14 +85,14 @@ After you start the ROM file you'll see the monitor prompt like this:
 
 ```text
 
-> 
+>
 ```
 
-Try `ls` to see a list of available programs. You can run them with `run` or `r`
-followed by the program name. For example:
+Try `list` to see a list of available programs. You can run them with `run` or
+`r` followed by the program name. For example:
 
 ```text
-> ls
+> list
 edi 94B7
 graphics_test 9A5E
 hello 9B21
@@ -114,7 +119,7 @@ the program counter, and the stack pointer, and then the familiar monitor prompt
 ```text
 --HINZVC  A  B    X   PC   SP
 11000100 00 00 100B F89B 7DF2
-> 
+>
 ```
 
 To get back to the running program use the `continue` or `c` command.
@@ -122,6 +127,9 @@ To get back to the running program use the `continue` or `c` command.
 Other available commands are `reset` which starts the system fresh, and `clear`
 which resets the graphics. That last command may also bring back the cursor.
 Some programs disable it and don't turn it back on on exit :-).
+
+There are also basic implementations of the file system commands `ls`, `cd`, and
+`cat`. They work on the SD card image.
 
 ## Profiling & sanitizer runs
 
