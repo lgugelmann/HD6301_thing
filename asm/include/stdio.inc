@@ -20,6 +20,8 @@ __stdio_inc = 1
         PUBLIC_SHARED putx_dec
         PUBLIC_SHARED putx_hex
 
+__enable_serial_io = 0
+
 stdio_init:
         jsr graphics_init
         jsr keyboard_init
@@ -41,8 +43,9 @@ getchar:
         rts
 
 
-; Output the character in A on both graphical and serial terminal
+; Output the character in A on both graphical and (if enabled) serial terminal
 putchar:
+        if __enable_serial_io = 1
         jsr serial_send_byte
         ; If that was a backspace, also clear the deleted character.
         cmp a,#KEY_BACKSPACE
@@ -61,6 +64,7 @@ putchar:
         jsr serial_send_byte
         lda #KEY_ENTER
 .serial_handled:
+        endif
         jmp graphics_putchar
         ; rts in graphics_putchar
 
