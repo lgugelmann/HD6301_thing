@@ -178,7 +178,10 @@ void W65C22::write(uint16_t address, uint8_t value) {
     case kTimer1CounterHigh:
       // Setting the high byte of the latch also reloads the timer.
       timer1_latch_ = (timer1_latch_ & 0xFF) | (value << 8);
-      timer1_counter_ = timer1_latch_;
+      // The timer is at N for the first cycle after the latch is set to N. Our
+      // tick code decrements the counter immediately. The +1 below shifts
+      // things slightly so the emulator matches the hardware.
+      timer1_counter_ = timer1_latch_ + 1;
       timer1_active_ = true;
       clear_irq_flag(kIrqTimer1);
       break;
@@ -196,7 +199,8 @@ void W65C22::write(uint16_t address, uint8_t value) {
       timer2_latch_low_ = value;
       break;
     case kTimer2CounterHigh:
-      timer2_counter_ = (value << 8) | timer2_latch_low_;
+      // See the timer 1 high counter byte write for an explanation of the +1.
+      timer2_counter_ = ((value << 8) | timer2_latch_low_) + 1;
       timer2_active_ = true;
       clear_irq_flag(kIrqTimer2);
       break;
