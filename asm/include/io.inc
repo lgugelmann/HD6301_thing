@@ -25,9 +25,12 @@ io_init:
         ; Set all IO ports to input
         clr IO_DDRA
         clr IO_DDRB
-        ; Disable interrupts. Bit 7 is 0 for 'clear where 1 is set'
+        ; Disable all interrupts. Bit 7 is 0 for 'clear where 1 is set'
         lda #(~IO_IRQ_ANY & $ff)
         sta IO_IER
+        ; Set the ACR & PCR to a known state
+        clr IO_ACR
+        clr IO_PCR
         rts
 
 io_irq:
@@ -35,8 +38,8 @@ io_irq:
         bpl .end                ; bit 7 is not set, not our irq
 
         ; Handle timer 1 by calling the relevant callback if provided
-        bit a,IO_IRQ_T1
-        bne +
+        bit a,#IO_IRQ_T1
+        beq +
         ldx io_timer1_callback
         beq +
         jsr 0,x
