@@ -4151,6 +4151,16 @@
 	)
 	(wire
 		(pts
+			(xy 154.94 104.14) (xy 151.13 104.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "198e2efd-5354-46f7-a98f-093ecc8b95a8")
+	)
+	(wire
+		(pts
 			(xy 139.7 118.11) (xy 139.7 119.38)
 		)
 		(stroke
@@ -4371,6 +4381,16 @@
 	)
 	(wire
 		(pts
+			(xy 151.13 102.87) (xy 142.24 102.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "440c5ff6-d96c-4e2d-9653-0957957118d8")
+	)
+	(wire
+		(pts
 			(xy 53.34 138.43) (xy 53.34 139.7)
 		)
 		(stroke
@@ -4568,26 +4588,6 @@
 			(type default)
 		)
 		(uuid "64e01985-895e-442d-aa16-668ee2118704")
-	)
-	(wire
-		(pts
-			(xy 142.24 102.87) (xy 152.4 102.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "64fa22cd-d7ef-4f96-93b2-e8740c861995")
-	)
-	(wire
-		(pts
-			(xy 152.4 104.14) (xy 154.94 104.14)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "65d23331-af47-43e2-9fc8-f923c937a1a4")
 	)
 	(wire
 		(pts
@@ -4901,16 +4901,6 @@
 	)
 	(wire
 		(pts
-			(xy 152.4 105.41) (xy 152.4 104.14)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "92f3709d-d2fe-4592-8148-00ad8a34d693")
-	)
-	(wire
-		(pts
 			(xy 45.72 44.45) (xy 45.72 45.72)
 		)
 		(stroke
@@ -4961,13 +4951,13 @@
 	)
 	(wire
 		(pts
-			(xy 152.4 102.87) (xy 152.4 101.6)
+			(xy 151.13 104.14) (xy 151.13 102.87)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "a2210053-3a00-4997-891d-01c030731c4d")
+		(uuid "a26769b2-fb37-4adf-8909-e62a42214386")
 	)
 	(wire
 		(pts
@@ -4988,6 +4978,16 @@
 			(type default)
 		)
 		(uuid "a4cf04e8-e581-48a4-ab7d-2268704f4c8b")
+	)
+	(wire
+		(pts
+			(xy 152.4 101.6) (xy 152.4 105.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a570236e-4ba7-42b7-a1ae-3ed13a1d622f")
 	)
 	(wire
 		(pts
@@ -5038,16 +5038,6 @@
 			(type default)
 		)
 		(uuid "b9eb4520-0c0c-4b99-abb4-4cf69531afe8")
-	)
-	(wire
-		(pts
-			(xy 152.4 101.6) (xy 154.94 101.6)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "be57ac35-ab8c-4b9a-b2ee-304975d52da6")
 	)
 	(wire
 		(pts
@@ -5301,6 +5291,16 @@
 	)
 	(wire
 		(pts
+			(xy 154.94 101.6) (xy 152.4 101.6)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f861fad3-34fe-4a59-8bc1-cb07d2431e20")
+	)
+	(wire
+		(pts
 			(xy 182.88 86.36) (xy 182.88 109.22)
 		)
 		(stroke
@@ -5329,6 +5329,17 @@
 		)
 		(uuid "ffafcdc8-106b-4fab-a1d9-259213bd0fb5")
 	)
+	(text "This is the schematic as it should be.\n\nThe actual one that's working on a breadboard uses a 74AHTC595\ninstead of the '164. The GreenPAK generates a second delayed\nclock to trigger the register sampling. It should work roughly\nequivalently to the '164 version.\n\nThinking about it: the register sampling capability of the '595\nmigth allow an overlap of reading and writing:\n- stop interrupts\n- kick off SR\n- (read previous A value)\n- restart interrupts\n- counter in the GreenPAK triggers sampling after 8 clock cycles\n- stop interrupts\n- kick off the next byte\n- read A\n- ..."
+		(exclude_from_sim no)
+		(at 199.39 113.792 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left top)
+		)
+		(uuid "b77295e0-4d06-42e4-8a40-dc66acd223ae")
+	)
 	(label "A15"
 		(at 62.23 111.76 0)
 		(fields_autoplaced yes)
@@ -5352,7 +5363,7 @@
 		(uuid "01d366aa-e08e-46f4-be88-57b998b98f9f")
 	)
 	(label "SER_IN"
-		(at 142.24 102.87 0)
+		(at 142.24 105.41 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -5449,6 +5460,17 @@
 			(justify left bottom)
 		)
 		(uuid "32a16138-2e30-4dca-a47e-cfd80012ac51")
+	)
+	(label "SER_CLK"
+		(at 142.24 102.87 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "4a6c6276-f302-431d-898e-ed00f550e272")
 	)
 	(label "CLK"
 		(at 121.92 87.63 180)
@@ -5570,17 +5592,6 @@
 			(justify left bottom)
 		)
 		(uuid "78c3ffe8-c3d7-4f51-b86b-e445c5050306")
-	)
-	(label "SER_CLK"
-		(at 142.24 105.41 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "7b4167a2-56ea-46e7-b944-28f1f8d07dd6")
 	)
 	(label "A7"
 		(at 91.44 113.03 180)
