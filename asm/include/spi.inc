@@ -15,10 +15,11 @@ __spi_inc = 1
         PUBLIC spi_send_byte_ff
         PUBLIC spi_send_byte_00
 
-CLK  = %00000001
-MOSI = %00000010
-MISO = %10000000
-CS   = %00000100
+CA2_LOW  = %00001100
+CA2_HIGH = %00001110
+CA2_BITS = ~%00001110
+
+SR_IFR_FLAG = %00000100
 
 ; General notes:
 ; - spi_send/receive_byte leave X untouched as we might have to do loops of 512
@@ -26,122 +27,82 @@ CS   = %00000100
 ; - spi_discard_byte, spi_send_byte_ff/00, spi_end_command leave A untouched as
 ;   it's often carrying the value of an earlier spi_receive_byte that we want to
 ;   preserve.
-; - MISO in bit 7 is an important optimization as it can be read without using a
-;   register via 'tst IO_IRA' and the N flag. The rest of the SPI lines can be
-;   placed anywhere.
-; - Some code is already attempting to play nice to other users of port A, most
-;   isn't.
-; - There are definitely opportunities to optimize further. Some loops could be
-;   unrolled if performance is paramount too.
 
+; Initialize SPI. We have to:
+; - Set the shift register up for phi2-clocked output
+; - Set port B as inputs for the input data
+; - Set CA2 high as /CS line
 spi_init:
-        lda #CS
-        ; CS high, CLK low, MOSI low (but that doesn't matter)
-        sta IO_ORA
-        lda #(CLK | MOSI | CS)
-        sta IO_DDRA
+        ; Shift register setup.
+        lda #%00011000          ; Output, phi2-clocked
+        sta IO_ACR
+
+        ; Port B as inputs
+        clr IO_DDRB
+
+        ; CA2 initially high
+        lda IO_PCR
+        ora a,#CA2_HIGH
+        sta IO_PCR
         rts
 
-; Start a SPI command. Leaves all registers intact, but clears the for non-SPI
-; bits on port A too.
+; Start a SPI command. Clobbers A.
 spi_start_command:
-        ; Set CS low, CLK low (and assume we're the only ones on port A)
-        clr IO_ORA
+        lda IO_PCR
+        and a,#CA2_BITS
+        ora a,#CA2_LOW
+        sta IO_PCR
         rts
 
 ; End a SPI command. Clobbers B.
 spi_end_command:
-        ldb #CS
-        stb IO_ORA
+.wait:
+        ldb IO_IFR
+        and b,#SR_IFR_FLAG
+        beq .wait
+
+        ldb IO_PCR
+        ora b,#CA2_HIGH         ; high is all 1, so or is sufficient
+        stb IO_PCR
         rts
 
-; Receives a byte and returns it in A. Clobbers B.
-; Cycles: 8 + 8*19 (worst case) + 11 (jsr,rts) = 171
+; Receives a byte and returns it in A.
 spi_receive_byte:
-        ldb #MOSI
-        stb IO_ORA
+        lda #$ff                ; We could skip this and send a random value
+        sta IO_SR
+        ; It takes 18 cycles for the data to show up at port A fully. This means
+        ; we're most likely going to use 27 cycles here (3 loops, unless
+        ; interrupted). TODO: optimize this so we get the data faster.
+.wait:
+        lda IO_IFR
+        and a,#SR_IFR_FLAG
+        beq .wait
 
-getbit  macro
-        inc b                   ; CLK is bit 0
-        stb IO_ORA              ; Raise clock
-        asl a
-        tst IO_IRA              ; Sets N to PA7
-        bpl +                   ; On 0 we don't need the 'inc a'
-        inc a
-+
-        dec b
-        stb IO_ORA              ; Lower clock
-        endm
-
-        getbit                  ; bit 0
-        getbit                  ; bit 1
-        getbit                  ; bit 2
-        getbit                  ; bit 3
-        getbit                  ; bit 4
-        getbit                  ; bit 5
-        getbit                  ; bit 6
-        getbit                  ; bit 7
-
+        lda IO_IRB
         rts
 
-; Sends the byte in A, clobbers A and B.
+; Sends the byte in A.
 spi_send_byte:
-        pshx
-        ldx #8
-.loop:
-        asl a
-        bcc .send_zero
-        ldb #MOSI
-        stb IO_ORA
-        ldb #(MOSI | CLK)
-        stb IO_ORA
-        clr IO_ORA
-        dex
-        bne .loop
-        bra .end
-.send_zero:
-        ; clr IO_ORA    ; can assume this is already done
-        ldb #CLK
-        stb IO_ORA
-        clr IO_ORA
-        dex
-        bne .loop
-.end:
-        pulx
+        psh a
+        pul a
+        sta IO_SR
         rts
 
-; Send the ff byte. This is faster than spi_send_byte. This works corectly with
-; CS both high or low. Assumes that CLK is low at the start. Clobbers B, X.
+; Send the ff byte without touching A. Clobbers B.
 spi_send_byte_ff:
 ; Sending ff or discarding a byte are equivalent
 spi_discard_byte:
-        ldb IO_IRA              ; Make sure to get CS from the current state
-        ora b,#MOSI
-
-        ldx #8
-.loop:
-        inc b                   ; clock up
-        stb IO_ORA
-        dec b                   ; clock down
-        stb IO_ORA
-        dex
-        bne .loop
+        psh b
+        pul b                   ; Waste a bit of time. TODO: fix this.
+        ldb #$ff
+        stb IO_SR
         rts
 
-; Send the 00 byte. This is faster than spi_send_byte. This works corectly with
-; CS both high or low. Assumes that CLK is low at the start. Clobbers B, X.
+; Send the 00 byte. This gets the SR clock going without touching any registers.
 spi_send_byte_00:
-        ldb IO_IRA              ; Make sure to get CS from the current state
-        and b,#~MOSI
-
-        ldx #8
-.loop:
-        inc b                   ; clock up
-        stb IO_ORA
-        dec b                   ; clock down
-        stb IO_ORA
-        dex
-        bne .loop
+        psh a
+        pul a                   ; Waste a bit of time - we seem to be going too fast
+        clr IO_SR
         rts
 
         ENDSECTION spi

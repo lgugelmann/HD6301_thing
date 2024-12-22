@@ -218,10 +218,10 @@ get_r1:
         rts
 
 ; Wait for the start block marker or a data error token and return it in A. We
-; repeat 100 times as it can take a while for a card to be ready to
+; repeat 500 times as it can take a while for a card to be ready to
 ; read. Clobbers B, X.
 get_start_block:
-        ldx #100
+        ldx #500
 .loop:
         jsr spi_receive_byte
         cmp a,#$ff
@@ -233,7 +233,7 @@ get_start_block:
 
 ; Wait for a data response token from the card. Return it in A. Clobbers B, X.
 get_data_response:
-        ldx #100
+        ldx #500
 .loop:
         jsr spi_receive_byte
         cmp a,#$ff
