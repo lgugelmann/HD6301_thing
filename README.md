@@ -248,3 +248,43 @@ Tasks:
 - Implement write support
   - Goal: Snake should get persistent high scores.
 - Implement support for using more than just the first FAT sector
+
+### Expanding the programmer board to be a runtime monitor thing too
+
+Right now the programmer board has the ability to read almost the entire bus
+(data, address, IRQ), but we're not doing anything with that. An idea would be
+to also plumb CLK back to the Pico and very quickly sample the bus on clock
+edges. Wiring-wise this should be possible on the existing board by changing the
+GreenPAK setup - the C1 pin is unused on the Pico side.
+
+It's not clear that we can do this fast enough (easily), but it's worth trying
+out. It's probably very much possible to do the hard way as we can bit-bang at
+400+MHz for the DVI out using PIO.
+
+Some math:
+
+- The internets claim that Pico interrupt latency can be brought down to
+  100-200ns. A busy-loop on the pin state ~70ns.
+- The LVC245 in use take 10ns max to go from OE to data available.
+- No idea how fast one can read 8 data pins - but probably tens of ns. Say 50 as
+  an upper bound.
+
+If we take some upper bounds we get 200 trigger + 3 * (10 + 50) ~= 400ns. We
+have 500ns budget between clock edges so this sounds doable. Afterwards we have
+500 more ns to do some data processing until the next interesting edge.
+
+Assume we have ~100k of RAM free (total 264k, seems reasonable). If we store 3
+bytes per clock cycle we get roughly 30ms of data in a buffer before we run
+over. In total we generate 3MB/s. Getting those off the Pico in a continuous
+fashion does not seem doable without trickery. The theoretical maximum is
+12Mbit/s, or 1.5MB/sec. In practice folks seem to get somewhere between 500 and
+850 KiB/sec. The minimum information needed to code the instructions would be:
+instruction, address (if needed), data. A 3-byte instruction typically takes 4
+cycles and would have 4 bytes of data total (1 instruction, 2 address, 1
+data). We'd get a factor 3 compression here if that's the average case. It might
+just barely be possible to stream things continuously.
+
+Tasks:
+
+- Rework the GreenPAK setup to get the clock back to a Pico input pin.
+- See how fast the IRQ triggers and whether we can sample the bus on time.
