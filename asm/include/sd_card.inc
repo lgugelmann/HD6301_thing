@@ -16,8 +16,8 @@ __sd_card_inc = 1
         PUBLIC_SHARED sd_card_read_block
         PUBLIC_SHARED sd_card_write_block
 
-	; Address to read from / write to with the next block command. First
-	; byte is MSB, last is LSB.
+        ; Address to read from / write to with the next block command. First
+        ; byte is MSB, last is LSB.
         reserve_system_memory sd_card_block_address, 4
         ; The address at the start of 512 bytes to be written to the card, or
         ; the address to read 512 bytes into.
@@ -163,7 +163,7 @@ sd_card_write_block:
         jsr spi_send_byte
 
         ldx sd_card_io_buffer_address
-	; Add 512 to the address above
+        ; Add 512 to the address above
         xgdx
         add a,#2
         xgdx
@@ -345,7 +345,7 @@ send_cmd58:
         jsr get_r1
         bne .end
 
-	; Top byte is sent first
+        ; Top byte is sent first
         jsr spi_receive_byte
         ; Discard the next 3 bytes. None of the commands below touch A.
         jsr spi_discard_byte
@@ -370,7 +370,7 @@ send_acmd41:
         jsr spi_send_byte_00
         jsr spi_send_byte_00
         jsr spi_send_byte_00
-	; CRC (not checked)
+        ; CRC (not checked)
         jsr spi_send_byte_00
 
         jsr get_r1
