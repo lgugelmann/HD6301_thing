@@ -43,6 +43,7 @@ TEST_F(W65C22Test, Timer1CounterSetOnlyByHighCounterWrite) {
 
   // A high *counter* write should now move the latches to the counter.
   w65c22_->write(W65C22::kTimer1CounterHigh, counter_high + 2);
+  w65c22_->tick();
 
   EXPECT_EQ(w65c22_->read(W65C22::kTimer1CounterLow), counter_low + 1);
   EXPECT_EQ(w65c22_->read(W65C22::kTimer1CounterHigh), counter_high + 2);
@@ -59,7 +60,8 @@ TEST_F(W65C22Test, Timer1LowCounterWriteSetsLowLatch) {
 TEST_F(W65C22Test, Timer1TickReducesCounterValue) {
   w65c22_->write(W65C22::kTimer1LatchLow, 0x01);
   w65c22_->write(W65C22::kTimer1CounterHigh, 0x01);
-  w65c22_->tick();
+  w65c22_->tick();  // 1
+  w65c22_->tick();  // 0
   EXPECT_EQ(w65c22_->read(W65C22::kTimer1CounterLow), 0x00);
   EXPECT_EQ(w65c22_->read(W65C22::kTimer1CounterHigh), 0x01);
   w65c22_->tick();
@@ -72,7 +74,8 @@ TEST_F(W65C22Test, Timer1InterruptFlagSetWhenCounterReachesZero) {
   w65c22_->write(W65C22::kTimer1CounterHigh, 0x00);
   EXPECT_EQ(w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqTimer1,
             0);
-  w65c22_->tick();
+  w65c22_->tick();  // 1
+  w65c22_->tick();  // 0
   EXPECT_EQ(w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqTimer1,
             W65C22::kIrqTimer1);
 }
@@ -80,7 +83,8 @@ TEST_F(W65C22Test, Timer1InterruptFlagSetWhenCounterReachesZero) {
 TEST_F(W65C22Test, Timer1InterruptFlagClearedWhenCounterRead) {
   w65c22_->write(W65C22::kTimer1LatchLow, 0x01);
   w65c22_->write(W65C22::kTimer1CounterHigh, 0x00);
-  w65c22_->tick();
+  w65c22_->tick();  // 1
+  w65c22_->tick();  // 0
   EXPECT_EQ(w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqTimer1,
             W65C22::kIrqTimer1);
   w65c22_->read(W65C22::kTimer1CounterLow);
@@ -127,7 +131,8 @@ TEST_F(W65C22Test, AnyInterruptFlagNotSetIfInterruptNotEnabled) {
   // Set up an interrupt flag
   w65c22_->write(W65C22::kTimer1LatchLow, 0x01);
   w65c22_->write(W65C22::kTimer1CounterHigh, 0x00);
-  w65c22_->tick();
+  w65c22_->tick();  // 1 on the counter
+  w65c22_->tick();  // 0
   // Timer 1 flag is now set
   ASSERT_EQ(w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqTimer1,
             W65C22::kIrqTimer1);
@@ -144,7 +149,8 @@ TEST_F(W65C22Test, AnyInterruptFlagSetIfInterruptEnabled) {
   // Set up an interrupt flag
   w65c22_->write(W65C22::kTimer1LatchLow, 0x01);
   w65c22_->write(W65C22::kTimer1CounterHigh, 0x00);
-  w65c22_->tick();
+  w65c22_->tick();  // 1
+  w65c22_->tick();  // 0
   // Timer 1 flag is now set
   ASSERT_EQ(w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqTimer1,
             W65C22::kIrqTimer1);
@@ -169,7 +175,8 @@ TEST_F(W65C22Test, Timer1InterruptFiresIfEnabled) {
   w65c22_->write(W65C22::kTimer1CounterHigh, 0x00);
   // Make sure the interrupt hasn't fired yet
   ASSERT_FALSE(irq_.has_interrupt());
-  w65c22_->tick();
+  w65c22_->tick();  // 1
+  w65c22_->tick();  // 0
 
   EXPECT_TRUE(irq_.has_interrupt());
 }
@@ -183,7 +190,8 @@ TEST_F(W65C22Test, Timer1InterruptClearedOnCounteRead) {
   w65c22_->write(W65C22::kTimer1CounterHigh, 0x00);
   // Make sure the interrupt hasn't fired yet
   ASSERT_FALSE(irq_.has_interrupt());
-  w65c22_->tick();
+  w65c22_->tick();  // 1
+  w65c22_->tick();  // 0
   ASSERT_TRUE(irq_.has_interrupt());
   // Clear the interrupt by reading the low counter
   w65c22_->read(W65C22::kTimer1CounterLow);
@@ -194,7 +202,8 @@ TEST_F(W65C22Test, Timer1InterruptClearedOnCounteRead) {
 TEST_F(W65C22Test, InterruptsClearedViaIFRWrites) {
   w65c22_->write(W65C22::kTimer1LatchLow, 0x01);
   w65c22_->write(W65C22::kTimer1CounterHigh, 0x00);
-  w65c22_->tick();
+  w65c22_->tick();  // 1
+  w65c22_->tick();  // 0
   ASSERT_EQ(w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqTimer1,
             W65C22::kIrqTimer1);
   // Double-check that reading the IFR doesn't clear anything
@@ -208,7 +217,8 @@ TEST_F(W65C22Test, SingleShotTimerSetsFlagOnlyOnce) {
   w65c22_->write(W65C22::kAuxiliaryControlRegister, 0);
   w65c22_->write(W65C22::kTimer1LatchLow, 0x01);
   w65c22_->write(W65C22::kTimer1CounterHigh, 0x00);
-  w65c22_->tick();
+  w65c22_->tick();  // 1
+  w65c22_->tick();  // 0
   ASSERT_EQ(w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqTimer1,
             W65C22::kIrqTimer1);
   // Clear timer 1 flag by reading low counter
@@ -234,6 +244,7 @@ TEST_F(W65C22Test, Timer2CounterSetOnlyByHighCounterWrite) {
 
   // A high counter write should now move the latches to the counter.
   w65c22_->write(W65C22::kTimer2CounterHigh, counter_high + 2);
+  w65c22_->tick();
 
   EXPECT_EQ(w65c22_->read(W65C22::kTimer2CounterLow), counter_low + 1);
   EXPECT_EQ(w65c22_->read(W65C22::kTimer2CounterHigh), counter_high + 2);
@@ -242,7 +253,8 @@ TEST_F(W65C22Test, Timer2CounterSetOnlyByHighCounterWrite) {
 TEST_F(W65C22Test, Timer2TickReducesCounterValue) {
   w65c22_->write(W65C22::kTimer2LatchLow, 0x01);
   w65c22_->write(W65C22::kTimer2CounterHigh, 0x00);
-  w65c22_->tick();
+  w65c22_->tick();  // 1
+  w65c22_->tick();  // 0
   EXPECT_EQ(w65c22_->read(W65C22::kTimer2CounterLow), 0x00);
   EXPECT_EQ(w65c22_->read(W65C22::kTimer2CounterHigh), 0x00);
   w65c22_->tick();
@@ -253,7 +265,8 @@ TEST_F(W65C22Test, Timer2TickReducesCounterValue) {
 TEST_F(W65C22Test, Timer2InterruptFlagSetWhenCounterReachesZero) {
   w65c22_->write(W65C22::kTimer2LatchLow, 0x01);
   w65c22_->write(W65C22::kTimer2CounterHigh, 0x00);
-  w65c22_->tick();
+  w65c22_->tick();  // 1
+  w65c22_->tick();  // 0
   EXPECT_EQ(w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqTimer2,
             W65C22::kIrqTimer2);
 }
@@ -261,7 +274,8 @@ TEST_F(W65C22Test, Timer2InterruptFlagSetWhenCounterReachesZero) {
 TEST_F(W65C22Test, Timer2InterruptFlagClearedWhenLowCounterRead) {
   w65c22_->write(W65C22::kTimer2LatchLow, 0x01);
   w65c22_->write(W65C22::kTimer2CounterHigh, 0x00);
-  w65c22_->tick();
+  w65c22_->tick();  // 1
+  w65c22_->tick();  // 0
   ASSERT_EQ(w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqTimer2,
             W65C22::kIrqTimer2);
   w65c22_->read(W65C22::kTimer2CounterLow);
@@ -272,7 +286,8 @@ TEST_F(W65C22Test, Timer2InterruptFlagClearedWhenLowCounterRead) {
 TEST_F(W65C22Test, Timer2InterruptFlagClearedWhenHighCounterRead) {
   w65c22_->write(W65C22::kTimer2LatchLow, 0x01);
   w65c22_->write(W65C22::kTimer2CounterHigh, 0x00);
-  w65c22_->tick();
+  w65c22_->tick();  // 1
+  w65c22_->tick();  // 0
   ASSERT_EQ(w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqTimer2,
             W65C22::kIrqTimer2);
   w65c22_->read(W65C22::kTimer2CounterHigh);
@@ -283,7 +298,8 @@ TEST_F(W65C22Test, Timer2InterruptFlagClearedWhenHighCounterRead) {
 TEST_F(W65C22Test, Timer2DoesNotFireAgainWithoutReset) {
   w65c22_->write(W65C22::kTimer2LatchLow, 0x01);
   w65c22_->write(W65C22::kTimer2CounterHigh, 0x00);
-  w65c22_->tick();
+  w65c22_->tick();  // 1
+  w65c22_->tick();  // 0
   ASSERT_EQ(w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqTimer2,
             W65C22::kIrqTimer2);
   w65c22_->read(W65C22::kTimer2CounterLow);
