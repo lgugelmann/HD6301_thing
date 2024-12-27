@@ -310,38 +310,73 @@ TEST_F(W65C22Test, ShiftRegisterWriteInPhi2ModeShiftsOut) {
                  W65C22::kAcrShiftRegisterOutPhi2);
   w65c22_->write(W65C22::kShiftRegister, 0xc5);
   EXPECT_EQ(w65c22_->read(W65C22::kShiftRegister), 0xc5);
+  // The SR interrupt flag should be cleared
+  EXPECT_EQ(
+      w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqShiftRegister,
+      0);
   // No change for 3 cycles after the write.
   for (int i = 0; i < 3; ++i) {
     uint8_t prev_cb_state = cb_state;
     w65c22_->tick();
     EXPECT_EQ(prev_cb_state, cb_state);
   }
-  w65c22_->tick();
-  // On the fourth cycle we start shifting. Expect the clock line to go down,
-  // and the first bit (a 1) of 0b11000101 to be shifted out.
-  EXPECT_EQ(cb_state, 0b00000010);
-  w65c22_->tick();
-  // Clock goes up
-  EXPECT_EQ(cb_state, 0b00000011);
-  w65c22_->tick();
-  // Clock goes down, second bit is shifted out.
-  EXPECT_EQ(cb_state, 0b00000000);
-  w65c22_->tick();
-  // Clock goes up
-  EXPECT_EQ(cb_state, 0b00000001);
+  // The value we're shifting out is 0b11000101, starting from LSB. We expect
+  // the following states:
+  auto expected_states = {
+      0b00000010,  // clock down, bit 1
+      0b00000011,  // clock up
+      0b00000000,  // clock down, bit 0
+      0b00000001,  // clock up
+      0b00000010,  // clock down, bit 1
+      0b00000011,  // clock up
+      0b00000000,  // clock down, bit 0
+      0b00000001,  // clock up
+      0b00000000,  // clock down, bit 0
+      0b00000001,  // clock up
+      0b00000000,  // clock down, bit 0
+      0b00000001,  // clock up
+      0b00000010,  // clock down, bit 1
+      0b00000011,  // clock up
+      0b00000010,  // clock down, bit 1
+      0b00000011,  // clock up
+  };
+  for (auto expected_state : expected_states) {
+    w65c22_->tick();
+    EXPECT_EQ(cb_state, expected_state);
+  }
+  // Shifting is done, the SR interrupt flag should be set now.
+  EXPECT_EQ(
+      w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqShiftRegister,
+      W65C22::kIrqShiftRegister);
+  // Shifting is done, we don't expect further changes
+  for (int i = 0; i < 5; ++i) {
+    w65c22_->tick();
+    // Clock up, bit 1
+    EXPECT_EQ(cb_state, 0b00000011);
+  }
+}
 
-  // Continue for the remaining 6 bits.
-  for (int i = 0; i < 2 * 6; ++i) {
+TEST_F(W65C22Test, ShiftRegisterWriteClearsIFR) {
+  w65c22_->write(W65C22::kAuxiliaryControlRegister,
+                 W65C22::kAcrShiftRegisterOutPhi2);
+  w65c22_->write(W65C22::kShiftRegister, 0xff);
+  // The SR interrupt flag should be cleared
+  ASSERT_EQ(
+      w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqShiftRegister,
+      0);
+  // 3 setup cycles, 16 to shift the data out
+  for (int i = 0; i < 3 + 16; ++i) {
     w65c22_->tick();
   }
-  // Final state is clock up, last bit on the line, and no further changes on
-  // ticks.
-  w65c22_->tick();
-  EXPECT_EQ(w65c22_->port_cb()->read(), 0x01);
-  w65c22_->tick();
-  EXPECT_EQ(w65c22_->port_cb()->read(), 0x01);
-  w65c22_->tick();
-  EXPECT_EQ(w65c22_->port_cb()->read(), 0x01);
+  // The SR interrupt flag should be set now.
+  ASSERT_EQ(
+      w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqShiftRegister,
+      W65C22::kIrqShiftRegister);
+  // Writing to the SR should clear the IFR
+  w65c22_->write(W65C22::kShiftRegister, 0x00);
+  EXPECT_EQ(
+      w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqShiftRegister,
+      0);
 }
 
 }  // namespace

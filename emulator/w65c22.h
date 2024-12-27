@@ -106,6 +106,8 @@ class W65C22 {
   // State of the CB port - we could read from port_cb_ as well but it's
   // slightly faster to keep it here.
   uint8_t cb_port_state_ = 0;
+  // interrupt state for the shift register
+  int shift_register_interrupt_id_ = 0;
 };
 
 }  // namespace eight_bit

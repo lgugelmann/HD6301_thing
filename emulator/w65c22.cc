@@ -64,7 +64,7 @@ void W65C22::tick() {
         port_cb_.write(cb_port_state_);
         // Shift out the next bit. The SR is LSB first.
         uint8_t bit =
-            shift_register_ >> (shift_register_shifts_remaining_ - 8) & 1;
+            (shift_register_ >> (8 - shift_register_shifts_remaining_)) & 1;
         cb_port_state_ = bit << 1;  // Clock is 0 here, only need to write bit 1
         port_cb_.write(cb_port_state_);
         shift_register_ticks_to_next_edge_ = 1;
@@ -74,7 +74,12 @@ void W65C22::tick() {
         cb_port_state_ |= 1;
         port_cb_.write(cb_port_state_);
         --shift_register_shifts_remaining_;
-        shift_register_ticks_to_next_edge_ = 1;
+        if (shift_register_shifts_remaining_ == 0) {
+          // Shifting is done, set the IFR bit.
+          set_irq_flag(kIrqShiftRegister);
+        } else {
+          shift_register_ticks_to_next_edge_ = 1;
+        }
       }
     }
   }
@@ -206,6 +211,7 @@ void W65C22::write(uint16_t address, uint8_t value) {
       break;
     case kShiftRegister:
       shift_register_ = value;
+      clear_irq_flag(kIrqShiftRegister);
       if ((auxiliary_control_register_ & kAcrShiftRegisterBits) ==
           kAcrShiftRegisterOutPhi2) {
         // Shift out under phi2 control
@@ -274,6 +280,12 @@ void W65C22::set_irq_flag(uint8_t mask) {
       timer2_interrupt_id_ == 0) {
     timer2_interrupt_id_ = interrupt_->set_interrupt();
   }
+  // Fire shift register interrupt if it's not already set and is enabled.
+  if (irq_flag_register_ & kIrqShiftRegister &&
+      irq_enable_register_ & kIrqShiftRegister &&
+      shift_register_interrupt_id_ == 0) {
+    shift_register_interrupt_id_ = interrupt_->set_interrupt();
+  }
 }
 
 void eight_bit::W65C22::clear_irq_flag(uint8_t mask) {
@@ -292,6 +304,12 @@ void eight_bit::W65C22::clear_irq_flag(uint8_t mask) {
   if ((irq_flag_register_ & kIrqTimer2) == 0 && timer2_interrupt_id_ != 0) {
     interrupt_->clear_interrupt(timer2_interrupt_id_);
     timer2_interrupt_id_ = 0;
+  }
+  // Clear the shift register interrupt if it's still outstanding.
+  if ((irq_flag_register_ & kIrqShiftRegister) == 0 &&
+      shift_register_interrupt_id_ != 0) {
+    interrupt_->clear_interrupt(shift_register_interrupt_id_);
+    shift_register_interrupt_id_ = 0;
   }
 }
 
