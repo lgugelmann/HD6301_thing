@@ -1,5 +1,2 @@
-*.bin
-*.d
 *.lst
-*.p
 monitor.inc
