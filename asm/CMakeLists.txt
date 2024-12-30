@@ -8,6 +8,8 @@ find_program(PROGRAMSGEN ${PROJECT_SOURCE_DIR}/generate_programs_list.py)
 find_program(PROGRAMMER ${CMAKE_SOURCE_DIR}/pico_programmer/programmer.py)
 
 set(ASM_PROGRAMS "" CACHE STRING "A list of programs to build. Empty means all.")
+set(ASM_AUTOSTART_PROGRAM "" CACHE STRING
+    "A program to run at startup. If empty start in the monitor. Has to also be listed in ASM_PROGRAMS.")
 
 #
 # Commands to assemble the monitor
@@ -40,7 +42,8 @@ else()
 endif()
 add_custom_command(
   OUTPUT ${PROJECT_SOURCE_DIR}/programs.s
-  COMMAND ${PROGRAMSGEN} ${PROGRAM_SOURCES} > ${PROJECT_SOURCE_DIR}/programs.s
+  COMMAND ${PROGRAMSGEN} --autostart_program "${ASM_AUTOSTART_PROGRAM}" ${PROGRAM_SOURCES} > ${PROJECT_SOURCE_DIR}/programs.s
+  VERBATIM
 )
 add_custom_command(
     OUTPUT ${PROJECT_BINARY_DIR}/programs.d
