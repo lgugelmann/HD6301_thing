@@ -3,12 +3,12 @@
         include ../stdlib.inc
 
         SECTION test_program
-        PUBLIC test_program_start
+        PUBLIC test_start
 
 test_string:
         byt "\nUser program start\n\0"
 
-test_program_start:
+test_start:
         clr GRAPHICS_CLEAR      ; Clear screen
         ldx #test_string
         jsr putstring

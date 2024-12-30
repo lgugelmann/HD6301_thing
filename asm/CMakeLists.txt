@@ -4,7 +4,10 @@ project(asm)
 find_program(ASL asl REQUIRED)
 find_program(P2BIN p2bin REQUIRED)
 find_program(DEPGEN ${PROJECT_SOURCE_DIR}/depgen.py REQUIRED)
+find_program(PROGRAMSGEN ${PROJECT_SOURCE_DIR}/generate_programs_list.py)
 find_program(PROGRAMMER ${CMAKE_SOURCE_DIR}/pico_programmer/programmer.py)
+
+set(ASM_PROGRAMS "" CACHE STRING "A list of programs to build. Empty means all.")
 
 #
 # Commands to assemble the monitor
@@ -30,6 +33,15 @@ add_custom_command(
 #
 # Commands to assemble the programs
 #
+if(NOT ASM_PROGRAMS)
+  file(GLOB PROGRAM_SOURCES RELATIVE ${PROJECT_SOURCE_DIR}/programs ${PROJECT_SOURCE_DIR}/programs/*.s)
+else()
+  set(PROGRAM_SOURCES ${ASM_PROGRAMS})
+endif()
+add_custom_command(
+  OUTPUT ${PROJECT_SOURCE_DIR}/programs.s
+  COMMAND ${PROGRAMSGEN} ${PROGRAM_SOURCES} > ${PROJECT_SOURCE_DIR}/programs.s
+)
 add_custom_command(
     OUTPUT ${PROJECT_BINARY_DIR}/programs.d
     COMMAND ${DEPGEN} ${PROJECT_SOURCE_DIR}/programs.s > ${PROJECT_BINARY_DIR}/programs.d
