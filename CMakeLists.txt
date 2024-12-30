@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.20)
 project(EightBitThings)
 
 set(CMAKE_CXX_STANDARD 23)
@@ -12,6 +12,8 @@ if (TSAN_BUILD)
 endif()
 
 add_subdirectory(dependencies)
+
+add_subdirectory(asm)
 
 enable_testing()
 
