@@ -17,6 +17,7 @@ namespace eight_bit {
 // - R/W on port A/B and their DDR registers (but not the handshake mode)
 // - timer 1 / timer 2 operation and interrupts but none of the I/O features
 // - Shift register I/O clocked by phi2
+// - CA2 high/low control
 class W65C22 {
  public:
   ~W65C22() = default;
@@ -33,6 +34,7 @@ class W65C22 {
 
   IOPort* port_a();
   IOPort* port_b();
+  IOPort* port_ca();
   IOPort* port_cb();
 
   // Constants for register offsets
@@ -63,6 +65,17 @@ class W65C22 {
   static constexpr uint8_t kAcrShiftRegisterBits = 0b00011100;
   static constexpr uint8_t kAcrShiftRegisterOutPhi2 = 0b00011000;
 
+  // Constants for the peripheral control register
+  static constexpr uint8_t kPcrCA2Bits = 0b00001110;
+  static constexpr uint8_t kPcrCA2High = 0b00001110;
+  static constexpr uint8_t kPcrCA2Low = 0b00001100;
+
+  // Constants for the CA/CB port bits
+  static constexpr uint8_t kCa1 = 0x01;
+  static constexpr uint8_t kCa2 = 0x02;
+  static constexpr uint8_t kCb1 = 0x01;
+  static constexpr uint8_t kCb2 = 0x02;
+
  private:
   W65C22(AddressSpace* address_space, uint16_t base_address,
          Interrupt* interrupt);
@@ -77,11 +90,19 @@ class W65C22 {
   Interrupt* interrupt_;
   IOPort port_a_;
   IOPort port_b_;
+  // These are the CAx/CBx ports. The lowest bit is Cx1, the second lowest Cx2.
+  IOPort port_ca_;
   IOPort port_cb_;
+  // State of the CA/CB ports. In the currently implemented code we only
+  // implement modes that have them driven entirely by the 65C22, so it's easier
+  // to keep things this way.
+  uint8_t port_ca_state_ = 0;
+  uint8_t port_cb_state_ = 0;
   uint8_t shift_register_ = 0;
   uint8_t irq_enable_register_ = 0;
   uint8_t irq_flag_register_ = 0;
   uint8_t auxiliary_control_register_ = 0;
+  uint8_t peripheral_control_register_ = 0;
   int timer1_interrupt_id_ = 0;
   int timer2_interrupt_id_ = 0;
   // The latch is reloaded one cycle after we reached 0, not immediately. This
@@ -103,9 +124,6 @@ class W65C22 {
   uint8_t shift_register_shifts_remaining_ = 0;
   // Number of ticks until the next shift clock edge.
   uint8_t shift_register_ticks_to_next_edge_ = 0;
-  // State of the CB port - we could read from port_cb_ as well but it's
-  // slightly faster to keep it here.
-  uint8_t cb_port_state_ = 0;
   // interrupt state for the shift register
   int shift_register_interrupt_id_ = 0;
 };

@@ -55,24 +55,24 @@ void W65C22::tick() {
   if (shift_register_shifts_remaining_ > 0) {
     --shift_register_ticks_to_next_edge_;
     if (shift_register_ticks_to_next_edge_ == 0) {
-      if (cb_port_state_ & 1) {
+      if (port_cb_state_ & kCb1) {
         // Clock is up, so we're at the start of a shift cycle. First lower the
         // clock line (CB1), then shift out the bit (CB2). We do this in two
         // steps to make sure we're not depending on the data being ready on the
         // falling edge already.
-        cb_port_state_ &= ~1;
-        port_cb_.write(cb_port_state_);
+        port_cb_state_ &= ~kCb1;
+        port_cb_.write(port_cb_state_);
         // Shift out the next bit. The SR is LSB first.
         uint8_t bit =
             (shift_register_ >> (8 - shift_register_shifts_remaining_)) & 1;
-        cb_port_state_ = bit << 1;  // Clock is 0 here, only need to write bit 1
-        port_cb_.write(cb_port_state_);
+        port_cb_state_ = bit << 1;  // Clock is 0 here, only need to write bit 1
+        port_cb_.write(port_cb_state_);
         shift_register_ticks_to_next_edge_ = 1;
       } else {
         // Clock is down, so we're at the end of a shift cycle. Raise the clock
         // line (CB1) again.
-        cb_port_state_ |= 1;
-        port_cb_.write(cb_port_state_);
+        port_cb_state_ |= kCb1;
+        port_cb_.write(port_cb_state_);
         --shift_register_shifts_remaining_;
         if (shift_register_shifts_remaining_ == 0) {
           // Shifting is done, set the IFR bit.
@@ -89,6 +89,8 @@ IOPort* W65C22::port_a() { return &port_a_; }
 
 IOPort* W65C22::port_b() { return &port_b_; }
 
+IOPort* W65C22::port_ca() { return &port_ca_; }
+
 IOPort* W65C22::port_cb() { return &port_cb_; }
 
 W65C22::W65C22(AddressSpace* address_space, uint16_t base_address,
@@ -98,9 +100,12 @@ W65C22::W65C22(AddressSpace* address_space, uint16_t base_address,
       interrupt_(interrupt),
       port_a_("65C22 Port A"),
       port_b_("65C22 Port B"),
+      port_ca_("65C22 Port CA"),
       port_cb_("65C22 Port CB") {}
 
 absl::Status W65C22::Initialize() {
+  // CA is output-only. CB is initialized when shift register ACR bits are set.
+  port_ca_.set_direction(kCa1 | kCa2);
   auto status = address_space_->register_read(
       base_address_, base_address_ + 15,
       [this](uint16_t address) { return read(address); });
@@ -150,6 +155,8 @@ uint8_t W65C22::read(uint16_t address) {
       return shift_register_;
     case kAuxiliaryControlRegister:
       return auxiliary_control_register_;
+    case kPeripheralControlRegister:
+      return peripheral_control_register_;
     case kInterruptEnableRegister:
       return irq_enable_register_;
     case kInterruptFlagRegister:
@@ -229,9 +236,20 @@ void W65C22::write(uint16_t address, uint8_t value) {
       if ((auxiliary_control_register_ & kAcrShiftRegisterBits) ==
           kAcrShiftRegisterOutPhi2) {
         // Shift out under phi2 control, set CB bits to outputs
-        port_cb_.set_direction(0x03);
-        port_cb_.write(0x01);  // Clock is high when idle
-        cb_port_state_ = 0x01;
+        port_cb_.set_direction(kCb1 | kCb2);
+        port_cb_state_ = kCb1;  // Clock is CB1 and high when idle
+        port_cb_.write(port_cb_state_);
+      }
+      break;
+    case kPeripheralControlRegister:
+      peripheral_control_register_ = value;
+      // TODO: implement more PCR bits. We only support CA2 high/low for now.
+      if ((peripheral_control_register_ & kPcrCA2Bits) == kPcrCA2High) {
+        port_ca_state_ |= kCa2;
+        port_ca_.write(port_ca_state_);
+      } else if ((peripheral_control_register_ & kPcrCA2Bits) == kPcrCA2Low) {
+        port_ca_state_ &= ~kCa2;
+        port_ca_.write(port_ca_state_);
       }
       break;
     case kInterruptFlagRegister:

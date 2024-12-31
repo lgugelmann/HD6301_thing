@@ -395,5 +395,24 @@ TEST_F(W65C22Test, ShiftRegisterWriteClearsIFR) {
       0);
 }
 
+TEST_F(W65C22Test, PcrValueIsSetAndReturned) {
+  w65c22_->write(W65C22::kPeripheralControlRegister, 0x42);
+  EXPECT_EQ(w65c22_->read(W65C22::kPeripheralControlRegister), 0x42);
+}
+
+TEST_F(W65C22Test, PcrCA2BitsSetCA2HighAndLow) {
+  // Set up a callback to get the state of the two CA bits. This works because
+  // the code is synchronous - but this will need some notifications to be
+  // correct if we ever make port callbacks async.
+  uint8_t ca_state = 0;
+  w65c22_->port_ca()->register_write_callback(
+      [&ca_state](uint8_t data) { ca_state = data; });
+
+  w65c22_->write(W65C22::kPeripheralControlRegister, W65C22::kPcrCA2High);
+  EXPECT_EQ(ca_state, W65C22::kCa2);
+  w65c22_->write(W65C22::kPeripheralControlRegister, W65C22::kPcrCA2Low);
+  EXPECT_EQ(ca_state, 0);
+}
+
 }  // namespace
 }  // namespace eight_bit
