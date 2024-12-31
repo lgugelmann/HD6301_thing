@@ -210,7 +210,7 @@ Tasks:
 - ASM
   - Update the code to use SR instead of bit-banging on a port for SPI
 - Hardware
-  - Actually try the approach in real hardware
+  - Actually try the approach in real hardware \[mostly done, down to 27ms\]
 
 ### Documentation and repository cleanup
 
