@@ -51,14 +51,16 @@ the monitor. See that file for details.
 
 ### User programs
 
-"User programs" are defined in the `programs` directory and bundled together by
-`programs.s`. That file also sets up the "program registry" which lists names
-and start addresses for all programs in the ROM. That's the structure the
-monitor programs `list` and `run` use to do their thing.
+"User programs" are defined in the `programs` directory. They are bundled
+together by an auto-generated `programs.s` file created by the
+`generate_programs_list.py` utility at build time. That file also sets up the
+"program registry" which lists names and start addresses for all programs in the
+ROM. That's the structure the monitor programs `list` and `run` use to do their
+thing. The set of programs to be built is configurable via CMake variables.
+There is also the option to make one program auto-run at reset.
 
 By convention, and to avoid conflicts, each program has a `SECTION` named after
-itself, and exports only a `program_name_start` function outside of itself. This
-makes it easier to bundle all programs together.
+itself, and exports only a `program_name_start` function outside of itself.
 
 The separation between user code and monitor code makes it possible to flash
 each part independently of each other and increase iteration speed.
@@ -67,10 +69,10 @@ If you're running in a user program you exit back to the monitor via the last
 `rts`. You can also issue a software interrupt (the `swi` instruction) or hit
 the 'break' key to get back into the monitor at any time.
 
-> [!WARNING]
-> After any change to monitor code it's prudent to reflash both monitor and
-> programs. Chances are high that the addresses of monitor function have moved
-> around. Old user code would jump to the wrong location and crash.
+> [!WARNING] After any change to monitor code it's prudent to reflash both
+> monitor and programs. Chances are high that the addresses of monitor function
+> have moved around. Existing user programs might jump to the wrong location and
+> crash.
 
 ## I/O
 
@@ -84,7 +86,10 @@ example, commands that move the cursor around exist only in graphics mode. That
 being said: look at `programs/snake.s` for how to do cursor movement over serial
 too. Maybe at some point we'll put that into the standard library too.
 
-This "dual stack" setup makes I/O a bit slow, but it's also very convenient. One improvement idea would be to make this selectable instead.
+This "dual stack" setup makes I/O a bit slow, but it's also very convenient. To
+get back speed (and to make the timings of the emulator and real hardware more
+comparable) there is a variable in `include/stdio.inc` called
+`__enable_serial_io` to enable or disable serial I/O.
 
 ## Monitor commands
 
@@ -101,35 +106,25 @@ This "dual stack" setup makes I/O a bit slow, but it's also very convenient. One
   time, i.e. `cd foo/bar` doesn't work and needs to be separate `cd foo`, `cd
   bar`.
 
-## Programs
-
-See `programs.s` and the `programs/` folder. Follow the examples in those files
-for how to add a new one. You basically need to both include the program in
-`programs.s` and also add it to the program registry in that same file.
-
 ## Memory map
 
 See the comment at the start of `include/memory_map.inc`.
 
 ## Programming the ROM
 
-There are two `Makefile` targets: `monitor_prog` and `programs_prog` which will
-assemble the relevant piece of code (if needed) and write it at the appropriate
-location in the ROM.
+There are three CMake targets: `monitor_prog`, `programs_prog`, and `prog`.
+These will assemble either monitor, program, or both and write it at the
+appropriate location in the ROM.
 
-The monitor program goes at the end of the ROM. It's designed to go into the
-last 8k bytes, starting at `$e000`. This usually wastes a bit of space between
-monitor code and the vectors starting at `$fff0`, but the flash chip has pages
-of 4k size. Until we start to run low on storage this makes no difference to
-programming speed.
+The monitor program goes at the end of the ROM, starting at the latest
+4k-aligned block. Currently that's `$d000` (see the `org` directive in
+`monitor.s`). This wastes a bit of space between monitor code and the vectors
+starting at `$fff0`, but the flash chip has pages of 4k size. Until we start to
+run low on storage this makes no difference to programming speed and is easier
+to reason about.
 
 The user programs are put at the start of the ROM with the program registry at
 `$8000` and the user programs after that.
-
-You only need to issue one of `make monitor_prog` or `make programs_prog`
-depending on which code you changed. If you intend to run programs besides the
-monitor after changing the monitor you need to reprogram both as the library
-addresses will have moved around. To program both at once use `make prog`.
 
 ## TODOs and ideas for improvements
 
