@@ -78,7 +78,7 @@ target_link_libraries(emulator
     absl::flags_parse
     absl::log
     absl::log_initialize
-    absl::log_flags
+    $<LINK_LIBRARY:WHOLE_ARCHIVE,absl::log_flags>
     absl::status
     absl::statusor
     absl::synchronization
