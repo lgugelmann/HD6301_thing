@@ -5,13 +5,19 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "(gdb) Launch emulator / disassembler",
+      "name": "(gdb) Launch emulator",
       "type": "cppdbg",
       "request": "launch",
       "program": "${command:cmake.launchTargetPath}",
       "args": [
         "--rom_file",
-        "${workspaceFolder}/asm/rom.bin"
+        "${command:cmake.buildDirectory}/asm/rom.bin",
+        "--sd_image_file",
+        "${command:cmake.buildDirectory}/io_board/sd_card.img",
+        "--v",
+        "1",
+        "--stderrthreshold",
+        "0"
       ],
       "stopAtEntry": false,
       "cwd": "${fileDirname}",
@@ -19,16 +25,16 @@
       "externalConsole": false,
       "MIMode": "gdb",
       "setupCommands": [
-          {
-              "description": "Enable pretty-printing for gdb",
-              "text": "-enable-pretty-printing",
-              "ignoreFailures": true
-          },
-          {
-              "description": "Set Disassembly Flavor to Intel",
-              "text": "-gdb-set disassembly-flavor intel",
-              "ignoreFailures": true
-          }
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Set Disassembly Flavor to Intel",
+          "text": "-gdb-set disassembly-flavor intel",
+          "ignoreFailures": true
+        }
       ]
     }
 
