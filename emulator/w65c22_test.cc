@@ -324,8 +324,8 @@ TEST_F(W65C22Test, ShiftRegisterWriteInPhi2ModeShiftsOut) {
 
   w65c22_->write(W65C22::kAuxiliaryControlRegister,
                  W65C22::kAcrShiftRegisterOutPhi2);
-  w65c22_->write(W65C22::kShiftRegister, 0xc5);
-  EXPECT_EQ(w65c22_->read(W65C22::kShiftRegister), 0xc5);
+  w65c22_->write(W65C22::kShiftRegister, 0xa3);
+  EXPECT_EQ(w65c22_->read(W65C22::kShiftRegister), 0xa3);
   // The SR interrupt flag should be cleared
   EXPECT_EQ(
       w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqShiftRegister,
@@ -336,8 +336,8 @@ TEST_F(W65C22Test, ShiftRegisterWriteInPhi2ModeShiftsOut) {
     w65c22_->tick();
     EXPECT_EQ(prev_cb_state, cb_state);
   }
-  // The value we're shifting out is 0b11000101, starting from LSB. We expect
-  // the following states:
+  // The value we're shifting out is 0b10100011, starting from MSB. We
+  // expect the following states:
   auto expected_states = {
       0b00000010,  // clock down, bit 1
       0b00000011,  // clock up
@@ -409,7 +409,7 @@ TEST_F(W65C22Test, PcrCA2BitsSetCA2HighAndLow) {
       [&ca_state](uint8_t data) { ca_state = data; });
 
   w65c22_->write(W65C22::kPeripheralControlRegister, W65C22::kPcrCA2High);
-  EXPECT_EQ(ca_state, W65C22::kCa2);
+  EXPECT_EQ(ca_state, W65C22::kCa2Mask);
   w65c22_->write(W65C22::kPeripheralControlRegister, W65C22::kPcrCA2Low);
   EXPECT_EQ(ca_state, 0);
 }

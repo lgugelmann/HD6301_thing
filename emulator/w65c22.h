@@ -71,10 +71,14 @@ class W65C22 {
   static constexpr uint8_t kPcrCA2Low = 0b00001100;
 
   // Constants for the CA/CB port bits
-  static constexpr uint8_t kCa1 = 0x01;
-  static constexpr uint8_t kCa2 = 0x02;
-  static constexpr uint8_t kCb1 = 0x01;
-  static constexpr uint8_t kCb2 = 0x02;
+  static constexpr uint8_t kCa1Pin = 0;
+  static constexpr uint8_t kCa1Mask = 1 << kCa1Pin;
+  static constexpr uint8_t kCa2Pin = 1;
+  static constexpr uint8_t kCa2Mask = 1 << kCa2Pin;
+  static constexpr uint8_t kCb1Pin = 0;
+  static constexpr uint8_t kCb1Mask = 1 << kCb1Pin;
+  static constexpr uint8_t kCb2Pin = 1;
+  static constexpr uint8_t kCb2Mask = 1 << kCb2Pin;
 
  private:
   W65C22(AddressSpace* address_space, uint16_t base_address,
