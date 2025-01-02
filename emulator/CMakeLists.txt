@@ -35,6 +35,7 @@ set(emulator_SOURCES
     timer.cc
     tl16c2550.cc
     w65c22.cc
+    w65c22_to_spi_glue.cc
 )
 if (RtMidi_FOUND)
     list(APPEND emulator_SOURCES midi_to_serial.cc)
@@ -107,6 +108,8 @@ add_executable(emulator_tests
     spi_test.cc
     w65c22.cc
     w65c22_test.cc
+    w65c22_to_spi_glue.cc
+    w65c22_to_spi_glue_test.cc
 )
 target_link_libraries(emulator_tests
     GTest::gtest_main
