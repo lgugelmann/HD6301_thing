@@ -14,6 +14,7 @@ endif()
 add_subdirectory(dependencies)
 
 add_subdirectory(asm)
+add_subdirectory(io_board)
 
 enable_testing()
 
