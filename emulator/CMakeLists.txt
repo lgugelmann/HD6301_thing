@@ -103,6 +103,8 @@ add_executable(emulator_tests
     hexdump_test.cc
     ioport.cc
     hexdump.cc
+    spi.cc
+    spi_test.cc
     w65c22.cc
     w65c22_test.cc
 )

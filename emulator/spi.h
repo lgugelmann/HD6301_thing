@@ -21,11 +21,9 @@ class SPI {
   ~SPI() = default;
   SPI(const SPI&) = delete;
 
-  static absl::StatusOr<std::unique_ptr<SPI>> create(IOPort* port,
-                                                     uint8_t cs_pin,
-                                                     uint8_t clk_pin,
-                                                     uint8_t mosi_pin,
-                                                     uint8_t miso_pin);
+  static absl::StatusOr<std::unique_ptr<SPI>> create(
+      IOPort* cs_port, uint8_t cs_pin, IOPort* clk_port, uint8_t clk_pin,
+      IOPort* mosi_port, uint8_t mosi_pin, IOPort* miso_port, uint8_t miso_pin);
 
   // Register a callback that's called when a byte is received. The callback
   // returns the byte to send back with the next 8 clock cycles of the current
@@ -40,15 +38,21 @@ class SPI {
   void set_chip_select_callback(const chip_select_callback& callback);
 
  private:
-  SPI(IOPort* port, uint8_t cs_pin, uint8_t clk_pin, uint8_t mosi_pin,
-      uint8_t miso_pin);
+  SPI(IOPort* cs_port, uint8_t cs_pin, IOPort* clk_port, uint8_t clk_pin,
+      IOPort* mosi_port, uint8_t mosi_pin, IOPort* miso_port, uint8_t miso_pin);
 
   absl::Status initialize();
 
   uint8_t sub_data_out() const;
+
+  void clk_data_in(uint8_t data);
+  void cs_data_in(uint8_t data);
   void sub_data_in(uint8_t data);
 
-  IOPort* port_;
+  IOPort* cs_port_;
+  IOPort* clk_port_;
+  IOPort* mosi_port_;
+  IOPort* miso_port_;
   uint8_t cs_mask_;
   uint8_t clk_mask_;
   uint8_t mosi_mask_;
@@ -68,8 +72,10 @@ class SPI {
     // The previous clock and chip select values, used to detect edges.
     uint8_t previous_clock = 0;
     uint8_t previous_cs = 0;
-    // The data returned on reads of the IO port.
-    uint8_t port_data = 0;
+    // The data returned on reads of the MISO IO port.
+    uint8_t miso_port_data = 0;
+    // The current state of the MOSI bit, either 0 or 1.
+    uint8_t mosi_bit = 0;
   };
   SPIState state_;
 };
