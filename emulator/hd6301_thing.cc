@@ -95,12 +95,30 @@ absl::StatusOr<std::unique_ptr<HD6301Thing>> HD6301Thing::create(
     return w65c22_or.status();
   }
   hd6301_thing->w65c22_ = std::move(w65c22_or.value());
+  // We create a local pointer here to copy-capture into the lambda below.
+  // Passing the unique_ptr would cause it to have to dereference it on every
+  // tick, which is expensive.
   auto* w65c22_ptr = hd6301_thing->w65c22_.get();
   hd6301_thing->cpu_->register_tick_callback(
       [w65c22_ptr]() { w65c22_ptr->tick(); });
 
-  auto spi =
-      eight_bit::SPI::create(hd6301_thing->w65c22_->port_a(), 2, 0, 1, 7);
+  auto w65c22_to_spi_glue = eight_bit::W65C22ToSPIGlue::create(
+      w65c22_ptr->port_cb(), W65C22::kCb1Pin, hd6301_thing->w65c22_->port_b());
+  if (!w65c22_to_spi_glue.ok()) {
+    return w65c22_to_spi_glue.status();
+  }
+  hd6301_thing->w65c22_to_spi_glue_ = std::move(w65c22_to_spi_glue.value());
+  auto* w65c22_to_spi_glue_ptr = hd6301_thing->w65c22_to_spi_glue_.get();
+  hd6301_thing->cpu_->register_tick_callback(
+      [w65c22_to_spi_glue_ptr]() { w65c22_to_spi_glue_ptr->tick(); });
+
+  auto spi = eight_bit::SPI::create(
+      hd6301_thing->w65c22_->port_ca(), W65C22::kCa2Pin /* CS */,
+      hd6301_thing->w65c22_to_spi_glue_->clk_out_port(),
+      W65C22ToSPIGlue::kClkPin /* CLK */, hd6301_thing->w65c22_->port_cb(),
+      W65C22::kCb2Pin /* MOSI */,
+      hd6301_thing->w65c22_to_spi_glue_->miso_port(),
+      W65C22ToSPIGlue::kMisoPin /* MISO */);
   if (!spi.ok()) {
     return spi.status();
   }

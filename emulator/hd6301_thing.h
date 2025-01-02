@@ -21,6 +21,7 @@
 #include "spi.h"
 #include "tl16c2550.h"
 #include "w65c22.h"
+#include "w65c22_to_spi_glue.h"
 
 #ifdef HAVE_MIDI
 #include "midi_to_serial.h"
@@ -72,6 +73,8 @@ class HD6301Thing {
   std::unique_ptr<SoundOPL3> sound_opl3_ ABSL_GUARDED_BY(emulator_mutex_);
   std::unique_ptr<TL16C2550> tl16c2550_ ABSL_GUARDED_BY(emulator_mutex_);
   std::unique_ptr<W65C22> w65c22_ ABSL_GUARDED_BY(emulator_mutex_);
+  std::unique_ptr<W65C22ToSPIGlue> w65c22_to_spi_glue_
+      ABSL_GUARDED_BY(emulator_mutex_);
   std::unique_ptr<SPI> spi_ ABSL_GUARDED_BY(emulator_mutex_);
   std::unique_ptr<SDCardSPI> sd_card_spi_ ABSL_GUARDED_BY(emulator_mutex_);
 #ifdef HAVE_MIDI
