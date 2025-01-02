@@ -466,7 +466,7 @@ uint8_t Cpu6301::execute(const Instruction& instruction) {
       LOG(ERROR) << "Unhandled addressing mode";
       return -1;
   }
-  VLOG(3) << absl::Hex(pc, absl::kZeroPad4) << ": " << instruction.name
+  VLOG(5) << absl::Hex(pc, absl::kZeroPad4) << ": " << instruction.name
           << " data " << absl::Hex(data, absl::kZeroPad4);
   instruction.exec(data);
   return 0;

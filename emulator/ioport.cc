@@ -13,7 +13,7 @@ IOPort::IOPort(std::string_view name) : name_(name) {}
 
 void IOPort::write(uint8_t data) {
   data_ = data;
-  VLOG(3) << "Write to " << name_ << ": "
+  VLOG(4) << "Write to " << name_ << ": "
           << absl::Hex(data & data_direction_, absl::kZeroPad2);
   for (const auto& callback : write_callbacks_) {
     callback(data & data_direction_);
@@ -27,7 +27,7 @@ uint8_t IOPort::read() {
   }
   // Bits set as outputs are returned as the last written data.
   read_data |= data_ & data_direction_;
-  VLOG(3) << "Read from " << name_ << ": "
+  VLOG(4) << "Read from " << name_ << ": "
           << absl::Hex(read_data, absl::kZeroPad2);
   return read_data;
 }
