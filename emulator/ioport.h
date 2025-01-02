@@ -15,13 +15,14 @@ class IOPort {
   IOPort(std::string_view name);
   ~IOPort() = default;
 
-  // Reads from the port. Note: assumes that the read callbacks do not return
-  // overlapping data and that they leave bits that aren't part of the callback
-  // device as 0.
+  // Reads from the port, i.e. return the data that's presented as input to it.
+  // Note: assumes that the read callbacks do not return overlapping data and
+  // that they leave bits that aren't part of the callback device as 0.
   uint8_t read();
 
-  // Writes to this port. Calls all write callbacks with the written data. Bits
-  // set as inputs are passed to the callbacks as zero.
+  // Writes to this port, i.e. make the port output 'data'. Calls all write
+  // callbacks with the written data. Bits set as inputs are passed to the
+  // callbacks as zero.
   void write(uint8_t data);
 
   // Set the data direction for the port. Bits set to 0 are inputs, bits set to
