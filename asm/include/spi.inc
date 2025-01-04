@@ -10,10 +10,13 @@ __spi_inc = 1
         PUBLIC spi_start_command
         PUBLIC spi_end_command
         PUBLIC spi_receive_byte
+        PUBLIC spi_receive_block
         PUBLIC spi_discard_byte
         PUBLIC spi_send_byte
         PUBLIC spi_send_byte_ff
         PUBLIC spi_send_byte_00
+
+        zp_var block_end_address,2
 
 CA2_LOW  = %00001100
 CA2_HIGH = %00001110
@@ -70,15 +73,50 @@ spi_end_command:
 spi_receive_byte:
         lda #$ff                ; We could skip this and send a random value
         sta IO_SR
-        ; It takes 18 cycles for the data to show up at port A fully. This means
-        ; we're most likely going to use 27 cycles here (3 loops, unless
-        ; interrupted). TODO: optimize this so we get the data faster.
-.wait:
-        lda IO_IFR
-        and a,#SR_IFR_FLAG
-        beq .wait
-
+        ; It takes 18 cycles for the data to show up at port A fully.
+        psh a                   ; 4
+        pul a                   ; 3
+        psh a                   ; 4
+        pul a                   ; 3
+        nop
+        nop
+        nop
+        nop
         lda IO_IRB
+        rts
+
+; Read 512 bytes of data into the 512-bytes buffer pointed to by X. Clobbers A,
+; B, X. One round-trip from writing into SR to having the response data ready in
+; port B takes 18 cycles. We try to interleave SR writes with reads of the
+; previous response to be as fast as possible.
+spi_receive_block:
+        ; We could send arbitrary data, $ff is more deterministic.
+        ldb #$ff
+        stb IO_SR               ; Start the first transfer
+        pshx
+        xgdx
+        addd #511
+        std block_end_address
+        pulx                    ; X has the start address again
+        ldb #$ff
+.loop:
+        ; Prevent interrupts. We want to start the next transfer before reading
+        ; back the previous output byte to speed things up. We have at most ~18
+        ; cycles to do that so we can't afford interrupts between stb and
+        ; lda. This is safe because we don't allow non-maskable interrupts.
+        sei                     ; 1 cycle
+        stb IO_SR               ; Start the next transfer, 4 cy
+        lda IO_IRB              ; Get the previous data, 4 cy
+        cli                     ; Allow interrupts again, 1 cy
+        sta 0,x                 ; 4
+        inx                     ; 1
+        cpx block_end_address   ; 4 (direct)
+        bne .loop               ; 3
+
+        ; We need to be >=18 cycles away from the last IO_SR write.
+        nop
+        lda IO_IRB
+        sta 0,x
         rts
 
 ; Sends the byte in A.

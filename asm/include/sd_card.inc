@@ -114,18 +114,7 @@ sd_card_read_block:
 
 .no_error:
         ldx sd_card_io_buffer_address
-	; Add 512 to the address above
-        xgdx
-        add a,#2
-        xgdx
-        stx io_buffer_end_address
-        ldx sd_card_io_buffer_address
-.loop:
-        jsr spi_receive_byte
-        sta 0,x
-        inx
-        cpx io_buffer_end_address
-        bne .loop
+        jsr spi_receive_block
 
         ; 16-bit CRC
         jsr spi_discard_byte
