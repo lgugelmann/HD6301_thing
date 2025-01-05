@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<GPDProject version="34" oldestCompatibleVersion="32" GPDVersion="6.46.001" lastChange="22 Dec 2024 11:56:23" projectChecksumState="1" projectChecksum="48a2f4c5">
+<GPDProject version="34" oldestCompatibleVersion="32" GPDVersion="6.46.001" lastChange="5 Jan 2025 22:45:29" projectChecksumState="1" projectChecksum="750d8c19">
     <generalProjectSettings/>
     <chip family="04" type="06" friendlyName="GreenPAK 6" partNumber="36" package="7">
-        <nvmData registerLenght="2048">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3 0 74 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 E1 2F FC C1 DF FD 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 30 30 0 30 30 30 30 0 0 30 30 30 0 30 30 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 14 22 30 C 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 20 0 1 0 82 0 1 1 11 0 0 1 1 0 0 2 1 0 0 2 0 1 0 0 2 1 0 0 2 0 1 0 0 2 0 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 A5</nvmData>
+        <nvmData registerLenght="2048">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 F0 67 1D 0 0 0 0 0 3 0 60 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 E1 2F FC C1 DF FD 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 30 30 0 30 30 30 30 0 0 30 30 30 0 30 30 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 14 22 30 C 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 77 3 0 0 0 0 0 20 0 1 0 82 0 1 1 11 0 51 1 1 0 0 2 1 0 0 2 0 1 0 0 2 1 0 0 2 0 1 0 0 2 0 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 A5</nvmData>
         <eepromData id="0">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</eepromData>
-        <checksum crc32="0x66604E37" version="7"/>
+        <checksum crc32="0x8E06CB1B" version="7"/>
         <VDDItem id="0">
             <item id="0" caption="VDD (PIN 1)">
                 <graphics pos="(-590.00,30.00)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,10.00)"/>
@@ -207,11 +207,9 @@
                 <graphics pos="(210.00,370.00)" angle="90" flipping="0" hidden="1" tOrigin="(20.00,15.00)"/>
             </item>
         </LUT>
-        <LUT id="45" regularShape="0" mode="0">
-            <item id="45" caption="3-bit LUT6/Pipe Delay/Ripple Counter">
-                <graphics pos="(210.00,430.00)" angle="90" flipping="0" hidden="1" tOrigin="(20.00,15.00)"/>
-            </item>
-        </LUT>
+        <item id="45" caption="3-bit LUT6/Pipe Delay/Ripple Counter">
+            <graphics pos="(-56.51,219.91)" angle="0" flipping="0" hidden="0" tOrigin="(20.00,18.00)"/>
+        </item>
         <item id="46" caption="MF0 (4-bit LUT0, DFF/LATCH9, WS Ctrl, 16-bit CNT0/DLY0/FSM0)">
             <graphics pos="(-500.00,-20.00)" angle="0" flipping="0" hidden="1" tOrigin="(155.00,60.00)"/>
         </item>
@@ -379,13 +377,22 @@
         <wire output="194" input="539" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="10" wireText="NET10" wireState="0">
             <points>(-334.00,251.00); (-135.00,251.00); (-135.00,-38.00)</points>
         </wire>
-        <wire output="194" input="631" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="10" wireText="NET10" wireState="0">
-            <points>(-334.00,251.00); (79.00,251.00)</points>
-        </wire>
         <wire output="196" input="530" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="13" wireText="NET13" wireState="0">
             <points>(180.00,246.00); (316.00,246.00); (316.00,-38.00)</points>
         </wire>
-        <wire output="54" input="630" autoRouting="1" pen="#ff8000ff;1.00;1;32;128" lineType="2" protected="1" CWLid="-1" wireText="OSC2 CLK" wireState="1">
+        <wire output="168" input="567" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="14" wireText="NET14" wireState="0">
+            <points>(3.00,238.00); (21.00,238.00); (21.00,213.00); (-99.00,213.00); (-99.00,238.00); (-78.00,238.00)</points>
+        </wire>
+        <wire output="194" input="568" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="10" wireText="NET10" wireState="0">
+            <points>(-334.00,251.00); (-78.00,251.00)</points>
+        </wire>
+        <wire output="0" input="566" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="-1" wireText="VDD" wireState="1">
+            <points/>
+        </wire>
+        <wire output="167" input="631" autoRouting="1" pen="#00ff00ff;1.00;1;32;128" lineType="1" protected="0" CWLid="15" wireText="NET15" wireState="0">
+            <points>(3.00,225.00); (57.00,225.00); (57.00,251.00); (79.00,251.00)</points>
+        </wire>
+        <wire output="55" input="630" autoRouting="1" pen="#ff8000ff;1.00;1;32;128" lineType="2" protected="1" CWLid="-1" wireText="OSC2 CLK /4" wireState="1">
             <points/>
         </wire>
     </chip>
@@ -619,9 +626,9 @@
     </emulatorConfiguration>
     <simulationConfiguration version="16" compatibleVersion="16" activePreset="-1">
         <draftPreset>
-            <simulationPreset index="-1" name="Default" customGroupLayout="false" customParametricDcGroupLayout="false">
+            <simulationPreset index="-1" name="Default" customGroupLayout="true" customParametricDcGroupLayout="false">
                 <transientAnalyses>
-                    <transientAnalysis stopTime="30u" maxTimeStep="400n" startTime="0" stepTime="400n" temperature="25" useInitialConditions="false" vdd="3.3"/>
+                    <transientAnalysis stopTime="60u" maxTimeStep="400n" startTime="0" stepTime="400n" temperature="25" useInitialConditions="false" vdd="3.3"/>
                 </transientAnalyses>
                 <parametricDcAnalyses>
                     <parametricDcAnalysis>
@@ -647,11 +654,28 @@
                     <pinProbe instrumentId="2" measurementFlags="1">
                         <IdDto category="100" componentType="45" componentNumber="0" pinNumber="17"/>
                     </pinProbe>
+                    <pinProbe instrumentId="3" measurementFlags="1">
+                        <IdDto category="1" componentType="13" componentNumber="0" pinNumber="0"/>
+                    </pinProbe>
                 </pinProbes>
                 <groups>
                     <group name="CLK_595 (PIN 17)" customGroupLayout="false">
                         <waveforms>
                             <WaveformIdData analysisType="0" pinIdStr="100;45;0;17" xAxisBinding="0;;-1;-1;-1">
+                                <parameters/>
+                            </WaveformIdData>
+                        </waveforms>
+                    </group>
+                    <group name="GreenPAK -&gt; Pipe Delay -&gt; OUT0" customGroupLayout="true">
+                        <waveforms>
+                            <WaveformIdData analysisType="0" pinIdStr="1;13;0;0" xAxisBinding="0;;-1;-1;-1">
+                                <parameters/>
+                            </WaveformIdData>
+                        </waveforms>
+                    </group>
+                    <group name="SD_CLK (PIN 20)" customGroupLayout="true">
+                        <waveforms>
+                            <WaveformIdData analysisType="0" pinIdStr="100;45;0;20" xAxisBinding="0;;-1;-1;-1">
                                 <parameters/>
                             </WaveformIdData>
                         </waveforms>
@@ -663,16 +687,15 @@
                             </WaveformIdData>
                         </waveforms>
                     </group>
-                    <group name="SD_CLK (PIN 20)" customGroupLayout="false">
-                        <waveforms>
-                            <WaveformIdData analysisType="0" pinIdStr="100;45;0;20" xAxisBinding="0;;-1;-1;-1">
-                                <parameters/>
-                            </WaveformIdData>
-                        </waveforms>
-                    </group>
                 </groups>
                 <parametricDcGroups/>
                 <waveforms>
+                    <waveform>
+                        <waveformSetup penColor="#2e8eff" penWidth="2" style="0" attributes="1" symbol="-1" symSize="6" symColor="#ff0000"/>
+                        <WaveformIdData analysisType="0" pinIdStr="1;13;0;0" xAxisBinding="0;;-1;-1;-1">
+                            <parameters/>
+                        </WaveformIdData>
+                    </waveform>
                     <waveform>
                         <waveformSetup penColor="#26e056" penWidth="2" style="0" attributes="1" symbol="-1" symSize="6" symColor="#ff0000"/>
                         <WaveformIdData analysisType="0" pinIdStr="100;45;0;4" xAxisBinding="0;;-1;-1;-1">
@@ -804,7 +827,7 @@
                             <param id="lp_min_voltage" affinity="3" value="0" defaultValue=""/>
                             <param id="lp_rise_time" affinity="3" value="0.01u" defaultValue=""/>
                             <param id="lp_fall_time" affinity="3" value="0.01u" defaultValue=""/>
-                            <param id="lp_values" affinity="4" value="1u 5 1|1u 0 0|1u 0 0|1u 5 1|1u 5 1|1u 0 0|1u 0 0|1u 5 1|1u 5 1|1u 5 1|1u 0 0|1u 0 0|1u 0 0|1u 5 1|1u 5 1|1u 5 1|1u 0 0" defaultValue=""/>
+                            <param id="lp_values" affinity="4" value="1u 5 1|1u 0 0|1u 5 1|1u 0 0|1u 5 1|1u 0 0|1u 5 1|1u 0 0|1u 5 1|1u 0 0|1u 5 1|1u 0 0|1u 5 1|1u 0 0|1u 0 0|1u 5 1|1u 0 0|1u 0 0|1u 5 1|1u 5 1|1u 0 0|1u 0 0|1u 5 1|1u 5 1|1u 5 1|1u 0 0|1u 0 0|1u 0 0|1u 5 1|1u 5 1|1u 5 1|1u 0 0" defaultValue=""/>
                         </schematicProps>
                         <instanceProps/>
                     </component>
