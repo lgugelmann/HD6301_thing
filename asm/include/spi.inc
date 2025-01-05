@@ -88,9 +88,9 @@ spi_receive_byte:
 ; Read 512 bytes of data into the 512-bytes buffer pointed to by X. Clobbers A,
 ; B, X. One round-trip from writing into SR to having the response data ready in
 ; port B takes 18 cycles. We try to interleave SR writes with reads of the
-; previous response to be as fast as possible.
+; previous response to be as fast as possible. The current code does one byte in
+; 19 cycles + some amortized setup.
 spi_receive_block:
-        ; We could send arbitrary data, $ff is more deterministic.
         ldb #$ff
         stb IO_SR               ; Start the first transfer
         pshx
@@ -98,8 +98,10 @@ spi_receive_block:
         addd #511
         std block_end_address
         pulx                    ; X has the start address again
-        ldb #$ff
-.loop:
+        ; The actual MOSI byte doesn't matter. This means that we can use B both
+        ; as a counter and as the byte to send.
+        ldb #$00
+.loop256:
         ; Prevent interrupts. We want to start the next transfer before reading
         ; back the previous output byte to speed things up. We have at most ~18
         ; cycles to do that so we can't afford interrupts between stb and
@@ -110,10 +112,24 @@ spi_receive_block:
         cli                     ; Allow interrupts again, 1 cy
         sta 0,x                 ; 4
         inx                     ; 1
-        cpx block_end_address   ; 4 (direct)
-        bne .loop               ; 3
+        inc b                   ; 1
+        bne .loop256            ; 3
 
-        ; We need to be >=18 cycles away from the last IO_SR write.
+        ldb #$01
+.loop511:
+        sei                     ; 1 cycle
+        stb IO_SR               ; Start the next transfer, 4 cy
+        lda IO_IRB              ; Get the previous data, 4 cy
+        cli                     ; Allow interrupts again, 1 cy
+        sta 0,x                 ; 4
+        inx                     ; 1
+        inc b                   ; 1
+        bne .loop511            ; 3
+
+        ; Need to be >= 18 cycles away from the last IO_SR write.
+        nop
+        nop
+        nop
         nop
         lda IO_IRB
         sta 0,x
