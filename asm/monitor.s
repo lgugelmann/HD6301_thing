@@ -5,6 +5,7 @@
         include include/delays
         include include/file
         include include/io
+        include include/i2c
         include include/macros
         include include/map
         include include/memory_map
@@ -118,6 +119,7 @@ start:
         sts monitor_stack_ptr
 
         jsr io_init
+        jsr i2c_init
         jsr midi_uart_init
         jsr random_init
         jsr sound_init
