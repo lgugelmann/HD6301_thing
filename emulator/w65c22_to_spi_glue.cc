@@ -12,7 +12,7 @@ eight_bit::W65C22ToSPIGlue::create(IOPort* clk_in_port, uint8_t clk_in_pin,
                                    IOPort* parallel_out_port) {
   auto miso_to_parallel = std::unique_ptr<W65C22ToSPIGlue>(
       new W65C22ToSPIGlue(clk_in_port, clk_in_pin, parallel_out_port));
-  return std::move(miso_to_parallel);
+  return miso_to_parallel;
 }
 
 void W65C22ToSPIGlue::tick() {
