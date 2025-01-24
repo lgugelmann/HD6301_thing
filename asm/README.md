@@ -191,15 +191,21 @@ on idle, but the sampling happens on the wrong edge.
 For communication from the '22 to the SD card one can invert the clock and delay
 it by ~1 cycle to make it work.
 
-For communication from the SD card to the '22 we can use something like a
-74xx164 shift register for serial to parallel conversion and connect the 8 bits
-to a full port. It's clocked the same way as the write side. The data would be
-ready one cycle after the SR output done flag is set.
+For communication from the SD card to the '22 we can use a 74xx595 shift
+register for serial to parallel conversion and connect the 8 bits to a full
+port. It's clocked the same way as the write side and with a bit of glue logic
+the register latch on the 595 can be triggered only once every 8 clock pulses.
+This allows the previously shifted-in data to persist on a '22 port while the
+next transfer is already in progress.
 
 The CS line can be handled with CA2 for example to avoid using up an additional
 pin on a port.
 
-Sending data is then a write into the SR + 17 cycles to clock it out (accounting
-for the clock delay), so 21 cycles. Receiving data requires a write into the SR
-to get the clock going, then a 17 cycles delay, then a read on the port, which
-is 25 cycles total. For 512 bytes that works out to roughly 13ms.
+Sending data is then a write into the SR, and 18 cycles to clock it out (2 per
+bit, and 2 cycles setup delay). Receiving data requires a write into the SR to
+get the clock going, an 18 cycles delay, then a read on the port. With the '595
+trick above it's possible to read the previous data *after* starting the next
+transfer by ensuring that no interrupt can get in-between the write and the read
+(as otherwise the previous data would be overwritten). The current code does
+this in 19 cycles per byte (plus a bit of amortized overhead), which works out
+to ~10ms per 512 bytes.

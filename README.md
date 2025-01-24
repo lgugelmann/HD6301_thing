@@ -203,14 +203,15 @@ This means emulating the schematic in `io_board` in the emulator.
 Tasks:
 
 - Emulator:
-  - Create basic shift register output support in W65C22 \[done\]
-  - Figure out how to emulate clock inversion and delay
-  - Emulate a serial-in, parallel-out shift register like 74'164 series.
-  - Connect the above two pieces in-between the W65C22 and the current SPI emulation.
+  - ~~Create basic shift register output support in W65C22~~
+  - ~~Figure out how to emulate clock inversion and delay~~
+  - ~~Emulate a serial-in, parallel-out shift register like 74'164 series.~~
+  - ~~Connect the above two pieces in-between the W65C22 and the current SPI emulation.~~
 - ASM
-  - Update the code to use SR instead of bit-banging on a port for SPI
+  - ~~Update the code to use SR instead of bit-banging on a port for SPI~~
 - Hardware
-  - Actually try the approach in real hardware \[mostly done, down to 27ms\]
+  - ~~Actually try the approach in real hardware~~ \[done, down to ~10ms\]
+  - Write out schematics and design the board
 
 ### Documentation and repository cleanup
 
