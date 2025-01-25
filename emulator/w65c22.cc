@@ -1,5 +1,6 @@
 #include "w65c22.h"
 
+#include <atomic>
 #include <bit>
 #include <memory>
 
@@ -7,6 +8,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/synchronization/mutex.h"
 
 namespace eight_bit {
 
@@ -110,8 +112,11 @@ W65C22::W65C22(AddressSpace* address_space, uint16_t base_address,
       port_cb_("65C22 Port CB") {}
 
 absl::Status W65C22::Initialize() {
-  // CA is output-only. CB is initialized when shift register ACR bits are set.
+  // CA2 is output-only in our implementation. CA1 is always an input on a
+  // W65C22. CB is initialized when shift register ACR bits are set.
   port_ca_.write_data_direction_register(kCa1Mask | kCa2Mask);
+  port_ca_.register_input_change_callback(
+      [this](uint8_t data) { ca1_transition(data); });
   auto status = address_space_->register_read(
       base_address_, base_address_ + 15,
       [this](uint16_t address) { return read(address); });
@@ -130,6 +135,7 @@ uint8_t W65C22::read(uint16_t address) {
     case kOutputRegisterB:
       return port_b_.read_input_register();
     case kOutputRegisterA:
+      clear_irq_flag(kIrqCA1);
       return port_a_.read_input_register();
     case kDataDirectionRegisterB:
       return port_b_.read_data_direction_register();
@@ -163,10 +169,14 @@ uint8_t W65C22::read(uint16_t address) {
       return auxiliary_control_register_;
     case kPeripheralControlRegister:
       return peripheral_control_register_;
-    case kInterruptEnableRegister:
+    case kInterruptEnableRegister: {
+      absl::MutexLock lock(&irq_flag_mutex_);
       return irq_enable_register_;
-    case kInterruptFlagRegister:
+    }
+    case kInterruptFlagRegister: {
+      absl::MutexLock lock(&irq_flag_mutex_);
       return irq_flag_register_;
+    }
     default:
       LOG(ERROR) << "Read from unimplemented 65C22 register: "
                  << absl::Hex(offset, absl::kZeroPad2);
@@ -182,6 +192,7 @@ void W65C22::write(uint16_t address, uint8_t value) {
       break;
     case kOutputRegisterA:
       port_a_.write_output_register(value);
+      clear_irq_flag(kIrqCA1);
       break;
     case kDataDirectionRegisterB:
       port_b_.write_data_direction_register(value);
@@ -251,13 +262,18 @@ void W65C22::write(uint16_t address, uint8_t value) {
       break;
     case kPeripheralControlRegister:
       peripheral_control_register_ = value;
-      // TODO: implement more PCR bits. We only support CA2 high/low for now.
       if ((peripheral_control_register_ & kPcrCA2Bits) == kPcrCA2High) {
         port_ca_state_ |= kCa2Mask;
         port_ca_.write_output_register(port_ca_state_);
       } else if ((peripheral_control_register_ & kPcrCA2Bits) == kPcrCA2Low) {
         port_ca_state_ &= ~kCa2Mask;
         port_ca_.write_output_register(port_ca_state_);
+      }
+      if ((peripheral_control_register_ & kPcrCA1RisingSentive) ==
+          kPcrCA1RisingSentive) {
+        ca1_is_rising_edge_sensitive_ = true;
+      } else {
+        ca1_is_rising_edge_sensitive_ = false;
       }
       break;
     case kInterruptFlagRegister:
@@ -271,12 +287,18 @@ void W65C22::write(uint16_t address, uint8_t value) {
       // register. Otherwise they are set. Bits that are 0 are always left
       // untouched.
       if (value & 0x80) {
-        irq_enable_register_ |= value & 0x7F;
+        {
+          absl::MutexLock lock(&irq_flag_mutex_);
+          irq_enable_register_ |= value & 0x7F;
+        }
         // Some IRQs that had previous flags set might now need to fire. The IFR
         // top bit also needs to be recomputed. set_irq_flag(0) does this.
         set_irq_flag(0);
       } else {
-        irq_enable_register_ &= (~value) & 0x7F;
+        {
+          absl::MutexLock lock(&irq_flag_mutex_);
+          irq_enable_register_ &= (~value) & 0x7F;
+        }
         // Clear any IRQs that are no longer enabled and recompute the top IFR
         // bit.
         clear_irq_flag(0);
@@ -290,6 +312,7 @@ void W65C22::write(uint16_t address, uint8_t value) {
 }
 
 void W65C22::set_irq_flag(uint8_t mask) {
+  absl::MutexLock lock(&irq_flag_mutex_);
   irq_flag_register_ |= (mask & 0x7F);
   if ((irq_flag_register_ & 0x7F & irq_enable_register_) != 0) {
     // If any of the other bits are set, and the corresponding IRQ is enabled,
@@ -315,6 +338,7 @@ void W65C22::set_irq_flag(uint8_t mask) {
 }
 
 void eight_bit::W65C22::clear_irq_flag(uint8_t mask) {
+  absl::MutexLock lock(&irq_flag_mutex_);
   // Clears out the mask bits and the top bit.
   irq_flag_register_ &= ~(mask | 0x80);
   if ((irq_flag_register_ & irq_enable_register_) != 0) {
@@ -337,6 +361,21 @@ void eight_bit::W65C22::clear_irq_flag(uint8_t mask) {
     interrupt_->clear_interrupt(shift_register_interrupt_id_);
     shift_register_interrupt_id_ = 0;
   }
+  // Clear the CA1 interrupt if it's still outstanding.
+  if ((irq_flag_register_ & kIrqCA1) == 0 && ca1_interrupt_id_ != 0) {
+    interrupt_->clear_interrupt(ca1_interrupt_id_);
+    ca1_interrupt_id_ = 0;
+  }
+}
+
+void W65C22::ca1_transition(uint8_t port_data) {
+  bool current_level = port_data & kCa1Mask;
+  bool rising_sensitive = ca1_is_rising_edge_sensitive_.load();
+  if ((rising_sensitive && prev_ca1_level == 0 && current_level == 1) ||
+      (!rising_sensitive && prev_ca1_level == 1 && current_level == 0)) {
+    set_irq_flag(kIrqCA1);
+  }
+  prev_ca1_level = current_level;
 }
 
 }  // namespace eight_bit

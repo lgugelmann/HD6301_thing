@@ -1,11 +1,14 @@
 #ifndef EIGHT_BIT_WD65C22_H
 #define EIGHT_BIT_WD65C22_H
 
+#include <atomic>
 #include <cstdint>
 #include <memory>
 
+#include "absl/base/thread_annotations.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/synchronization/mutex.h"
 #include "address_space.h"
 #include "interrupt.h"
 #include "ioport.h"
@@ -17,7 +20,9 @@ namespace eight_bit {
 // - R/W on port A/B and their DDR registers (but not the handshake mode)
 // - timer 1 / timer 2 operation and interrupts but none of the I/O features
 // - Shift register I/O clocked by phi2
-// - CA2 high/low control
+// - CA2 high/low control, CA1 edge detection and interrupts
+// Reads/writes/ticks from the main bus are not thread-safe. I/O port uses are
+// safe if the registered callbacks are. CA1 edge detection is thread-safe.
 class W65C22 {
  public:
   ~W65C22() = default;
@@ -56,16 +61,19 @@ class W65C22 {
   static constexpr uint8_t kInterruptEnableRegister = 14;
 
   // Constants for the Interrupt Registers
-  static constexpr uint8_t kIrqAny = 0x80;
-  static constexpr uint8_t kIrqTimer1 = 0x40;
-  static constexpr uint8_t kIrqTimer2 = 0x20;
+  static constexpr uint8_t kIrqCA1 = 0x02;
   static constexpr uint8_t kIrqShiftRegister = 0x04;
+  static constexpr uint8_t kIrqTimer2 = 0x20;
+  static constexpr uint8_t kIrqTimer1 = 0x40;
+  static constexpr uint8_t kIrqAny = 0x80;
 
   // Constants for the auxiliary control register
   static constexpr uint8_t kAcrShiftRegisterBits = 0b00011100;
   static constexpr uint8_t kAcrShiftRegisterOutPhi2 = 0b00011000;
 
   // Constants for the peripheral control register
+  static constexpr uint8_t kPcrCA1FallingSentive = 0b00000000;
+  static constexpr uint8_t kPcrCA1RisingSentive = 0b00000001;
   static constexpr uint8_t kPcrCA2Bits = 0b00001110;
   static constexpr uint8_t kPcrCA2High = 0b00001110;
   static constexpr uint8_t kPcrCA2Low = 0b00001100;
@@ -89,9 +97,22 @@ class W65C22 {
   void set_irq_flag(uint8_t mask);
   void clear_irq_flag(uint8_t mask);
 
+  // Callback for a change on the CA1 input.
+  void ca1_transition(uint8_t port_data);
+
   AddressSpace* address_space_;
   const uint16_t base_address_ = 0;
-  Interrupt* interrupt_;
+  // Interrupt-related variables. These need to be thread safe as the CA1
+  // callback needs to be, and it needs to be able to set interrupts.
+  Interrupt* const interrupt_;
+  absl::Mutex irq_flag_mutex_;
+  uint8_t irq_enable_register_ ABSL_GUARDED_BY(irq_flag_mutex_) = 0;
+  uint8_t irq_flag_register_ ABSL_GUARDED_BY(irq_flag_mutex_) = 0;
+  int timer1_interrupt_id_ ABSL_GUARDED_BY(irq_flag_mutex_) = 0;
+  int timer2_interrupt_id_ ABSL_GUARDED_BY(irq_flag_mutex_) = 0;
+  int shift_register_interrupt_id_ ABSL_GUARDED_BY(irq_flag_mutex_) = 0;
+  int ca1_interrupt_id_ ABSL_GUARDED_BY(irq_flag_mutex_) = 0;
+
   IOPort port_a_;
   IOPort port_b_;
   // These are the CAx/CBx ports. The lowest bit is Cx1, the second lowest Cx2.
@@ -102,13 +123,12 @@ class W65C22 {
   // to keep things this way.
   uint8_t port_ca_state_ = 0;
   uint8_t port_cb_state_ = 0;
+  // only used in the CA1 callback, doesn't need locking.
+  bool prev_ca1_level = 0;
+  std::atomic_bool ca1_is_rising_edge_sensitive_ = false;
   uint8_t shift_register_ = 0;
-  uint8_t irq_enable_register_ = 0;
-  uint8_t irq_flag_register_ = 0;
   uint8_t auxiliary_control_register_ = 0;
   uint8_t peripheral_control_register_ = 0;
-  int timer1_interrupt_id_ = 0;
-  int timer2_interrupt_id_ = 0;
   // The latch is reloaded one cycle after we reached 0, not immediately. This
   // flag keeps track of that.
   bool reload_timer1_latch_ = false;
@@ -128,8 +148,6 @@ class W65C22 {
   uint8_t shift_register_shifts_remaining_ = 0;
   // Number of ticks until the next shift clock edge.
   uint8_t shift_register_ticks_to_next_edge_ = 0;
-  // interrupt state for the shift register
-  int shift_register_interrupt_id_ = 0;
 };
 
 }  // namespace eight_bit

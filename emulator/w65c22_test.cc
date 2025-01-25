@@ -17,6 +17,11 @@ class W65C22Test : public ::testing::Test {
     w65c22_ = std::move(wdc_or.value());
   }
 
+  void ClearAllFlags() {
+    // Top bit clear -> clear all set flags.
+    w65c22_->write(W65C22::kInterruptFlagRegister, 0x7f);
+  }
+
   AddressSpace address_space_;
   Interrupt irq_;
   std::unique_ptr<W65C22> w65c22_;
@@ -412,6 +417,84 @@ TEST_F(W65C22Test, PcrCA2BitsSetCA2HighAndLow) {
   EXPECT_EQ(ca_state, W65C22::kCa2Mask);
   w65c22_->write(W65C22::kPeripheralControlRegister, W65C22::kPcrCA2Low);
   EXPECT_EQ(ca_state, 0);
+}
+
+TEST_F(W65C22Test, CA1FallingTransitionSetsInterruptFlag) {
+  // Ensure that CA1 is set to falling-edge transitions (PCR bit 0 is 0)
+  w65c22_->write(W65C22::kPeripheralControlRegister,
+                 W65C22::kPcrCA1FallingSentive);
+
+  auto ca1_port = w65c22_->port_ca();
+  // Ensure CA1 is seeing a high signal
+  ca1_port->provide_inputs(W65C22::kCa1Mask, W65C22::kCa1Mask);
+  // Clear anything that might have happened as a result of the above
+  ClearAllFlags();
+
+  // Falling edge
+  ca1_port->provide_inputs(0, W65C22::kCa1Mask);
+  EXPECT_EQ(W65C22::kIrqCA1,
+            w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqCA1);
+}
+
+TEST_F(W65C22Test, CA1RisingTransitionSetsInterruptFlag) {
+  // Ensure that CA1 is set to rising-edge transitions (PCR bit 0 is 1)
+  w65c22_->write(W65C22::kPeripheralControlRegister,
+                 W65C22::kPcrCA1RisingSentive);
+
+  auto ca1_port = w65c22_->port_ca();
+  // Ensure CA1 is seeing a high signal
+  ca1_port->provide_inputs(W65C22::kCa1Mask, W65C22::kCa1Mask);
+  // Clear anything that might have happened as a result of the above
+  ClearAllFlags();
+
+  // Falling edge - expect no flag changes to happen.
+  ca1_port->provide_inputs(0, W65C22::kCa1Mask);
+  EXPECT_EQ(0, w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqCA1);
+
+  // Rising edge - expect the flag to be set.
+  ca1_port->provide_inputs(W65C22::kCa1Mask, W65C22::kCa1Mask);
+  EXPECT_EQ(W65C22::kIrqCA1,
+            w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqCA1);
+}
+
+TEST_F(W65C22Test, PortAReadClearsCA1Flag) {
+  // Ensure that CA1 is set to falling-edge transitions (PCR bit 0 is 0)
+  w65c22_->write(W65C22::kPeripheralControlRegister,
+                 W65C22::kPcrCA1FallingSentive);
+
+  auto ca1_port = w65c22_->port_ca();
+  // Ensure CA1 is seeing a high signal
+  ca1_port->provide_inputs(W65C22::kCa1Mask, W65C22::kCa1Mask);
+  // Clear anything that might have happened as a result of the above
+  ClearAllFlags();
+
+  // Falling edge
+  ca1_port->provide_inputs(0, W65C22::kCa1Mask);
+  EXPECT_EQ(W65C22::kIrqCA1,
+            w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqCA1);
+  // Reading the port A register should clear the CA1 flag
+  w65c22_->read(W65C22::kOutputRegisterA);
+  EXPECT_EQ(0, w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqCA1);
+}
+
+TEST_F(W65C22Test, PortAWriteClearsCA1Flag) {
+  // Ensure that CA1 is set to falling-edge transitions (PCR bit 0 is 0)
+  w65c22_->write(W65C22::kPeripheralControlRegister,
+                 W65C22::kPcrCA1FallingSentive);
+
+  auto ca1_port = w65c22_->port_ca();
+  // Ensure CA1 is seeing a high signal
+  ca1_port->provide_inputs(W65C22::kCa1Mask, W65C22::kCa1Mask);
+  // Clear anything that might have happened as a result of the above
+  ClearAllFlags();
+
+  // Falling edge
+  ca1_port->provide_inputs(0, W65C22::kCa1Mask);
+  EXPECT_EQ(W65C22::kIrqCA1,
+            w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqCA1);
+  // Writing to the port A register should clear the CA1 flag
+  w65c22_->write(W65C22::kOutputRegisterA, 0);
+  EXPECT_EQ(0, w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqCA1);
 }
 
 }  // namespace
