@@ -28,11 +28,9 @@ class IOPort {
   IOPort(std::string_view name);
   ~IOPort() = default;
 
-  // Reads from the port, i.e. return the data that's presented as input to it.
-  // Combines data from provide_inputs() with that provided by the read
-  // callbacks. Bits set to output return 0. Assumes that provide_inputs() and
-  // the read callbacks do not return overlapping data, and that they leave bits
-  // that they aren't driving as 0.
+  // Reads from the port, i.e. return the data that was provided as input to it
+  // via provide_inputs(). For bits set as outputs in the data direction
+  // register we return the corresponding bit in the output register.
   uint8_t read_input_register();
 
   // Returns the contents of the output register.
@@ -44,9 +42,7 @@ class IOPort {
   // of the output register state.
   void write_output_register(uint8_t data);
 
-  // A non-callback-driven version of read_input_register(). The data provided
-  // here is joined with the input callbacks on read_input_register() calls. If
-  // 'mask' is provided, only bits that are 1 in mask are changed.
+  // Provides data to input pins. Only bits that are 1 in 'mask' are updated.
   void provide_inputs(uint8_t data, uint8_t mask = 0xff);
 
   // Set the data direction for the port. Bits set to 0 denote, bits set to 1
@@ -55,10 +51,6 @@ class IOPort {
 
   // Return the data direction for the port.
   uint8_t read_data_direction_register() const;
-
-  // Registers a callback that's called when read_input_register() is invoked on
-  // this port. The device at the other end is expected to provide data.
-  void register_input_read_callback(const input_read_callback& callback);
 
   // Registers a callback that's called when outputs change for this port.
   void register_output_change_callback(const output_change_callback& callback);
@@ -69,14 +61,12 @@ class IOPort {
 
  private:
   std::string name_;
-  // Callbacks for reading and event-driven reaction to changes.
-  std::vector<input_read_callback> input_read_callbacks_;
+  // Callbacks for event-driven reaction to changes.
   std::vector<output_change_callback> output_change_callbacks_;
   std::vector<input_change_callback> input_change_callbacks_;
 
   // Bits set to 0 are inputs, bits set to 1 are outputs.
   uint8_t data_direction_ = 0;
-
   uint8_t output_register_ = 0;
   uint8_t input_register_ = 0;
 };

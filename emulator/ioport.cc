@@ -13,9 +13,6 @@ IOPort::IOPort(std::string_view name) : name_(name) {}
 
 uint8_t IOPort::read_input_register() {
   uint8_t read_data = input_register_;
-  for (const auto& callback : input_read_callbacks_) {
-    read_data |= callback();
-  }
   // Bits set as outputs are returned as the last written data.
   read_data |= output_register_ & data_direction_;
   VLOG(4) << "Read from " << name_ << ": "
@@ -48,10 +45,6 @@ void IOPort::write_data_direction_register(uint8_t direction_mask) {
 }
 
 uint8_t IOPort::read_data_direction_register() const { return data_direction_; }
-
-void IOPort::register_input_read_callback(const input_read_callback& callback) {
-  input_read_callbacks_.push_back(callback);
-}
 
 void IOPort::register_output_change_callback(
     const output_change_callback& callback) {
