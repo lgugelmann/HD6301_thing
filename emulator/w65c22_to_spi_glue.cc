@@ -35,15 +35,14 @@ W65C22ToSPIGlue::W65C22ToSPIGlue(IOPort* clk_in_port, uint8_t clk_in_pin,
     : clk_out_port_("W65C22 SPI glue clock out"),
       miso_port_("W65C22 SPI glue miso"),
       clk_in_port_(clk_in_port),
-      clk_in_pin_(clk_in_pin) {
+      clk_in_pin_(clk_in_pin),
+      parallel_out_port_(parallel_out_port) {
   clk_out_port_.write_data_direction_register(kClkBitmask);
   miso_port_.write_data_direction_register(kMisoBitmask);
   miso_port_.register_output_change_callback(
       [this](uint8_t data) { miso_bit_in(data); });
   clk_in_port_->register_output_change_callback(
       [this](uint8_t data) { clk_bit_in(data); });
-  parallel_out_port->register_input_read_callback(
-      [this]() { return parallel_out_data(); });
 }
 
 void W65C22ToSPIGlue::clk_bit_in(uint8_t data) {
@@ -56,7 +55,7 @@ void W65C22ToSPIGlue::miso_bit_in(uint8_t data) {
   miso_shift_data_ = (miso_shift_data_ << 1) | bit;
   ++shift_count_;
   if (shift_count_ == 8) {
-    parallel_out_data_ = miso_shift_data_;
+    parallel_out_port_->provide_inputs(miso_shift_data_);
     shift_count_ = 0;
   }
 }

@@ -41,16 +41,15 @@ class W65C22ToSPIGlue {
   // clk_out_port_.
   void clk_bit_in(uint8_t data);
   // Callback for the MISO input port. Shifts in the bits and presents them to
-  // parallel_out_ once 8 bits are received.
+  // parallel_out_port_ once 8 bits are received.
   void miso_bit_in(uint8_t data);
-  uint8_t parallel_out_data() const { return parallel_out_data_; }
 
   IOPort clk_out_port_;
   IOPort miso_port_;
-  IOPort* clk_in_port_;
+  IOPort* clk_in_port_ = nullptr;
   const uint8_t clk_in_pin_;
+  IOPort* parallel_out_port_ = nullptr;
 
-  uint8_t parallel_out_data_ = 0;
   uint8_t miso_shift_data_ = 0;
   int shift_count_ = 0;
   // True if the clock changed during the last tick
