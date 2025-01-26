@@ -34,8 +34,8 @@ void IOPort::write_output_register(uint8_t data) {
   }
 }
 
-void IOPort::provide_inputs(uint8_t data) {
-  input_register_ = data;
+void IOPort::provide_inputs(uint8_t data, uint8_t mask) {
+  input_register_ = (input_register_ & ~mask) | data;
   for (const auto& callback : input_change_callbacks_) {
     callback(input_register_);
   }

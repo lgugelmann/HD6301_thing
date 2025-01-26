@@ -45,8 +45,9 @@ class IOPort {
   void write_output_register(uint8_t data);
 
   // A non-callback-driven version of read_input_register(). The data provided
-  // here is joined with the input callbacks on read_input_register() calls.
-  void provide_inputs(uint8_t data);
+  // here is joined with the input callbacks on read_input_register() calls. If
+  // 'mask' is provided, only bits that are 1 in mask are changed.
+  void provide_inputs(uint8_t data, uint8_t mask = 0xff);
 
   // Set the data direction for the port. Bits set to 0 denote, bits set to 1
   // denote outputs.
