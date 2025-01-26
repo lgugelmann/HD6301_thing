@@ -46,7 +46,6 @@ SPI::SPI(IOPort* cs_port, uint8_t cs_pin, IOPort* clk_port, uint8_t clk_pin,
       state_{.previous_cs = cs_mask_} {}
 
 absl::Status SPI::initialize() {
-  miso_port_->register_input_read_callback([this]() { return sub_data_out(); });
   mosi_port_->register_output_change_callback(
       [this](uint8_t data) { sub_data_in(data); });
   clk_port_->register_output_change_callback(
@@ -55,8 +54,6 @@ absl::Status SPI::initialize() {
       [this](uint8_t data) { cs_data_in(data); });
   return absl::OkStatus();
 }
-
-uint8_t SPI::sub_data_out() const { return state_.miso_port_data & miso_mask_; }
 
 void SPI::clk_data_in(uint8_t data) {
   // Check for clock transitions.
@@ -82,9 +79,9 @@ void SPI::clk_data_in(uint8_t data) {
       uint8_t out_bit = state_.sub_data_out & 0x80;
       state_.sub_data_out <<= 1;
       if (out_bit) {
-        state_.miso_port_data |= miso_mask_;
+        miso_port_->provide_inputs(miso_mask_, miso_mask_);
       } else {
-        state_.miso_port_data &= ~miso_mask_;
+        miso_port_->provide_inputs(0, miso_mask_);
       }
     }
   }
@@ -102,7 +99,7 @@ void SPI::cs_data_in(uint8_t data) {
       state_.sub_data_out = 0xff;
     }
     // We need to present the first bit on CS going low.
-    state_.miso_port_data = (state_.sub_data_out & 0x80) ? miso_mask_ : 0;
+    miso_port_->provide_inputs((state_.sub_data_out & 0x80) ? miso_mask_ : 0);
     state_.bit_count = 0;
   }
 }

@@ -43,8 +43,6 @@ class SPI {
 
   absl::Status initialize();
 
-  uint8_t sub_data_out() const;
-
   void clk_data_in(uint8_t data);
   void cs_data_in(uint8_t data);
   void sub_data_in(uint8_t data);
