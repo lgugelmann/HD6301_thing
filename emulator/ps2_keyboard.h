@@ -23,6 +23,11 @@ class PS2Keyboard {
 
   void handle_keyboard_event(SDL_KeyboardEvent event);
 
+  const uint8_t kIrqClearPin = 0;
+  const uint8_t kIrqClearMask = 1 << kIrqClearPin;
+  const uint8_t kIrqStatusPin = 1;
+  const uint8_t kIrqStatusMask = 1 << kIrqStatusPin;
+
  private:
   Interrupt* irq_ = nullptr;
   IOPort* data_port_ = nullptr;

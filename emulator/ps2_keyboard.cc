@@ -129,14 +129,15 @@ PS2Keyboard::PS2Keyboard(Interrupt* irq, IOPort* data_port,
   // keyboard interrupt by being pulled low then high again.
   irq_status_port_->register_output_change_callback([this](uint8_t data) {
     absl::MutexLock lock(&mutex_);
-    data = data & 0x01;
-    // We saw a 0->1 transition on the interrupt clear bit. Clear the interrupt.
-    if (data == 1 && interrupt_clear_ == 0) {
+    data = data & kIrqClearMask;
+    // We saw a 0->1 transition on the interrupt clear bit. Clear the
+    // interrupt.
+    if (data == kIrqClearMask && interrupt_clear_ == 0) {
       VLOG(1) << "Clearing keyboard interrupt";
       if (interrupt_id_ != 0) {
         irq_->clear_interrupt(interrupt_id_);
         interrupt_id_ = 0;
-        irq_status_port_->provide_inputs(0x02, 0x02);
+        irq_status_port_->provide_inputs(kIrqStatusMask, kIrqStatusMask);
       }
       // TODO: This should really happen after some given amount of time
       // corresponding to ps2 data rates, but for now just assume that the
@@ -146,7 +147,8 @@ PS2Keyboard::PS2Keyboard(Interrupt* irq, IOPort* data_port,
       }
       if (!data_.empty()) {
         data_port_->provide_inputs(data_.front());
-        irq_status_port_->provide_inputs(0, 0x02);
+        // The status pin is active low
+        irq_status_port_->provide_inputs(0, kIrqStatusMask);
         interrupt_id_ = irq_->set_interrupt();
       }
     }
@@ -178,7 +180,7 @@ void PS2Keyboard::handle_keyboard_event(SDL_KeyboardEvent event) {
     // 0 is a sentinel value for no interrupt.
     if (interrupt_id_ == 0) {
       data_port_->provide_inputs(data_.front());
-      irq_status_port_->provide_inputs(0, 0x02);
+      irq_status_port_->provide_inputs(0, kIrqStatusMask);
       interrupt_id_ = irq_->set_interrupt();
     }
   }
