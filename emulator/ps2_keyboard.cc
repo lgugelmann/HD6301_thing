@@ -125,14 +125,6 @@ const std::map<SDL_Scancode, PS2Key> sdl_to_ps2_keymap{
 PS2Keyboard::PS2Keyboard(Interrupt* irq, IOPort* data_port,
                          IOPort* irq_status_port)
     : irq_(irq), data_port_(data_port), irq_status_port_(irq_status_port) {
-  data_port_->register_input_read_callback([this]() -> uint8_t {
-    absl::MutexLock lock(&mutex_);
-    if (!data_.empty()) {
-      return data_.front();
-    }
-    return 0;
-  });
-
   // Bit 0 on the irq status port can be written to and is used to clear the
   // keyboard interrupt by being pulled low then high again.
   irq_status_port_->register_output_change_callback([this](uint8_t data) {
@@ -144,6 +136,7 @@ PS2Keyboard::PS2Keyboard(Interrupt* irq, IOPort* data_port,
       if (interrupt_id_ != 0) {
         irq_->clear_interrupt(interrupt_id_);
         interrupt_id_ = 0;
+        irq_status_port_->provide_inputs(0x02, 0x02);
       }
       // TODO: This should really happen after some given amount of time
       // corresponding to ps2 data rates, but for now just assume that the
@@ -152,16 +145,12 @@ PS2Keyboard::PS2Keyboard(Interrupt* irq, IOPort* data_port,
         data_.pop();
       }
       if (!data_.empty()) {
+        data_port_->provide_inputs(data_.front());
+        irq_status_port_->provide_inputs(0, 0x02);
         interrupt_id_ = irq_->set_interrupt();
       }
     }
     interrupt_clear_ = data;
-  });
-  // Bit 1 can be read from and indicates whether there is an outstanding
-  // interrupt from the keyboard (active low).
-  irq_status_port_->register_input_read_callback([this]() -> uint8_t {
-    absl::MutexLock lock(&mutex_);
-    return interrupt_id_ != 0 ? 0x00 : 0x02;
   });
 }
 
@@ -188,6 +177,8 @@ void PS2Keyboard::handle_keyboard_event(SDL_KeyboardEvent event) {
     }
     // 0 is a sentinel value for no interrupt.
     if (interrupt_id_ == 0) {
+      data_port_->provide_inputs(data_.front());
+      irq_status_port_->provide_inputs(0, 0x02);
       interrupt_id_ = irq_->set_interrupt();
     }
   }
