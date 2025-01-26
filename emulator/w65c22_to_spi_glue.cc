@@ -17,11 +17,11 @@ eight_bit::W65C22ToSPIGlue::create(IOPort* clk_in_port, uint8_t clk_in_pin,
 
 void W65C22ToSPIGlue::tick() {
   if (clock_on_last_tick_) {
-    clk_out_port_.write(prev_clock_ << kClkPin);
+    clk_out_port_.write_output_register(prev_clock_ << kClkPin);
     clock_on_last_tick_ = false;
     if (prev_clock_ == 1) {
       // Rising edge, sample MISO
-      miso_bit_in(miso_port_.read());
+      miso_bit_in(miso_port_.read_input_register());
     }
   }
 }
@@ -36,13 +36,13 @@ W65C22ToSPIGlue::W65C22ToSPIGlue(IOPort* clk_in_port, uint8_t clk_in_pin,
       miso_port_("W65C22 SPI glue miso"),
       clk_in_port_(clk_in_port),
       clk_in_pin_(clk_in_pin) {
-  clk_out_port_.set_direction(kClkBitmask);
-  miso_port_.set_direction(kMisoBitmask);
-  miso_port_.register_write_callback(
+  clk_out_port_.write_data_direction_register(kClkBitmask);
+  miso_port_.write_data_direction_register(kMisoBitmask);
+  miso_port_.register_output_change_callback(
       [this](uint8_t data) { miso_bit_in(data); });
-  clk_in_port_->register_write_callback(
+  clk_in_port_->register_output_change_callback(
       [this](uint8_t data) { clk_bit_in(data); });
-  parallel_out_port->register_read_callback(
+  parallel_out_port->register_input_read_callback(
       [this]() { return parallel_out_data(); });
 }
 

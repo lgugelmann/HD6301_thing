@@ -792,47 +792,55 @@ absl::Status Cpu6301::initialize() {
   serial_ = std::move(serial.value());
 
   // Set up reads, writes to port 1 & port 1 DDR.
-  auto status = memory_->register_read(
-      0x0000, 0x0000, [this](uint16_t) { return port1_.get_direction(); });
+  auto status = memory_->register_read(0x0000, 0x0000, [this](uint16_t) {
+    return port1_.read_data_direction_register();
+  });
+  if (!status.ok()) {
+    return status;
+  }
+  status =
+      memory_->register_write(0x0000, 0x0000, [this](uint16_t, uint8_t data) {
+        port1_.write_data_direction_register(data);
+      });
+  if (!status.ok()) {
+    return status;
+  }
+  status = memory_->register_read(0x0002, 0x0002, [this](uint16_t) {
+    return port1_.read_input_register();
+  });
   if (!status.ok()) {
     return status;
   }
   status = memory_->register_write(
-      0x0000, 0x0000,
-      [this](uint16_t, uint8_t data) { port1_.set_direction(data); });
-  if (!status.ok()) {
-    return status;
-  }
-  status = memory_->register_read(0x0002, 0x0002,
-                                  [this](uint16_t) { return port1_.read(); });
-  if (!status.ok()) {
-    return status;
-  }
-  status = memory_->register_write(
-      0x0002, 0x0002, [this](uint16_t, uint8_t data) { port1_.write(data); });
+      0x0002, 0x0002,
+      [this](uint16_t, uint8_t data) { port1_.write_output_register(data); });
   if (!status.ok()) {
     return status;
   }
 
   // Set up reads, writes to port 2 & port 2 DDR.
-  status = memory_->register_read(
-      0x0001, 0x0001, [this](uint16_t) { return port2_.get_direction(); });
+  status = memory_->register_read(0x0001, 0x0001, [this](uint16_t) {
+    return port2_.read_data_direction_register();
+  });
+  if (!status.ok()) {
+    return status;
+  }
+  status =
+      memory_->register_write(0x0001, 0x0001, [this](uint16_t, uint8_t data) {
+        port2_.write_data_direction_register(data);
+      });
+  if (!status.ok()) {
+    return status;
+  }
+  status = memory_->register_read(0x0003, 0x0003, [this](uint16_t) {
+    return port2_.read_input_register();
+  });
   if (!status.ok()) {
     return status;
   }
   status = memory_->register_write(
-      0x0001, 0x0001,
-      [this](uint16_t, uint8_t data) { port2_.set_direction(data); });
-  if (!status.ok()) {
-    return status;
-  }
-  status = memory_->register_read(0x0003, 0x0003,
-                                  [this](uint16_t) { return port2_.read(); });
-  if (!status.ok()) {
-    return status;
-  }
-  status = memory_->register_write(
-      0x0003, 0x0003, [this](uint16_t, uint8_t data) { port2_.write(data); });
+      0x0003, 0x0003,
+      [this](uint16_t, uint8_t data) { port2_.write_output_register(data); });
   return status;
 }
 

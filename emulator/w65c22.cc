@@ -64,7 +64,7 @@ void W65C22::tick() {
         // could also push things a bit and only prepare the next bit on the
         // next tick, just before raising the clock edge again.
         port_cb_state_ &= ~kCb1Mask;
-        port_cb_.write(port_cb_state_);
+        port_cb_.write_output_register(port_cb_state_);
         // Shift out the next bit. The SR is MSB first and rotates bit 7 back
         // into bit 0 on each shift.
         static_assert(std::numeric_limits<typeof(shift_register_)>::digits ==
@@ -72,13 +72,13 @@ void W65C22::tick() {
         shift_register_ = std::rotl(shift_register_, 1);
         // Clock is 0 here, only need to write CB2 bit.
         port_cb_state_ = (shift_register_ & 1) << kCb2Pin;
-        port_cb_.write(port_cb_state_);
+        port_cb_.write_output_register(port_cb_state_);
         shift_register_ticks_to_next_edge_ = 1;
       } else {
         // Clock is down, so we're at the end of a shift cycle. Raise the clock
         // line (CB1) again.
         port_cb_state_ |= kCb1Mask;
-        port_cb_.write(port_cb_state_);
+        port_cb_.write_output_register(port_cb_state_);
         --shift_register_shifts_remaining_;
         if (shift_register_shifts_remaining_ == 0) {
           // Shifting is done, set the IFR bit.
@@ -111,7 +111,7 @@ W65C22::W65C22(AddressSpace* address_space, uint16_t base_address,
 
 absl::Status W65C22::Initialize() {
   // CA is output-only. CB is initialized when shift register ACR bits are set.
-  port_ca_.set_direction(kCa1Mask | kCa2Mask);
+  port_ca_.write_data_direction_register(kCa1Mask | kCa2Mask);
   auto status = address_space_->register_read(
       base_address_, base_address_ + 15,
       [this](uint16_t address) { return read(address); });
@@ -128,13 +128,13 @@ uint8_t W65C22::read(uint16_t address) {
   uint16_t offset = address - base_address_;
   switch (offset) {
     case kOutputRegisterB:
-      return port_b_.read();
+      return port_b_.read_input_register();
     case kOutputRegisterA:
-      return port_a_.read();
+      return port_a_.read_input_register();
     case kDataDirectionRegisterB:
-      return port_b_.get_direction();
+      return port_b_.read_data_direction_register();
     case kDataDirectionRegisterA:
-      return port_a_.get_direction();
+      return port_a_.read_data_direction_register();
     case kTimer1CounterLow:
       // Reading this also clears the timer 1 IFR bit.
       clear_irq_flag(kIrqTimer1);
@@ -178,16 +178,16 @@ void W65C22::write(uint16_t address, uint8_t value) {
   uint16_t offset = address - base_address_;
   switch (offset) {
     case kOutputRegisterB:
-      port_b_.write(value);
+      port_b_.write_output_register(value);
       break;
     case kOutputRegisterA:
-      port_a_.write(value);
+      port_a_.write_output_register(value);
       break;
     case kDataDirectionRegisterB:
-      port_b_.set_direction(value);
+      port_b_.write_data_direction_register(value);
       break;
     case kDataDirectionRegisterA:
-      port_a_.set_direction(value);
+      port_a_.write_data_direction_register(value);
       break;
     case kTimer1CounterLow:
       // A write sets the low byte of the latch, it doesn't change the counter.
@@ -244,9 +244,9 @@ void W65C22::write(uint16_t address, uint8_t value) {
       if ((auxiliary_control_register_ & kAcrShiftRegisterBits) ==
           kAcrShiftRegisterOutPhi2) {
         // Shift out under phi2 control, set CB bits to outputs
-        port_cb_.set_direction(kCb1Mask | kCb2Mask);
+        port_cb_.write_data_direction_register(kCb1Mask | kCb2Mask);
         port_cb_state_ = kCb1Mask;  // Clock is CB1 and high when idle
-        port_cb_.write(port_cb_state_);
+        port_cb_.write_output_register(port_cb_state_);
       }
       break;
     case kPeripheralControlRegister:
@@ -254,10 +254,10 @@ void W65C22::write(uint16_t address, uint8_t value) {
       // TODO: implement more PCR bits. We only support CA2 high/low for now.
       if ((peripheral_control_register_ & kPcrCA2Bits) == kPcrCA2High) {
         port_ca_state_ |= kCa2Mask;
-        port_ca_.write(port_ca_state_);
+        port_ca_.write_output_register(port_ca_state_);
       } else if ((peripheral_control_register_ & kPcrCA2Bits) == kPcrCA2Low) {
         port_ca_state_ &= ~kCa2Mask;
-        port_ca_.write(port_ca_state_);
+        port_ca_.write_output_register(port_ca_state_);
       }
       break;
     case kInterruptFlagRegister:

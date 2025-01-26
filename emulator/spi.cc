@@ -46,12 +46,13 @@ SPI::SPI(IOPort* cs_port, uint8_t cs_pin, IOPort* clk_port, uint8_t clk_pin,
       state_{.previous_cs = cs_mask_} {}
 
 absl::Status SPI::initialize() {
-  miso_port_->register_read_callback([this]() { return sub_data_out(); });
-  mosi_port_->register_write_callback(
+  miso_port_->register_input_read_callback([this]() { return sub_data_out(); });
+  mosi_port_->register_output_change_callback(
       [this](uint8_t data) { sub_data_in(data); });
-  clk_port_->register_write_callback(
+  clk_port_->register_output_change_callback(
       [this](uint8_t data) { clk_data_in(data); });
-  cs_port_->register_write_callback([this](uint8_t data) { cs_data_in(data); });
+  cs_port_->register_output_change_callback(
+      [this](uint8_t data) { cs_data_in(data); });
   return absl::OkStatus();
 }
 

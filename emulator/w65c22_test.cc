@@ -319,7 +319,7 @@ TEST_F(W65C22Test, ShiftRegisterWriteInPhi2ModeShiftsOut) {
   // the code is synchronous - but this will need some notifications to be
   // correct if we ever make port callbacks async.
   uint8_t cb_state = 0;
-  w65c22_->port_cb()->register_write_callback(
+  w65c22_->port_cb()->register_output_change_callback(
       [&cb_state](uint8_t data) { cb_state = data; });
 
   w65c22_->write(W65C22::kAuxiliaryControlRegister,
@@ -405,7 +405,7 @@ TEST_F(W65C22Test, PcrCA2BitsSetCA2HighAndLow) {
   // the code is synchronous - but this will need some notifications to be
   // correct if we ever make port callbacks async.
   uint8_t ca_state = 0;
-  w65c22_->port_ca()->register_write_callback(
+  w65c22_->port_ca()->register_output_change_callback(
       [&ca_state](uint8_t data) { ca_state = data; });
 
   w65c22_->write(W65C22::kPeripheralControlRegister, W65C22::kPcrCA2High);
