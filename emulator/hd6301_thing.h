@@ -13,7 +13,7 @@
 #include "address_space.h"
 #include "cpu6301.h"
 #include "graphics.h"
-#include "ps2_keyboard.h"
+#include "ps2_keyboard_6301.h"
 #include "ram.h"
 #include "rom.h"
 #include "sd_card_spi.h"
@@ -69,7 +69,7 @@ class HD6301Thing {
   std::unique_ptr<Cpu6301> cpu_ ABSL_GUARDED_BY(emulator_mutex_);
   // Thread safe. For the responsiveness of the UI, we don't want to block
   // keycode handling on the emulator running a large number of cycles.
-  std::unique_ptr<PS2Keyboard> keyboard_;
+  std::unique_ptr<PS2Keyboard6301> keyboard_;
   std::unique_ptr<SoundOPL3> sound_opl3_ ABSL_GUARDED_BY(emulator_mutex_);
   std::unique_ptr<TL16C2550> tl16c2550_ ABSL_GUARDED_BY(emulator_mutex_);
   std::unique_ptr<W65C22> w65c22_ ABSL_GUARDED_BY(emulator_mutex_);

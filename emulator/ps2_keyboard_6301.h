@@ -1,5 +1,5 @@
-#ifndef EIGHT_BIT_PS2_KEYBOARD_H
-#define EIGHT_BIT_PS2_KEYBOARD_H
+#ifndef EIGHT_BIT_PS2_KEYBOARD_6301_H
+#define EIGHT_BIT_PS2_KEYBOARD_6301_H
 
 #include <SDL.h>
 
@@ -15,11 +15,13 @@ namespace eight_bit {
 // Emulates a PS/2 keyboard connected to an 8-bit I/O port for parallel data
 // communication (some other hardware converts the serial data to parallel) and
 // another I/O port for interrupt handling (data present bit, and a clear signal
-// for that bit). Thread safe.
-class PS2Keyboard {
+// for that bit). Thread safe. This represents the setup for the PS2 port on the
+// 6301 CPU board, where the data pins are on one of the 8-bit ports and the IRQ
+// logic on port 2.
+class PS2Keyboard6301 {
  public:
-  PS2Keyboard(Interrupt* irq, IOPort* data_port, IOPort* irq_status_port);
-  ~PS2Keyboard() = default;
+  PS2Keyboard6301(Interrupt* irq, IOPort* data_port, IOPort* irq_status_port);
+  ~PS2Keyboard6301() = default;
 
   void handle_keyboard_event(SDL_KeyboardEvent event);
 
@@ -41,4 +43,4 @@ class PS2Keyboard {
 
 }  // namespace eight_bit
 
-#endif  // EIGHT_BIT_PS2_KEYBOARD_H
+#endif  // EIGHT_BIT_PS2_KEYBOARD_6301_H

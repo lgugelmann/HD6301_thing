@@ -11,7 +11,7 @@
 #include "address_space.h"
 #include "cpu6301.h"
 #include "graphics.h"
-#include "ps2_keyboard.h"
+#include "ps2_keyboard_6301.h"
 #include "ram.h"
 #include "rom.h"
 #include "sound_opl3.h"
@@ -71,7 +71,7 @@ absl::StatusOr<std::unique_ptr<HD6301Thing>> HD6301Thing::create(
   std::cout << "CPU serial port: "
             << hd6301_thing->cpu_->get_serial()->get_pty_name() << std::endl;
 
-  hd6301_thing->keyboard_ = std::make_unique<PS2Keyboard>(
+  hd6301_thing->keyboard_ = std::make_unique<PS2Keyboard6301>(
       hd6301_thing->cpu_->get_irq(), hd6301_thing->cpu_->get_port1(),
       hd6301_thing->cpu_->get_port2());
 

@@ -1,4 +1,4 @@
-#include "ps2_keyboard.h"
+#include "ps2_keyboard_6301.h"
 
 #include <map>
 #include <span>
@@ -9,8 +9,8 @@
 
 namespace eight_bit {
 
-PS2Keyboard::PS2Keyboard(Interrupt* irq, IOPort* data_port,
-                         IOPort* irq_status_port)
+PS2Keyboard6301::PS2Keyboard6301(Interrupt* irq, IOPort* data_port,
+                                 IOPort* irq_status_port)
     : irq_(irq), data_port_(data_port), irq_status_port_(irq_status_port) {
   // Bit 0 on the irq status port can be written to and is used to clear the
   // keyboard interrupt by being pulled low then high again.
@@ -45,7 +45,7 @@ PS2Keyboard::PS2Keyboard(Interrupt* irq, IOPort* data_port,
 
 // Translates the SDL keyboard event into a sequence of PS/2 data bytes to be
 // put on the data port.
-void PS2Keyboard::handle_keyboard_event(SDL_KeyboardEvent event) {
+void PS2Keyboard6301::handle_keyboard_event(SDL_KeyboardEvent event) {
   VLOG(1) << "Handling keyboard event on scancode: " << event.keysym.scancode;
   const std::vector<uint8_t>* data = nullptr;
   if (event.type == SDL_KEYDOWN) {
