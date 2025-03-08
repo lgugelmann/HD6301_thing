@@ -4,15 +4,16 @@
 
         include include/delays
         include include/file
-        include include/io
         include include/i2c
+        include include/io
+        include include/keyboard_6301
         include include/macros
         include include/map
         include include/memory_map
         include include/midi
         include include/midi_uart
-        include include/registers
         include include/random
+        include include/registers
         include include/sd_card
         include include/sound
         include include/stdio
@@ -119,6 +120,7 @@ start:
         sts monitor_stack_ptr
 
         jsr io_init
+        jsr keyboard_6301_init
         jsr i2c_init
         jsr midi_uart_init
         jsr random_init
@@ -535,11 +537,12 @@ irq:
         jsr sound_irq
         bcs .handled            ; IRQ handlers set C if they handled their IRQ
 
-        jsr keyboard_irq
+        jsr keyboard_6301_irq
         bvs invoke_monitor      ; keyboard IRQ sets V if 'break' key is pressed
         bcs .handled
 
         jsr io_irq
+        bvs invoke_monitor      ; keyboard IRQ sets V if 'break' key is pressed
         bcs .handled
 
         ; Invoke the monitor on an unexpected unhandled interrupt
