@@ -33,9 +33,9 @@ HD6301Thing::~HD6301Thing() {
 }
 
 absl::StatusOr<std::unique_ptr<HD6301Thing>> HD6301Thing::create(
-    int ticks_per_second) {
-  auto hd6301_thing =
-      std::unique_ptr<HD6301Thing>(new HD6301Thing(ticks_per_second));
+    int ticks_per_second, KeyboardType keyboard_type) {
+  auto hd6301_thing = std::unique_ptr<HD6301Thing>(
+      new HD6301Thing(ticks_per_second, keyboard_type));
   absl::MutexLock lock(&hd6301_thing->emulator_mutex_);
 
   constexpr uint rom_start = 0x8000;
@@ -71,7 +71,7 @@ absl::StatusOr<std::unique_ptr<HD6301Thing>> HD6301Thing::create(
   std::cout << "CPU serial port: "
             << hd6301_thing->cpu_->get_serial()->get_pty_name() << std::endl;
 
-  hd6301_thing->keyboard_ = std::make_unique<PS2Keyboard6301>(
+  hd6301_thing->keyboard_6301_ = std::make_unique<PS2Keyboard6301>(
       hd6301_thing->cpu_->get_irq(), hd6301_thing->cpu_->get_port1(),
       hd6301_thing->cpu_->get_port2());
 
@@ -103,7 +103,8 @@ absl::StatusOr<std::unique_ptr<HD6301Thing>> HD6301Thing::create(
       [w65c22_ptr]() { w65c22_ptr->tick(); });
 
   auto w65c22_to_spi_glue = eight_bit::W65C22ToSPIGlue::create(
-      w65c22_ptr->port_cb(), W65C22::kCb1Pin, hd6301_thing->w65c22_->port_b());
+      w65c22_ptr->port_cb(), W65C22::kCb1Pin, hd6301_thing->w65c22_->port_a(),
+      2, w65c22_ptr->port_ca(), W65C22::kCa1Pin, w65c22_ptr->port_b());
   if (!w65c22_to_spi_glue.ok()) {
     return w65c22_to_spi_glue.status();
   }
@@ -164,7 +165,18 @@ void HD6301Thing::load_sd_image(
 }
 
 void HD6301Thing::handle_keyboard_event(SDL_KeyboardEvent event) {
-  keyboard_->handle_keyboard_event(event);
+  switch (KeyboardType(keyboard_type_)) {
+    case kKeyboard6301:
+      if (keyboard_6301_) {
+        keyboard_6301_->handle_keyboard_event(event);
+      }
+      break;
+    case kKeyboard65C22:
+      if (w65c22_to_spi_glue_) {
+        w65c22_to_spi_glue_->handle_keyboard_event(event);
+      }
+      break;
+  }
 }
 
 bool HD6301Thing::is_cpu_running() const { return cpu_running_; }
@@ -209,8 +221,8 @@ absl::Status HD6301Thing::render_graphics(SDL_Renderer* renderer,
   return graphics_->render(renderer, destination_rect);
 }
 
-HD6301Thing::HD6301Thing(int ticks_per_second)
-    : ticks_per_ms_(ticks_per_second / 1000) {}
+HD6301Thing::HD6301Thing(int ticks_per_second, KeyboardType keyboard_type)
+    : keyboard_type_(keyboard_type), ticks_per_ms_(ticks_per_second / 1000) {}
 
 void HD6301Thing::emulator_loop() {
   next_loop_time_ = std::chrono::steady_clock::now();

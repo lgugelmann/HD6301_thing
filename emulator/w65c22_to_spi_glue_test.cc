@@ -13,16 +13,29 @@ class W65C22ToSPIGlueTest : public ::testing::Test {
     parallel_out_ = std::make_unique<IOPort>("Parallel out");
     // The "parallel out" is actually an input to the W65C22
     parallel_out_->write_data_direction_register(0);
+    output_switch_ = std::make_unique<IOPort>("Output switch");
+
     w65c22_to_spi_glue_ =
-        W65C22ToSPIGlue::create(clk_in_.get(), 0, parallel_out_.get()).value();
+        W65C22ToSPIGlue::create(clk_in_.get(), kClkPin, output_switch_.get(),
+                                kOutputSwitchPin, keyboard_irq_.get(),
+                                kKeyboardIrqPin, parallel_out_.get())
+            .value();
   }
+
+  uint8_t kOutputSwitchPin = 1;
+  uint8_t kKeyboardIrqPin = 0;
+  uint8_t kClkPin = 0;
 
   std::unique_ptr<W65C22ToSPIGlue> w65c22_to_spi_glue_;
   std::unique_ptr<IOPort> clk_in_;
   std::unique_ptr<IOPort> parallel_out_;
+  std::unique_ptr<IOPort> output_switch_;
+  std::unique_ptr<IOPort> keyboard_irq_;
 };
 
 TEST_F(W65C22ToSPIGlueTest, MisoBitInWritesToParallelOut) {
+  // Make sure the output switch is set to output SD card data
+  output_switch_->write_output_register(1 << kOutputSwitchPin);
   ASSERT_EQ(parallel_out_->read_input_register(), 0);
 
   IOPort* miso_port = w65c22_to_spi_glue_->miso_port();

@@ -35,8 +35,13 @@ class HD6301Thing {
   HD6301Thing& operator=(const HD6301Thing&) = delete;
   ~HD6301Thing();
 
+  enum KeyboardType {
+    kKeyboard6301,
+    kKeyboard65C22,
+  };
+
   static absl::StatusOr<std::unique_ptr<HD6301Thing>> create(
-      int ticks_per_second);
+      int ticks_per_second, KeyboardType keyboard_type);
 
   void load_rom(uint16_t address, std::span<uint8_t> data);
   void load_sd_image(std::unique_ptr<std::basic_iostream<char>> image);
@@ -54,9 +59,12 @@ class HD6301Thing {
                                SDL_FRect* destination_rect = nullptr);
 
  private:
-  HD6301Thing(int ticks_per_second);
+  HD6301Thing(int ticks_per_second, KeyboardType keyboard_type);
 
   void emulator_loop();
+
+  // Which kind of keyboard connection to emulate.
+  const KeyboardType keyboard_type_;
 
   // Protects access to the emulator state for parts that aren't already
   // thread-safe.
@@ -69,7 +77,7 @@ class HD6301Thing {
   std::unique_ptr<Cpu6301> cpu_ ABSL_GUARDED_BY(emulator_mutex_);
   // Thread safe. For the responsiveness of the UI, we don't want to block
   // keycode handling on the emulator running a large number of cycles.
-  std::unique_ptr<PS2Keyboard6301> keyboard_;
+  std::unique_ptr<PS2Keyboard6301> keyboard_6301_;
   std::unique_ptr<SoundOPL3> sound_opl3_ ABSL_GUARDED_BY(emulator_mutex_);
   std::unique_ptr<TL16C2550> tl16c2550_ ABSL_GUARDED_BY(emulator_mutex_);
   std::unique_ptr<W65C22> w65c22_ ABSL_GUARDED_BY(emulator_mutex_);

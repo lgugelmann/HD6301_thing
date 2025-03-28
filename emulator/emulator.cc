@@ -113,7 +113,8 @@ int main(int argc, char* argv[]) {
       [] { ImGui_ImplSDLRenderer3_Shutdown(); });
 
   auto hd6301_thing =
-      eight_bit::HD6301Thing::create(absl::GetFlag(FLAGS_ticks_per_second));
+      eight_bit::HD6301Thing::create(absl::GetFlag(FLAGS_ticks_per_second),
+                                     eight_bit::HD6301Thing::kKeyboard65C22);
   QCHECK_OK(hd6301_thing);
 
   // Prepare ROM image file
