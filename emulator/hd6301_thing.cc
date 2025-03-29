@@ -204,7 +204,7 @@ std::string HD6301Thing::get_ram_hexdump() {
 }
 
 absl::Status HD6301Thing::render_graphics(SDL_Renderer* renderer,
-                                          SDL_Rect* destination_rect) {
+                                          SDL_FRect* destination_rect) {
   absl::MutexLock lock(&emulator_mutex_);
   return graphics_->render(renderer, destination_rect);
 }

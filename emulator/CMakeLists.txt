@@ -4,8 +4,8 @@ project(emulator)
 option(GPERFTOOLS_BUILD "Enable profiling with gperftools" OFF)
 option(USE_CLANG_TIDY "Use clang-tidy for static analysis" OFF)
 
-# SDL2
-find_package(SDL2 REQUIRED)
+# SDL3
+find_package(SDL3 REQUIRED)
 
 # RtMidi -- Optional
 find_package(RtMidi QUIET)
@@ -75,7 +75,7 @@ target_include_directories(emulator PUBLIC "${PROJECT_SOURCE_DIR}" ${SDL2_INCLUD
 target_compile_options(emulator PRIVATE -Wall -Wextra -Werror -Wno-gcc-compat)
 
 target_link_libraries(emulator
-    SDL2::SDL2
+    SDL3::SDL3
     absl::flags_parse
     absl::log
     absl::log_initialize

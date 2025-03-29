@@ -51,7 +51,7 @@ class HD6301Thing {
   void reset();
   std::string get_ram_hexdump();
   absl::Status render_graphics(SDL_Renderer* renderer,
-                               SDL_Rect* destination_rect = nullptr);
+                               SDL_FRect* destination_rect = nullptr);
 
  private:
   HD6301Thing(int ticks_per_second);

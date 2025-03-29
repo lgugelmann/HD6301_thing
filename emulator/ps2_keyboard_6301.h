@@ -1,7 +1,7 @@
 #ifndef EIGHT_BIT_PS2_KEYBOARD_6301_H
 #define EIGHT_BIT_PS2_KEYBOARD_6301_H
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #include <queue>
 

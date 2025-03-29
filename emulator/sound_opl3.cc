@@ -1,6 +1,6 @@
 #include "sound_opl3.h"
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #include <cstdint>
 #include <memory>
@@ -14,16 +14,27 @@
 
 namespace eight_bit {
 namespace {
-constexpr int kNumSamples = 1024;
+// The maximum number of samples we want to generate in one go to avoid high
+// audio latency.
+constexpr int kMaxNumSamples = 1024;
+constexpr int kBytesPerSample = 4;  // 2 channels * 16 bits per channel
 }  // namespace
 
-void SoundOPL3::AudioCallback(void* userdata, uint8_t* stream, int len) {
+void SoundOPL3::AudioCallback(void* userdata, SDL_AudioStream* stream,
+                              int additional_amount, int total_amount) {
   auto* callback_data = static_cast<SoundOPL3::LockableOPL3Chip*>(userdata);
-  // len is the length of the stream in bytes, but we generate 16-bit stereo
-  // samples, and OPL3_GenerateStream expects the number of samples.
+  // additional_amount is the minimum required right now, total_amount is the
+  // max we can send. Both are in bytes. OPL3_GenerateStream tracks length in
+  // samples however. We generate at least the minimum amount of samples to
+  // avoid underruns, without going over KMaxNumSamples if possible.
+  int sample_count =
+      std::max(additional_amount / kBytesPerSample,
+               std::min(total_amount / kBytesPerSample, kMaxNumSamples));
+  static char buffer[kMaxNumSamples * kBytesPerSample];
   absl::MutexLock lock(&callback_data->mutex);
-  OPL3_GenerateStream(&callback_data->chip, reinterpret_cast<int16_t*>(stream),
-                      len / 4);
+  OPL3_GenerateStream(&callback_data->chip, reinterpret_cast<int16_t*>(buffer),
+                      sample_count);
+  SDL_PutAudioStreamData(stream, buffer, sample_count * kBytesPerSample);
 }
 
 SoundOPL3::SoundOPL3(AddressSpace* address_space, uint16_t base_address)
@@ -44,9 +55,11 @@ SoundOPL3::SoundOPL3(AddressSpace* address_space, uint16_t base_address)
 }
 
 SoundOPL3::~SoundOPL3() {
-  // SDL reference counts the Init and Quit, repeated calls are ok.
-  if (sdl_audio_initialized_) {
-    SDL_CloseAudio();
+  if (sdl_audio_stream_) {
+    // This also closes the audio device as we're opening the stream with
+    // SDL_OpenAudioDeviceStream.
+    SDL_DestroyAudioStream(sdl_audio_stream_);
+    sdl_audio_stream_ = nullptr;
   }
 }
 
@@ -90,25 +103,24 @@ uint8_t SoundOPL3::read_status() {
 
 absl::Status SoundOPL3::initialize() {
   // Initialize SDL
-  if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+  if (!SDL_Init(SDL_INIT_AUDIO)) {
     return absl::InternalError("SDL_Init for AUDIO failed");
   }
 
   SDL_AudioSpec spec;
   SDL_memset(&spec, 0, sizeof(spec));
   spec.freq = 44100;
-  spec.format = AUDIO_S16SYS;
+  spec.format = SDL_AUDIO_S16;
   spec.channels = 2;
-  spec.samples = kNumSamples;
-  spec.callback = SoundOPL3::AudioCallback;
-  spec.userdata = &opl3_chip_;
 
-  if (SDL_OpenAudio(&spec, nullptr) < 0) {
+  sdl_audio_stream_ =
+      SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec,
+                                &SoundOPL3::AudioCallback, &opl3_chip_);
+  if (sdl_audio_stream_ == nullptr) {
     return absl::InternalError("SDL_OpenAudio failed");
   }
 
-  sdl_audio_initialized_ = true;
-  SDL_PauseAudio(0);
+  SDL_ResumeAudioStreamDevice(sdl_audio_stream_);
 
   return absl::OkStatus();
 }

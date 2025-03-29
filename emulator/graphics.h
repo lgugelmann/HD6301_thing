@@ -1,7 +1,7 @@
 #ifndef EIGHT_BIT_GRAPHICS_H_
 #define EIGHT_BIT_GRAPHICS_H_
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #include <cstdint>
 #include <memory>
@@ -28,7 +28,7 @@ class Graphics {
   // the screen will be scaled to fit within the given rectangle. Otherwise it
   // fills the entire renderer.
   absl::Status render(SDL_Renderer* renderer,
-                      SDL_Rect* destination_rect = nullptr)
+                      SDL_FRect* destination_rect = nullptr)
       ABSL_LOCKS_EXCLUDED(graphics_state_mutex_);
 
  private:

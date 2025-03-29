@@ -1,4 +1,4 @@
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #include <atomic>
 #include <cstdint>
@@ -21,8 +21,8 @@
 #include "graphics.h"
 #include "hd6301_thing.h"
 #include "imgui.h"
-#include "imgui_impl_sdl2.h"
-#include "imgui_impl_sdlrenderer2.h"
+#include "imgui_impl_sdl3.h"
+#include "imgui_impl_sdlrenderer3.h"
 
 #ifdef HAVE_MIDI
 #include "midi_to_serial.h"
@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
   absl::InitializeLog();
 
   // Initialize SDL
-  if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+  if (!SDL_Init(SDL_INIT_VIDEO)) {
     LOG(FATAL) << absl::StreamFormat("Failed to initialize SDL: %s",
                                      SDL_GetError());
   }
@@ -57,31 +57,32 @@ int main(int argc, char* argv[]) {
                   "Linux?";
   }
 
-  // Scale the window 2x if the screen has high DPI
-  float dpi = 0.0;
-  SDL_GetDisplayDPI(0, nullptr, &dpi, nullptr);
-  int scale = 1;
-  if (dpi > 120.0) {
-    scale = 2;
+  // Make sure to scale up the window for high DPI displays
+  float scale = 1.0f;
+  int num_displays = 0;
+  SDL_DisplayID* displays = SDL_GetDisplays(&num_displays);
+  if (!displays) {
+    LOG(ERROR) << absl::StreamFormat("Failed to enumerate displays: %s",
+                                     SDL_GetError());
+  } else {
+    // We arbitrarily pick the first display
+    scale = SDL_GetDisplayContentScale(displays[0]);
+    SDL_free(displays);
+    // Round up to next higher integer. We're doing pixel graphics, that doesn't
+    // look good at fractional scaling.
+    scale = std::ceil(scale);
+    printf("Scaling by %f\n", scale);
   }
 
-  auto* window = SDL_CreateWindow(
-      "Emulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-      (kGraphicsFrameWidth + kDebugWindowWidth) * scale,
-      kGraphicsFrameHeight * scale, SDL_WINDOW_SHOWN);
-  if (!window) {
-    LOG(FATAL) << absl::StreamFormat("Failed to create window: %s",
+  SDL_Window* window = nullptr;
+  SDL_Renderer* renderer = nullptr;
+  if (!SDL_CreateWindowAndRenderer(
+          "Emulator", (kGraphicsFrameWidth + kDebugWindowWidth) * scale,
+          kGraphicsFrameHeight * scale, 0, &window, &renderer)) {
+    LOG(FATAL) << absl::StreamFormat("Failed to create window and renderer: %s",
                                      SDL_GetError());
   }
   absl::Cleanup window_cleanup([window] { SDL_DestroyWindow(window); });
-
-  // Create a renderer
-  auto* renderer = SDL_CreateRenderer(
-      window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-  if (!renderer) {
-    LOG(FATAL) << absl::StreamFormat("Failed to create renderer: %s",
-                                     SDL_GetError());
-  }
   absl::Cleanup renderer_cleanup([renderer] { SDL_DestroyRenderer(renderer); });
 
   // Init to a black background
@@ -105,11 +106,11 @@ int main(int argc, char* argv[]) {
   font_config.SizePixels = 13.0F * scale;
   io.Fonts->AddFontDefault(&font_config);
 
-  ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
-  absl::Cleanup imgui_sdl_cleanup([] { ImGui_ImplSDL2_Shutdown(); });
-  ImGui_ImplSDLRenderer2_Init(renderer);
+  ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
+  absl::Cleanup imgui_sdl_cleanup([] { ImGui_ImplSDL3_Shutdown(); });
+  ImGui_ImplSDLRenderer3_Init(renderer);
   absl::Cleanup imgui_renderer_cleanup(
-      [] { ImGui_ImplSDLRenderer2_Shutdown(); });
+      [] { ImGui_ImplSDLRenderer3_Shutdown(); });
 
   auto hd6301_thing =
       eight_bit::HD6301Thing::create(absl::GetFlag(FLAGS_ticks_per_second));
@@ -158,12 +159,12 @@ int main(int argc, char* argv[]) {
   while (running) {
     // Handle events
     while (SDL_PollEvent(&event)) {
-      ImGui_ImplSDL2_ProcessEvent(&event);
+      ImGui_ImplSDL3_ProcessEvent(&event);
 
-      if (event.type == SDL_QUIT) {
+      if (event.type == SDL_EVENT_QUIT) {
         running = false;
       }
-      if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
+      if (event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_KEY_UP) {
         // Only pass keyboard events if Dear ImGui doesn't want them
         if (!io.WantCaptureKeyboard) {
           (*hd6301_thing)->handle_keyboard_event(event.key);
@@ -171,8 +172,8 @@ int main(int argc, char* argv[]) {
       }
     }
 
-    ImGui_ImplSDLRenderer2_NewFrame();
-    ImGui_ImplSDL2_NewFrame();
+    ImGui_ImplSDLRenderer3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
     ImGui::SetNextWindowPos(ImVec2(kGraphicsFrameWidth * scale, 0));
@@ -345,14 +346,14 @@ int main(int argc, char* argv[]) {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
     //
-    SDL_Rect graphics_rect = {0, 0, kGraphicsFrameWidth * scale,
-                              kGraphicsFrameHeight * scale};
+    SDL_FRect graphics_rect = {0, 0, kGraphicsFrameWidth * scale,
+                               kGraphicsFrameHeight * scale};
     auto status = (*hd6301_thing)->render_graphics(renderer, &graphics_rect);
     if (!status.ok()) {
       LOG(ERROR) << "Failed to render graphics: " << status;
       break;
     }
-    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
+    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
     SDL_RenderPresent(renderer);
   }
   return 0;

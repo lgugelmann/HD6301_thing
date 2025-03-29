@@ -1,6 +1,8 @@
 #ifndef EIGHT_BIT_SOUND_OPL3_H
 #define EIGHT_BIT_SOUND_OPL3_H
 
+#include <SDL3/SDL_audio.h>
+
 #include <cstdint>
 #include <memory>
 
@@ -28,9 +30,10 @@ class SoundOPL3 {
   SoundOPL3(AddressSpace* address_space, uint16_t base_address);
   absl::Status initialize();
 
-  static void AudioCallback(void* userdata, uint8_t* stream, int len);
+  static void AudioCallback(void* userdata, SDL_AudioStream* stream,
+                            int additional_amount, int total_amount);
 
-  bool sdl_audio_initialized_ = false;
+  SDL_AudioStream* sdl_audio_stream_ = nullptr;
   AddressSpace* address_space_;
   uint16_t base_address_;
 

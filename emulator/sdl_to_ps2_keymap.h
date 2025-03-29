@@ -1,7 +1,7 @@
 #ifndef EIGHT_BIT_SDL_TO_PS2_KEYMAP_H
 #define EIGHT_BIT_SDL_TO_PS2_KEYMAP_H
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #include <cstdint>
 #include <map>

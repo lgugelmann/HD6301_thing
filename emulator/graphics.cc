@@ -1,6 +1,6 @@
 #include "graphics.h"
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #include "../pico_graphics/font.h"
 #include "absl/log/log.h"
@@ -12,10 +12,10 @@ namespace eight_bit {
 
 Graphics::~Graphics() {
   if (palette_) {
-    SDL_FreePalette(palette_);
+    SDL_DestroyPalette(palette_);
   }
   if (frame_surface_) {
-    SDL_FreeSurface(frame_surface_);
+    SDL_DestroySurface(frame_surface_);
   }
 }
 
@@ -32,7 +32,7 @@ absl::StatusOr<std::unique_ptr<Graphics>> Graphics::create(
 
 absl::Status Graphics::initialize() {
   // Initialize a palette with the 64 RGB222 colors
-  palette_ = SDL_AllocPalette(64);
+  palette_ = SDL_CreatePalette(64);
   if (!palette_) {
     return absl::InternalError(
         absl::StrCat("Failed to allocate palette: ", SDL_GetError()));
@@ -44,15 +44,15 @@ absl::Status Graphics::initialize() {
   }
 
   // Create a surface for the frame
-  frame_surface_ = SDL_CreateRGBSurfaceWithFormat(0, kFrameWidth, kFrameHeight,
-                                                  8, SDL_PIXELFORMAT_INDEX8);
+  frame_surface_ =
+      SDL_CreateSurface(kFrameWidth, kFrameHeight, SDL_PIXELFORMAT_INDEX8);
   if (!frame_surface_) {
     return absl::InternalError(
         absl::StrCat("Failed to create frame surface: ", SDL_GetError()));
   }
   SDL_SetSurfacePalette(frame_surface_, palette_);
   // nullptr means fill the entire surface
-  SDL_FillRect(frame_surface_, nullptr, 0 /* black */);
+  SDL_FillSurfaceRect(frame_surface_, nullptr, 0 /* black */);
 
   auto status = address_space_->register_write(
       base_address_, base_address_ + 63,
@@ -65,7 +65,7 @@ absl::Status Graphics::initialize() {
 }
 
 absl::Status Graphics::render(SDL_Renderer* renderer,
-                              SDL_Rect* destination_rect) {
+                              SDL_FRect* destination_rect) {
   {
     absl::MutexLock lock(&graphics_state_mutex_);
     if (graphics_state_dirty_) {
@@ -79,7 +79,9 @@ absl::Status Graphics::render(SDL_Renderer* renderer,
     return absl::InternalError(
         absl::StrCat("Failed to create texture: ", SDL_GetError()));
   }
-  SDL_RenderCopy(renderer, texture, nullptr, destination_rect);
+  // Pixel graphics don't look good with the default linear scaling.
+  SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
+  SDL_RenderTexture(renderer, texture, nullptr, destination_rect);
   SDL_DestroyTexture(texture);
   return absl::OkStatus();
 }
@@ -108,7 +110,7 @@ inline void Graphics::draw_character(int position) {
   uint8_t background_color = graphics_state_.GetBackgroundColor(position);
 
   SDL_Rect rect = {x, y, kFontCharWidth, kFontCharHeight};
-  SDL_FillRect(frame_surface_, &rect, background_color);
+  SDL_FillSurfaceRect(frame_surface_, &rect, background_color);
 
   const uint8_t character = characters[position];
   // This simplifies the code below as we can just read a single byte.

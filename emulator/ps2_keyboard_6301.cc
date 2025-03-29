@@ -46,15 +46,15 @@ PS2Keyboard6301::PS2Keyboard6301(Interrupt* irq, IOPort* data_port,
 // Translates the SDL keyboard event into a sequence of PS/2 data bytes to be
 // put on the data port.
 void PS2Keyboard6301::handle_keyboard_event(SDL_KeyboardEvent event) {
-  VLOG(1) << "Handling keyboard event on scancode: " << event.keysym.scancode;
+  VLOG(1) << "Handling keyboard event on scancode: " << event.scancode;
   const std::vector<uint8_t>* data = nullptr;
-  if (event.type == SDL_KEYDOWN) {
-    auto it = sdl_to_ps2_keymap.find(event.keysym.scancode);
+  if (event.type == SDL_EVENT_KEY_DOWN) {
+    auto it = sdl_to_ps2_keymap.find(event.scancode);
     if (it != sdl_to_ps2_keymap.end()) {
       data = &it->second.down;
     }
-  } else if (event.type == SDL_KEYUP) {
-    auto it = sdl_to_ps2_keymap.find(event.keysym.scancode);
+  } else if (event.type == SDL_EVENT_KEY_UP) {
+    auto it = sdl_to_ps2_keymap.find(event.scancode);
     if (it != sdl_to_ps2_keymap.end()) {
       data = &it->second.up;
     }
