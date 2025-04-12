@@ -24,8 +24,8 @@ PS2Keyboard6301::PS2Keyboard6301(Interrupt* irq, IOPort* data_port,
       if (interrupt_id_ != 0) {
         irq_->clear_interrupt(interrupt_id_);
         interrupt_id_ = 0;
-        irq_status_port_->provide_inputs(kIrqStatusMask, kIrqStatusMask);
       }
+      irq_status_port_->provide_inputs(kIrqStatusMask, kIrqStatusMask);
       // TODO: This should really happen after some given amount of time
       // corresponding to ps2 data rates, but for now just assume that the
       // interrupt is cleared after reading keyboard data.
