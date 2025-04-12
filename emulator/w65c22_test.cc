@@ -436,10 +436,13 @@ TEST_F(W65C22Test, CA1FallingTransitionSetsInterruptFlag) {
             w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqCA1);
 }
 
-TEST_F(W65C22Test, CA1RisingTransitionSetsInterruptFlag) {
+TEST_F(W65C22Test, CA1RisingTransitionSetsInterruptFlagAndFiresInterrupts) {
   // Ensure that CA1 is set to rising-edge transitions (PCR bit 0 is 1)
   w65c22_->write(W65C22::kPeripheralControlRegister,
                  W65C22::kPcrCA1RisingSentive);
+  // Enable CA1 interrupts
+  w65c22_->write(W65C22::kInterruptEnableRegister,
+                 W65C22::kIrqCA1 | W65C22::kIrqAny);
 
   auto ca1_port = w65c22_->port_ca();
   // Ensure CA1 is seeing a high signal
@@ -455,6 +458,9 @@ TEST_F(W65C22Test, CA1RisingTransitionSetsInterruptFlag) {
   ca1_port->provide_inputs(W65C22::kCa1Mask, W65C22::kCa1Mask);
   EXPECT_EQ(W65C22::kIrqCA1,
             w65c22_->read(W65C22::kInterruptFlagRegister) & W65C22::kIrqCA1);
+
+  // The IRQ should be set as well.
+  EXPECT_TRUE(irq_.has_interrupt());
 }
 
 TEST_F(W65C22Test, PortAReadClearsCA1Flag) {

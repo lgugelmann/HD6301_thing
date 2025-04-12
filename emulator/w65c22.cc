@@ -335,6 +335,11 @@ void W65C22::set_irq_flag(uint8_t mask) {
       shift_register_interrupt_id_ == 0) {
     shift_register_interrupt_id_ = interrupt_->set_interrupt();
   }
+  // Fire CA1 interrupt if it's not already set and is enabled.
+  if (irq_flag_register_ & kIrqCA1 && irq_enable_register_ & kIrqCA1 &&
+      ca1_interrupt_id_ == 0) {
+    ca1_interrupt_id_ = interrupt_->set_interrupt();
+  }
 }
 
 void eight_bit::W65C22::clear_irq_flag(uint8_t mask) {
