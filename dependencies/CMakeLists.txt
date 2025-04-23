@@ -2,6 +2,10 @@ add_subdirectory(googletest)
 
 # Abseil
 set(ABSL_PROPAGATE_CXX_STD ON)
+# Certain Abseil headers don't pass e.g. nullability warnings for Clang-20+,
+# which causes errors with -Werror. The setting below marks them as system
+# headers, which suppresses the warnings.
+set(ABSL_USE_SYSTEM_INCLUDES ON)
 add_subdirectory(abseil-cpp)
 
 # Dear ImGui
