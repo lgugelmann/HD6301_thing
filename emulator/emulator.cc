@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <print>
 #include <thread>
 #include <vector>
 
@@ -35,6 +36,9 @@ ABSL_FLAG(
     bool, sd_image_persist_writes, false,
     "If true, writes to the SD card image are persisted in the image file");
 ABSL_FLAG(int, ticks_per_second, 1000000, "Number of CPU ticks per second");
+ABSL_FLAG(
+    int, display_scale, 0,
+    "Scale factor for the display. 1 = no scaling, 2 = double size, etc.");
 
 constexpr int kDebugWindowWidth = 400;
 constexpr int kGraphicsFrameWidth = 800;
@@ -59,19 +63,29 @@ int main(int argc, char* argv[]) {
 
   // Make sure to scale up the window for high DPI displays
   float scale = 1.0f;
-  int num_displays = 0;
-  SDL_DisplayID* displays = SDL_GetDisplays(&num_displays);
-  if (!displays) {
-    LOG(ERROR) << absl::StreamFormat("Failed to enumerate displays: %s",
-                                     SDL_GetError());
+  if (absl::GetFlag(FLAGS_display_scale) > 0) {
+    // The flag default is 0, anything else is a user override.
+    scale = absl::GetFlag(FLAGS_display_scale);
   } else {
-    // We arbitrarily pick the first display
-    scale = SDL_GetDisplayContentScale(displays[0]);
-    SDL_free(displays);
-    // Round up to next higher integer. We're doing pixel graphics, that doesn't
-    // look good at fractional scaling.
-    scale = std::ceil(scale);
-    printf("Scaling by %f\n", scale);
+    // Try to detect a high DPI display and scale the window accordingly. This
+    // doesn't seem to work consistently.
+    int num_displays = 0;
+    SDL_DisplayID* displays = SDL_GetDisplays(&num_displays);
+    if (!displays) {
+      LOG(ERROR) << absl::StreamFormat("Failed to enumerate displays: %s",
+                                       SDL_GetError());
+    } else {
+      // We arbitrarily pick the first display
+      scale = SDL_GetDisplayContentScale(displays[0]);
+      SDL_free(displays);
+      // Round up to next higher integer. We're doing pixel graphics, that
+      // doesn't look good at fractional scaling.
+      scale = std::ceil(scale);
+      std::print(
+          "Autodetected scaling: {}. Use --display_scale to override if "
+          "needed.\n",
+          scale);
+    }
   }
 
   SDL_Window* window = nullptr;
