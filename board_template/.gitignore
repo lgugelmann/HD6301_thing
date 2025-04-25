@@ -1,4 +1,4 @@
-midi_board-backups
+*-backups
 gerber
 fp-info-cache
 *.kicad_prl
