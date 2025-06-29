@@ -7,4 +7,4 @@ add_custom_command(
   COMMAND ${SD_IMAGE_GEN} ${PROJECT_BINARY_DIR}/sd_card.img
 )
 
-add_custom_target(sd_image ALL DEPENDS ${PROJECT_BINARY_DIR}/sd_card.img)
+add_custom_target(sd_image DEPENDS ${PROJECT_BINARY_DIR}/sd_card.img)
