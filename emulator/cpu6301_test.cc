@@ -506,5 +506,73 @@ TEST_F(Cpu6301Test, SEI_SetsInterruptMask) {
   EXPECT_EQ(final_state, expected_state);
 }
 
+TEST_F(Cpu6301Test, SBA_SubtractsBFromA) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x10;  // SBA
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x10;
+  initial_state.b = 0x01;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.a = 0x0f;
+  expected_state.sr = Cpu6301::StatusRegister(0).as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, SBA_SetsZero) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x10;  // SBA
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x10;
+  initial_state.b = 0x10;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.a = 0x00;
+  Cpu6301::StatusRegister sr(0);
+  sr.Z = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, SBA_SetsNegative) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x10;  // SBA
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x10;
+  initial_state.b = 0x20;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.a = 0xf0;
+  Cpu6301::StatusRegister sr(0);
+  sr.N = 1;
+  sr.C = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
 }  // namespace
 }  // namespace eight_bit
