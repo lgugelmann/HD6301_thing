@@ -380,5 +380,47 @@ TEST_F(Cpu6301Test, DEX_SetsZero) {
   EXPECT_EQ(final_state, expected_state);
 }
 
+TEST_F(Cpu6301Test, CLV_ClearsOverflow) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x0A;  // CLV
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  Cpu6301::StatusRegister sr(0);
+  sr.V = 1;
+  initial_state.sr = sr.as_integer();
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  sr.V = 0;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, SEV_SetsOverflow) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x0B;  // SEV
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  Cpu6301::StatusRegister sr(0);
+  sr.V = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
 }  // namespace
 }  // namespace eight_bit
