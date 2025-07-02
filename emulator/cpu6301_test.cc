@@ -80,5 +80,154 @@ TEST_F(Cpu6301Test, NOP_only_increases_pc) {
   EXPECT_EQ(final_state, expected_state);
 }
 
+TEST_F(Cpu6301Test, LSRD_ShiftsRight) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x04;  // LSRD
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x80;
+  initial_state.b = 0x02;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.a = 0x40;
+  expected_state.b = 0x01;
+  expected_state.sr = Cpu6301::StatusRegister(0).as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, LSRD_SetsCarryAndZero) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x04;  // LSRD
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x00;
+  initial_state.b = 0x01;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.a = 0x00;
+  expected_state.b = 0x00;
+  Cpu6301::StatusRegister sr(0);
+  sr.C = 1;
+  sr.Z = 1;
+  sr.V = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, LSRD_ShiftWithCarryAndNonZero) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x04;  // LSRD
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x01;
+  initial_state.b = 0x01;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.a = 0x00;
+  expected_state.b = 0x80;
+  Cpu6301::StatusRegister sr(0);
+  sr.C = 1;
+  sr.V = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, ASLD_ShiftsLeft) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x05;  // ASLD
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x40;
+  initial_state.b = 0x01;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.a = 0x80;
+  expected_state.b = 0x02;
+  Cpu6301::StatusRegister sr(0);
+  sr.N = 1;
+  sr.V = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, ASLD_SetsCarryAndZero) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x05;  // ASLD
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x80;
+  initial_state.b = 0x00;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.a = 0x00;
+  expected_state.b = 0x00;
+  Cpu6301::StatusRegister sr(0);
+  sr.C = 1;
+  sr.Z = 1;
+  sr.V = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, ASLD_SetsNegative) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x05;  // ASLD
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x40;
+  initial_state.b = 0x00;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.a = 0x80;
+  expected_state.b = 0x00;
+  Cpu6301::StatusRegister sr(0);
+  sr.N = 1;
+  sr.V = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
 }  // namespace
 }  // namespace eight_bit
