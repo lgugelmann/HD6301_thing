@@ -65,13 +65,11 @@ class Cpu6301 {
 
     // Debugging helpers
     std::optional<uint16_t> breakpoint;
+
+    bool operator==(const CpuState&) const = default;
   };
   CpuState get_state() const;
-
- private:
-  Cpu6301(AddressSpace* memory);
-
-  absl::Status initialize();
+  void set_state(const CpuState& state);
 
   struct StatusRegister {
     StatusRegister() : StatusRegister(0) {}
@@ -96,6 +94,11 @@ class Cpu6301 {
     bool V = 0;
     bool C = 0;
   };
+
+ private:
+  Cpu6301(AddressSpace* memory);
+
+  absl::Status initialize();
 
   enum AddressingMode {
     kIMM,  // 1-byte immediate

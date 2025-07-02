@@ -94,6 +94,16 @@ Cpu6301::CpuState Cpu6301::get_state() const {
                   .breakpoint = breakpoint_};
 }
 
+void Cpu6301::set_state(const CpuState& state) {
+  a = state.a;
+  b = state.b;
+  x = state.x;
+  sp = state.sp;
+  pc = state.pc;
+  sr = StatusRegister(state.sr);
+  breakpoint_ = state.breakpoint;
+}
+
 IOPort* Cpu6301::get_port1() { return &port1_; }
 
 IOPort* Cpu6301::get_port2() { return &port2_; }

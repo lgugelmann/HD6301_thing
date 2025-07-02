@@ -101,11 +101,15 @@ enable_testing()
 include(GoogleTest)
 add_executable(emulator_tests
     address_space.cc
+    cpu6301.cc
+    cpu6301_test.cc
+    hd6301_serial.cc
     hexdump_test.cc
     ioport.cc
     hexdump.cc
     spi.cc
     spi_test.cc
+    timer.cc
     w65c22.cc
     w65c22_test.cc
     w65c22_to_spi_glue.cc
@@ -113,6 +117,7 @@ add_executable(emulator_tests
 )
 target_link_libraries(emulator_tests
     GTest::gtest_main
+    GTest::gmock
     hexdump_lib
     absl::strings
     absl::flags_parse
