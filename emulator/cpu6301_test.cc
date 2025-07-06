@@ -1184,5 +1184,106 @@ TEST_F(Cpu6301Test, ADDD_Extended) {
   EXPECT_EQ(final_state, expected_state);
 }
 
+TEST_F(Cpu6301Test, SUBD_Immediate) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x83;  // SUBD #data16
+  test_memory_[kProgramStart + 1] = 0x12;
+  test_memory_[kProgramStart + 2] = 0x34;
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x56;
+  initial_state.b = 0x78;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 3;
+  expected_state.a = 0x44;
+  expected_state.b = 0x44;
+  expected_state.sr = Cpu6301::StatusRegister(0).as_integer();
+
+  EXPECT_EQ(result.cycles_run, 3);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, SUBD_Direct) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x93;  // SUBD addr8
+  test_memory_[kProgramStart + 1] = 0x42;
+  test_memory_[0x42] = 0x12;
+  test_memory_[0x43] = 0x34;
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x56;
+  initial_state.b = 0x78;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 2;
+  expected_state.a = 0x44;
+  expected_state.b = 0x44;
+  expected_state.sr = Cpu6301::StatusRegister(0).as_integer();
+
+  EXPECT_EQ(result.cycles_run, 4);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, SUBD_Indexed) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0xA3;  // SUBD Disp,X
+  test_memory_[kProgramStart + 1] = 0x10;
+  test_memory_[0x1010] = 0x12;
+  test_memory_[0x1011] = 0x34;
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x56;
+  initial_state.b = 0x78;
+  initial_state.x = 0x1000;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 2;
+  expected_state.a = 0x44;
+  expected_state.b = 0x44;
+  expected_state.sr = Cpu6301::StatusRegister(0).as_integer();
+
+  EXPECT_EQ(result.cycles_run, 5);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, SUBD_Extended) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0xB3;  // SUBD addr16
+  test_memory_[kProgramStart + 1] = 0x12;
+  test_memory_[kProgramStart + 2] = 0x34;
+  test_memory_[0x1234] = 0x10;
+  test_memory_[0x1235] = 0x20;
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x50;
+  initial_state.b = 0x60;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 3;
+  expected_state.a = 0x40;
+  expected_state.b = 0x40;
+  expected_state.sr = Cpu6301::StatusRegister(0).as_integer();
+
+  EXPECT_EQ(result.cycles_run, 5);
+  EXPECT_EQ(final_state, expected_state);
+}
+
 }  // namespace
 }  // namespace eight_bit
