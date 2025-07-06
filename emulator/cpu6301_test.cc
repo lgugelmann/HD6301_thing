@@ -949,5 +949,139 @@ TEST_F(Cpu6301Test, PSHB_PushesValueToStack) {
   EXPECT_EQ(test_memory_[kStackTop], 0x42);
 }
 
+TEST_F(Cpu6301Test, TAB_TransfersAtoB) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x16;  // TAB
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x42;
+  initial_state.b = 0x11;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.b = 0x42;
+  expected_state.sr = Cpu6301::StatusRegister(0).as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, TAB_TransfersNegativeValue) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x16;  // TAB
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x80;
+  initial_state.b = 0x11;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.b = 0x80;
+  Cpu6301::StatusRegister sr(0);
+  sr.N = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, TAB_TransfersZero) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x16;  // TAB
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x00;
+  initial_state.b = 0x11;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.b = 0x00;
+  Cpu6301::StatusRegister sr(0);
+  sr.Z = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, TBA_TransfersBtoA) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x17;  // TBA
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x11;
+  initial_state.b = 0x42;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.a = 0x42;
+  expected_state.sr = Cpu6301::StatusRegister(0).as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, TBA_TransfersNegativeValue) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x17;  // TBA
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x11;
+  initial_state.b = 0x80;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.a = 0x80;
+  Cpu6301::StatusRegister sr(0);
+  sr.N = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, TBA_TransfersZero) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x17;  // TBA
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x11;
+  initial_state.b = 0x00;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.a = 0x00;
+  Cpu6301::StatusRegister sr(0);
+  sr.Z = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
 }  // namespace
 }  // namespace eight_bit
