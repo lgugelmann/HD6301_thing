@@ -853,7 +853,47 @@ TEST_F(Cpu6301Test, TXS_TransfersXMinusOneToSP) {
   EXPECT_EQ(final_state, expected_state);
 }
 
+TEST_F(Cpu6301Test, PULA_PullsValueFromStack) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x32;  // PULA
+  test_memory_[kStackTop] = 0x42;
 
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.sp = kStackTop - 1;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.sp = kStackTop;
+  expected_state.a = 0x42;
+
+  EXPECT_EQ(result.cycles_run, 3);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, PULB_PullsValueFromStack) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x33;  // PULB
+  test_memory_[kStackTop] = 0x42;
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.sp = kStackTop - 1;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.sp = kStackTop;
+  expected_state.b = 0x42;
+
+  EXPECT_EQ(result.cycles_run, 3);
+  EXPECT_EQ(final_state, expected_state);
+}
 
 }  // namespace
 }  // namespace eight_bit
