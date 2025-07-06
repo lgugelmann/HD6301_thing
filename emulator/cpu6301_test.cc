@@ -869,6 +869,7 @@ TEST_F(Cpu6301Test, PULA_PullsValueFromStack) {
   expected_state.pc += 1;
   expected_state.sp = kStackTop;
   expected_state.a = 0x42;
+  // PULA should not affect the status register.
 
   EXPECT_EQ(result.cycles_run, 3);
   EXPECT_EQ(final_state, expected_state);
@@ -890,9 +891,62 @@ TEST_F(Cpu6301Test, PULB_PullsValueFromStack) {
   expected_state.pc += 1;
   expected_state.sp = kStackTop;
   expected_state.b = 0x42;
+  // PULB should not affect the status register.
 
   EXPECT_EQ(result.cycles_run, 3);
   EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, PSHA_PushesValueToStack) {
+  ASSERT_THAT(memory_->register_write(
+                  kStackTop, kStackTop,
+                  [this](uint16_t address, uint8_t data) {
+                    test_memory_[address] = data;
+                  }),
+              IsOk());
+  test_memory_[kProgramStart] = 0x36;  // PSHA
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x42;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.sp -= 1;
+  // PSHA should not affect the status register.
+
+  EXPECT_EQ(result.cycles_run, 4);
+  EXPECT_EQ(final_state, expected_state);
+  EXPECT_EQ(test_memory_[kStackTop], 0x42);
+}
+
+TEST_F(Cpu6301Test, PSHB_PushesValueToStack) {
+  ASSERT_THAT(memory_->register_write(
+                  kStackTop, kStackTop,
+                  [this](uint16_t address, uint8_t data) {
+                    test_memory_[address] = data;
+                  }),
+              IsOk());
+  test_memory_[kProgramStart] = 0x37;  // PSHB
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.b = 0x42;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.sp -= 1;
+  // PSHB should not affect the status register.
+
+  EXPECT_EQ(result.cycles_run, 4);
+  EXPECT_EQ(final_state, expected_state);
+  EXPECT_EQ(test_memory_[kStackTop], 0x42);
 }
 
 }  // namespace
