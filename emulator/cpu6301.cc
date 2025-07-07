@@ -678,10 +678,10 @@ Cpu6301::Cpu6301(AddressSpace* memory)
   instructions_[0x95] = {"bita", 2, 3, kDIR, OP(nzv_sr(get(d) & a))};
   instructions_[0xa5] = {"bita", 2, 4, kIDX, OP(nzv_sr(get(d) & a))};
   instructions_[0xb5] = {"bita", 3, 4, kEXT, OP(nzv_sr(get(d) & a))};
-  instructions_[0xc5] = {"bitb", 2, 2, kIMM, OP(nzv_sr(d & a))};
-  instructions_[0xd5] = {"bitb", 2, 3, kDIR, OP(nzv_sr(get(d) & a))};
-  instructions_[0xe5] = {"bitb", 2, 4, kIDX, OP(nzv_sr(get(d) & a))};
-  instructions_[0xf5] = {"bitb", 3, 4, kEXT, OP(nzv_sr(get(d) & a))};
+  instructions_[0xc5] = {"bitb", 2, 2, kIMM, OP(nzv_sr(d & b))};
+  instructions_[0xd5] = {"bitb", 2, 3, kDIR, OP(nzv_sr(get(d) & b))};
+  instructions_[0xe5] = {"bitb", 2, 4, kIDX, OP(nzv_sr(get(d) & b))};
+  instructions_[0xf5] = {"bitb", 3, 4, kEXT, OP(nzv_sr(get(d) & b))};
   // LDA
   instructions_[0x86] = {"ldaa", 2, 2, kIMM, OP(nzv_sr(a = d))};
   instructions_[0x96] = {"ldaa", 2, 3, kDIR, OP(nzv_sr(a = get(d)))};
