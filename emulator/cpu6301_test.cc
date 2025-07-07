@@ -1402,5 +1402,97 @@ TEST_F(Cpu6301Test, BITB_Immediate) {
   EXPECT_EQ(final_state, expected_state);
 }
 
+TEST_F(Cpu6301Test, EORA_Immediate) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x88;  // EOR A #data8
+  test_memory_[kProgramStart + 1] = 0x0F;
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0xF0;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 2;
+  expected_state.a = 0xFF;
+  Cpu6301::StatusRegister sr(0);
+  sr.N = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 2);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, EORB_Immediate) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0xC8;  // EOR B #data8
+  test_memory_[kProgramStart + 1] = 0x0F;
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.b = 0xF0;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 2;
+  expected_state.b = 0xFF;
+  Cpu6301::StatusRegister sr(0);
+  sr.N = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 2);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, ORAA_Immediate) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x8A;  // ORA A #data8
+  test_memory_[kProgramStart + 1] = 0x0F;
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0xF0;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 2;
+  expected_state.a = 0xFF;
+  Cpu6301::StatusRegister sr(0);
+  sr.N = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 2);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, ORAB_Immediate) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0xCA;  // ORA B #data8
+  test_memory_[kProgramStart + 1] = 0x0F;
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.b = 0xF0;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 2;
+  expected_state.b = 0xFF;
+  Cpu6301::StatusRegister sr(0);
+  sr.N = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 2);
+  EXPECT_EQ(final_state, expected_state);
+}
+
 }  // namespace
 }  // namespace eight_bit
