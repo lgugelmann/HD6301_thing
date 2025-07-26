@@ -1593,5 +1593,210 @@ TEST_F(Cpu6301Test, ADCB_Immediate) {
   EXPECT_EQ(final_state, expected_state);
 }
 
+TEST_F(Cpu6301Test, SBCB_Immediate) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0xC2;  // SBC B #data8
+  test_memory_[kProgramStart + 1] = 0x01;
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.b = 0x11;
+  Cpu6301::StatusRegister sr(0);
+  sr.C = 1;
+  initial_state.sr = sr.as_integer();
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 2;
+  expected_state.b = 0x0F;
+  // All flags should be cleared except H, which is not affected by SBC.
+  expected_state.sr = Cpu6301::StatusRegister(0).as_integer();
+
+  EXPECT_EQ(result.cycles_run, 2);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, PULX_PullsValueFromStack) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x38;  // PULX
+  test_memory_[kStackTop - 1] = 0x12;
+  test_memory_[kStackTop] = 0x34;
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.sp = kStackTop - 2;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.x = 0x1234;
+  expected_state.sp = kStackTop;
+
+  EXPECT_EQ(result.cycles_run, 4);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, MUL_MultipliesAAndB) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x3d;  // MUL
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 10;
+  initial_state.b = 20;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.a = 0;
+  expected_state.b = 200;
+  Cpu6301::StatusRegister sr(0);
+  sr.C = 1;  // 200 is 0b11001000, bit 7 is 1.
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 7);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, MUL_MultipliesAAndBCarryNotSet) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x3d;  // MUL
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 10;
+  initial_state.b = 5;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.a = 0;
+  expected_state.b = 50;
+  Cpu6301::StatusRegister sr(0);
+  sr.C = 0;  // 50 is 0b00110010, bit 7 is 0.
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 7);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, XGDX_ExchangesDAndX) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x18;  // XGDX
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 0x12;
+  initial_state.b = 0x34;
+  initial_state.x = 0x5678;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.a = 0x56;
+  expected_state.b = 0x78;
+  expected_state.x = 0x1234;
+
+  EXPECT_EQ(result.cycles_run, 2);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, RTS_ReturnsFromSubroutine) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x39;  // RTS
+  test_memory_[kStackTop - 1] = 0x12;
+  test_memory_[kStackTop] = 0x34;
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.sp = kStackTop - 2;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc = 0x1234;
+  expected_state.sp = kStackTop;
+
+  EXPECT_EQ(result.cycles_run, 5);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, ABX_AddsBToX) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x3a;  // ABX
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.b = 0x10;
+  initial_state.x = 0x1234;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.x = 0x1244;
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, NEGA_NegatesA) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x40;  // NEGA
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.a = 10;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.a = -10;
+  Cpu6301::StatusRegister sr(0);
+  sr.N = 1;
+  sr.C = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
+TEST_F(Cpu6301Test, NEGB_NegatesB) {
+  fail_test_on_memory_write();
+  test_memory_[kProgramStart] = 0x50;  // NEGB
+
+  Cpu6301::CpuState initial_state = cpu_->get_state();
+  initial_state.b = 10;
+  cpu_->set_state(initial_state);
+
+  auto result = cpu_->tick(1);
+  Cpu6301::CpuState final_state = cpu_->get_state();
+
+  Cpu6301::CpuState expected_state = initial_state;
+  expected_state.pc += 1;
+  expected_state.b = -10;
+  Cpu6301::StatusRegister sr(0);
+  sr.N = 1;
+  sr.C = 1;
+  expected_state.sr = sr.as_integer();
+
+  EXPECT_EQ(result.cycles_run, 1);
+  EXPECT_EQ(final_state, expected_state);
+}
+
 }  // namespace
 }  // namespace eight_bit
