@@ -116,7 +116,7 @@ io_irq:
         bra .irq_handled
 +
         ; Clear interrupt flags we're not handling
-        lda #(IO_IRQ_CA1 | IO_IRQ_SR | IO_IRQ_CB2 | IO_IRQ_CB1 | IO_IRQ_T2)
+        lda #(IO_IRQ_SR | IO_IRQ_CB2 | IO_IRQ_CB1 | IO_IRQ_T2)
         sta IO_IFR
 .irq_handled:
         sec                     ; Indicate we handled the IRQ
