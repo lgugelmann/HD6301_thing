@@ -1,0 +1,16 @@
+# JMP - Jump
+# Indexed: 0x6E, Extended: 0x7E
+
+---
+name: indexed
+memory: 6E 10
+setup: x=1000
+# PC = X + 0x10 = 0x1010
+expect: pc=1010
+cycles: 3
+
+---
+name: extended
+memory: 7E 12 34
+expect: pc=1234
+cycles: 3

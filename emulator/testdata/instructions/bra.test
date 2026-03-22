@@ -1,0 +1,15 @@
+# BRA - Branch Always (opcode 0x20)
+# Always branches
+
+---
+name: taken forward
+memory: 20 0E
+expect: pc=0030
+cycles: 3
+
+---
+name: taken backward
+memory: 20 FC
+# 0x0022 + (-4) = 0x001E
+expect: pc=001E
+cycles: 3

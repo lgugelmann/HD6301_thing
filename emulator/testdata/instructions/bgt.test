@@ -1,0 +1,16 @@
+# BGT - Branch if Greater Than (signed: Z==0 AND N^V==0) (opcode 0x2E)
+# Branches when Z=0 and N XOR V == 0
+
+---
+name: taken
+memory: 2E 0E
+setup: sr=C0
+expect: pc=0030
+cycles: 3
+
+---
+name: not taken
+memory: 2E 0E
+setup: sr=C4
+expect: pc=0022
+cycles: 3

@@ -1,0 +1,25 @@
+# COMA - Complement A (opcode 0x43)
+# ~A; N=bit7, Z=zero, V=0, C=1
+
+---
+name: complement nonzero
+memory: 43
+setup: a=0F
+# ~0x0F = 0xF0
+expect: a=F0 N=1 Z=0 V=0 C=1
+cycles: 1
+
+---
+name: complement FF
+memory: 43
+setup: a=FF
+# ~0xFF = 0x00
+expect: a=00 N=0 Z=1 V=0 C=1
+cycles: 1
+
+---
+name: complement zero
+memory: 43
+# ~0x00 = 0xFF
+expect: a=FF N=1 Z=0 V=0 C=1
+cycles: 1

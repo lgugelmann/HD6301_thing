@@ -1,0 +1,20 @@
+# LSR - Logical Shift Right Memory
+# Indexed: 0x64, Extended: 0x74
+
+---
+name: indexed
+memory: 64 10
+setup: x=1000
+at 1010: 04
+expect: N=0 Z=0 V=0 C=0
+expect_at 1010: 02
+cycles: 6
+
+---
+name: extended with carry
+memory: 74 12 34
+at 1234: 03
+# 0x03 >> 1 = 0x01, C=1, V=N^C=0^1=1
+expect: N=0 Z=0 V=1 C=1
+expect_at 1234: 01
+cycles: 6

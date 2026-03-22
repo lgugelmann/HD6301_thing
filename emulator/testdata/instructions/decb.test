@@ -1,0 +1,15 @@
+# DECB - Decrement B (opcode 0x5A)
+
+---
+name: basic decrement
+memory: 5A
+setup: b=05
+expect: b=04 N=0 Z=0 V=0
+cycles: 1
+
+---
+name: decrement 0x80 sets overflow
+memory: 5A
+setup: b=80
+expect: b=7F N=0 Z=0 V=1
+cycles: 1

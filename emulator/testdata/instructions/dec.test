@@ -1,0 +1,27 @@
+# DEC - Decrement Memory
+# Indexed: 0x6A, Extended: 0x7A
+
+---
+name: indexed
+memory: 6A 10
+setup: x=1000
+at 1010: 05
+expect: N=0 Z=0 V=0
+expect_at 1010: 04
+cycles: 6
+
+---
+name: extended to zero
+memory: 7A 12 34
+at 1234: 01
+expect: N=0 Z=1 V=0
+expect_at 1234: 00
+cycles: 6
+
+---
+name: decrement 0x80 sets overflow
+memory: 7A 12 34
+at 1234: 80
+expect: N=0 Z=0 V=1
+expect_at 1234: 7F
+cycles: 6

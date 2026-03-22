@@ -1,0 +1,16 @@
+# BNE - Branch if Not Equal (opcode 0x26)
+# Branches when Z=0
+
+---
+name: taken
+memory: 26 0E
+setup: sr=C0
+expect: pc=0030
+cycles: 3
+
+---
+name: not taken
+memory: 26 0E
+setup: sr=C4
+expect: pc=0022
+cycles: 3

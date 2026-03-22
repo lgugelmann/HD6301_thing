@@ -1,0 +1,16 @@
+# COMB - Complement B (opcode 0x53)
+# ~B; N=bit7, Z=zero, V=0, C=1
+
+---
+name: complement nonzero
+memory: 53
+setup: b=0F
+expect: b=F0 N=1 Z=0 V=0 C=1
+cycles: 1
+
+---
+name: complement FF
+memory: 53
+setup: b=FF
+expect: b=00 N=0 Z=1 V=0 C=1
+cycles: 1

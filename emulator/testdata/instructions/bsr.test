@@ -1,0 +1,20 @@
+# BSR - Branch to Subroutine (opcode 0x8D)
+# Pushes return address (PC after this instruction), then branches by signed offset.
+
+---
+name: forward
+memory: 8D 10
+# PC after fetch = 0x0022. Push 0x0022 to stack. PC = 0x0022 + 0x10 = 0x0032
+expect: pc=0032 sp=EFFE
+expect_at EFFF: 00
+expect_at F000: 22
+cycles: 5
+
+---
+name: backward
+memory: 8D F0
+# PC after fetch = 0x0022. Push 0x0022. PC = 0x0022 + (-16) = 0x0012
+expect: pc=0012 sp=EFFE
+expect_at EFFF: 00
+expect_at F000: 22
+cycles: 5

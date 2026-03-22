@@ -1,0 +1,48 @@
+# CPX - Compare X (16-bit)
+# Immediate: 0x8C, Direct: 0x9C, Indexed: 0xAC, Extended: 0xBC
+
+---
+name: immediate equal
+memory: 8C 12 34
+setup: x=1234
+expect: x=1234 N=0 Z=1 V=0 C=0
+cycles: 3
+
+---
+name: immediate greater
+memory: 8C 10 00
+setup: x=2000
+expect: x=2000 N=0 Z=0 V=0 C=0
+cycles: 3
+
+---
+name: immediate less
+memory: 8C 20 00
+setup: x=1000
+# 0x1000 - 0x2000 = 0xF000, N=1, C=1
+expect: x=1000 N=1 Z=0 V=0 C=1
+cycles: 3
+
+---
+name: direct
+memory: 9C 42
+setup: x=1234
+at 0042: 12 34
+expect: x=1234 Z=1
+cycles: 4
+
+---
+name: indexed
+memory: AC 10
+setup: x=1000
+at 1010: 10 00
+expect: x=1000 Z=1
+cycles: 5
+
+---
+name: extended
+memory: BC 12 34
+setup: x=5678
+at 1234: 56 78
+expect: x=5678 Z=1
+cycles: 5

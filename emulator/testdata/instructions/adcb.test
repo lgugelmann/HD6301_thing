@@ -6,3 +6,27 @@ memory: C9 01
 setup: b=0F C=1
 expect: b=11 H=1 C=0
 cycles: 2
+
+---
+name: direct with carry
+memory: D9 42
+setup: b=0E C=1
+at 0042: 01
+expect: b=10 H=1
+cycles: 3
+
+---
+name: indexed
+memory: E9 10
+setup: b=0E C=1 x=1000
+at 1010: 01
+expect: b=10 H=1
+cycles: 4
+
+---
+name: extended
+memory: F9 12 34
+setup: b=0E C=1
+at 1234: 01
+expect: b=10 H=1
+cycles: 4

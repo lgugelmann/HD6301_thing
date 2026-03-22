@@ -1,0 +1,19 @@
+# INC - Increment Memory
+# Indexed: 0x6C, Extended: 0x7C
+
+---
+name: indexed
+memory: 6C 10
+setup: x=1000
+at 1010: 05
+expect: N=0 Z=0 V=0
+expect_at 1010: 06
+cycles: 6
+
+---
+name: extended overflow
+memory: 7C 12 34
+at 1234: 7F
+expect: N=1 Z=0 V=1
+expect_at 1234: 80
+cycles: 6

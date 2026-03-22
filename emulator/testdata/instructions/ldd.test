@@ -6,3 +6,25 @@ name: immediate
 memory: CC 12 34
 expect: a=12 b=34 N=0 Z=0 V=0
 cycles: 3
+
+---
+name: direct
+memory: DC 42
+at 0042: 12 34
+expect: a=12 b=34 N=0 Z=0 V=0
+cycles: 4
+
+---
+name: indexed
+memory: EC 10
+setup: x=1000
+at 1010: AB CD
+expect: a=AB b=CD N=1 Z=0 V=0
+cycles: 5
+
+---
+name: extended
+memory: FC 12 34
+at 1234: 56 78
+expect: a=56 b=78 N=0 Z=0 V=0
+cycles: 5

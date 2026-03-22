@@ -1,0 +1,8 @@
+# CLRB - Clear B (opcode 0x5F)
+
+---
+name: clear nonzero
+memory: 5F
+setup: b=42
+expect: b=00 N=0 Z=1 V=0 C=0
+cycles: 1

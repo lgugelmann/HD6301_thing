@@ -1,0 +1,16 @@
+# BLT - Branch if Less Than (signed: N^V==1) (opcode 0x2D)
+# Branches when N XOR V == 1
+
+---
+name: taken
+memory: 2D 0E
+setup: sr=C8
+expect: pc=0030
+cycles: 3
+
+---
+name: not taken
+memory: 2D 0E
+setup: sr=C0
+expect: pc=0022
+cycles: 3

@@ -6,3 +6,27 @@ memory: C2 01
 setup: b=11 C=1
 expect: b=0F N=0 Z=0 V=0 C=0
 cycles: 2
+
+---
+name: direct with borrow
+memory: D2 42
+setup: b=11 C=1
+at 0042: 01
+expect: b=0F N=0 Z=0 V=0 C=0
+cycles: 3
+
+---
+name: indexed
+memory: E2 10
+setup: b=11 C=1 x=1000
+at 1010: 01
+expect: b=0F N=0 Z=0 V=0 C=0
+cycles: 4
+
+---
+name: extended
+memory: F2 12 34
+setup: b=11 C=1
+at 1234: 01
+expect: b=0F N=0 Z=0 V=0 C=0
+cycles: 4

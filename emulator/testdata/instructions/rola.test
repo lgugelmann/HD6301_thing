@@ -1,0 +1,26 @@
+# ROLA - Rotate Left A through Carry (opcode 0x49)
+# Bit 7 -> C, old C -> bit 0. V = N ^ C.
+
+---
+name: rotate left carry clear
+memory: 49
+setup: a=01
+# 0x01 << 1 | 0 = 0x02. C=0, N=0, V=0^0=0
+expect: a=02 N=0 Z=0 V=0 C=0
+cycles: 1
+
+---
+name: rotate left carry set
+memory: 49
+setup: a=00 C=1
+# 0x00 << 1 | 1 = 0x01. C=0, N=0, V=0^0=0
+expect: a=01 N=0 Z=0 V=0 C=0
+cycles: 1
+
+---
+name: rotate left bit7 into carry
+memory: 49
+setup: a=80
+# 0x80 << 1 | 0 = 0x00. C=1, N=0, V=0^1=1
+expect: a=00 N=0 Z=1 V=1 C=1
+cycles: 1

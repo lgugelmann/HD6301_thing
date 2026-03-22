@@ -1,0 +1,33 @@
+# STAA - Store A
+# Direct: 0x97, Indexed: 0xA7, Extended: 0xB7
+
+---
+name: direct
+memory: 97 42
+setup: a=AB
+expect: N=1 Z=0 V=0
+expect_at 0042: AB
+cycles: 3
+
+---
+name: indexed
+memory: A7 10
+setup: a=42 x=1000
+expect: N=0 Z=0 V=0
+expect_at 1010: 42
+cycles: 4
+
+---
+name: extended
+memory: B7 12 34
+setup: a=42
+expect: N=0 Z=0 V=0
+expect_at 1234: 42
+cycles: 4
+
+---
+name: store zero
+memory: 97 42
+expect: N=0 Z=1 V=0
+expect_at 0042: 00
+cycles: 3

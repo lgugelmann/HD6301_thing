@@ -1,0 +1,21 @@
+# ROR - Rotate Right Memory through Carry
+# Indexed: 0x66, Extended: 0x76
+
+---
+name: indexed carry clear
+memory: 66 10
+setup: x=1000
+at 1010: 02
+expect: N=0 Z=0 V=0 C=0
+expect_at 1010: 01
+cycles: 6
+
+---
+name: extended carry in
+memory: 76 12 34
+setup: C=1
+at 1234: 00
+# C=1 in, bit0=0. 0x00>>1 | 1<<7 = 0x80. C=0, N=1, V=1^0=1
+expect: N=1 Z=0 V=1 C=0
+expect_at 1234: 80
+cycles: 6

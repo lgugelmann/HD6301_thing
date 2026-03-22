@@ -1,0 +1,15 @@
+# ASRB - Arithmetic Shift Right B (opcode 0x57)
+
+---
+name: shift positive
+memory: 57
+setup: b=04
+expect: b=02 N=0 Z=0 V=0 C=0
+cycles: 1
+
+---
+name: shift negative preserves sign
+memory: 57
+setup: b=80
+expect: b=C0 N=1 Z=0 V=1 C=0
+cycles: 1

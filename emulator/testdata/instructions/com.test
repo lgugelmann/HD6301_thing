@@ -1,0 +1,19 @@
+# COM - Complement Memory (1's complement)
+# Indexed: 0x63, Extended: 0x73
+
+---
+name: indexed
+memory: 63 10
+setup: x=1000
+at 1010: 0F
+expect: N=1 Z=0 V=0 C=1
+expect_at 1010: F0
+cycles: 6
+
+---
+name: extended
+memory: 73 12 34
+at 1234: FF
+expect: N=0 Z=1 V=0 C=1
+expect_at 1234: 00
+cycles: 6

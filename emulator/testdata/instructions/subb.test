@@ -1,0 +1,40 @@
+# SUBB - Subtract from B
+# Immediate: 0xC0, Direct: 0xD0, Indexed: 0xE0, Extended: 0xF0
+
+---
+name: immediate
+memory: C0 05
+setup: b=10
+expect: b=0B N=0 Z=0 V=0 C=0
+cycles: 2
+
+---
+name: immediate borrow
+memory: C0 10
+setup: b=05
+expect: b=F5 N=1 Z=0 V=0 C=1
+cycles: 2
+
+---
+name: direct
+memory: D0 42
+setup: b=10
+at 0042: 05
+expect: b=0B N=0 Z=0 V=0 C=0
+cycles: 3
+
+---
+name: indexed
+memory: E0 10
+setup: b=10 x=1000
+at 1010: 05
+expect: b=0B N=0 Z=0 V=0 C=0
+cycles: 4
+
+---
+name: extended
+memory: F0 12 34
+setup: b=10
+at 1234: 05
+expect: b=0B N=0 Z=0 V=0 C=0
+cycles: 4

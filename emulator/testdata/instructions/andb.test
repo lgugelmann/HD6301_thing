@@ -6,3 +6,27 @@ memory: C4 0F
 setup: b=F0
 expect: b=00 Z=1 N=0 V=0
 cycles: 2
+
+---
+name: direct
+memory: D4 42
+setup: b=FF
+at 0042: 0F
+expect: b=0F N=0 Z=0 V=0
+cycles: 3
+
+---
+name: indexed
+memory: E4 10
+setup: b=FF x=1000
+at 1010: 0F
+expect: b=0F N=0 Z=0 V=0
+cycles: 4
+
+---
+name: extended
+memory: F4 12 34
+setup: b=FF
+at 1234: 0F
+expect: b=0F N=0 Z=0 V=0
+cycles: 4

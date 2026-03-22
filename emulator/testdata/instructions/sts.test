@@ -1,0 +1,28 @@
+# STS - Store Stack Pointer
+# Direct: 0x9F, Indexed: 0xAF, Extended: 0xBF
+
+---
+name: direct
+memory: 9F 42
+expect: N=1 Z=0 V=0
+expect_at 0042: F0
+expect_at 0043: 00
+cycles: 4
+
+---
+name: indexed
+memory: AF 10
+setup: x=1000 sp=1234
+expect: N=0 Z=0 V=0
+expect_at 1010: 12
+expect_at 1011: 34
+cycles: 5
+
+---
+name: extended
+memory: BF 12 34
+setup: sp=5678
+expect: N=0 Z=0 V=0
+expect_at 1234: 56
+expect_at 1235: 78
+cycles: 5

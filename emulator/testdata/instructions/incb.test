@@ -1,0 +1,15 @@
+# INCB - Increment B (opcode 0x5C)
+
+---
+name: basic increment
+memory: 5C
+setup: b=05
+expect: b=06 N=0 Z=0 V=0
+cycles: 1
+
+---
+name: increment 0x7F sets overflow
+memory: 5C
+setup: b=7F
+expect: b=80 N=1 Z=0 V=1
+cycles: 1

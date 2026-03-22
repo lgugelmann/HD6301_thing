@@ -1,0 +1,26 @@
+# RORA - Rotate Right A through Carry (opcode 0x46)
+# Bit 0 -> C, old C -> bit 7. V = N ^ C.
+
+---
+name: rotate right carry clear
+memory: 46
+setup: a=02
+# C=0 in, bit0=0 out. 0x02 >> 1 | 0<<7 = 0x01. C=0, V=0^0=0
+expect: a=01 N=0 Z=0 V=0 C=0
+cycles: 1
+
+---
+name: rotate right carry set
+memory: 46
+setup: a=00 C=1
+# C=1 in, bit0=0 out. 0x00 >> 1 | 1<<7 = 0x80. C=0, N=1, V=1^0=1
+expect: a=80 N=1 Z=0 V=1 C=0
+cycles: 1
+
+---
+name: rotate right with bit0 set
+memory: 46
+setup: a=01
+# C=0 in, bit0=1 out. 0x01 >> 1 | 0<<7 = 0x00. C=1, N=0, V=0^1=1
+expect: a=00 N=0 Z=1 V=1 C=1
+cycles: 1

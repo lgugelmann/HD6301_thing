@@ -1,0 +1,48 @@
+# CMPA - Compare A (subtract without storing)
+# Immediate: 0x81, Direct: 0x91, Indexed: 0xA1, Extended: 0xB1
+
+---
+name: immediate equal
+memory: 81 42
+setup: a=42
+# A unchanged
+expect: a=42 N=0 Z=1 V=0 C=0
+cycles: 2
+
+---
+name: immediate greater
+memory: 81 05
+setup: a=10
+expect: a=10 N=0 Z=0 V=0 C=0
+cycles: 2
+
+---
+name: immediate less
+memory: 81 10
+setup: a=05
+expect: a=05 N=1 Z=0 V=0 C=1
+cycles: 2
+
+---
+name: direct
+memory: 91 42
+setup: a=42
+at 0042: 42
+expect: a=42 N=0 Z=1 V=0 C=0
+cycles: 3
+
+---
+name: indexed
+memory: A1 10
+setup: a=42 x=1000
+at 1010: 42
+expect: a=42 N=0 Z=1 V=0 C=0
+cycles: 4
+
+---
+name: extended
+memory: B1 12 34
+setup: a=42
+at 1234: 42
+expect: a=42 N=0 Z=1 V=0 C=0
+cycles: 4

@@ -1,0 +1,16 @@
+# BEQ - Branch if Equal (opcode 0x27)
+# Branches when Z=1
+
+---
+name: taken
+memory: 27 0E
+setup: sr=C4
+expect: pc=0030
+cycles: 3
+
+---
+name: not taken
+memory: 27 0E
+setup: sr=C0
+expect: pc=0022
+cycles: 3

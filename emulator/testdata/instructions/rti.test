@@ -1,0 +1,17 @@
+# RTI - Return from Interrupt (opcode 0x3B)
+# Pulls: SR, B, A, X(16), PC(16) from stack.
+
+---
+name: restores all registers
+memory: 3B
+setup: sp=EFF9
+at EFFA: C4
+at EFFB: BB
+at EFFC: AA
+at EFFD: 12
+at EFFE: 34
+at EFFF: 56
+at F000: 78
+# SR=0xC4 (Z=1), B=0xBB, A=0xAA, X=0x1234, PC=0x5678
+expect: a=AA b=BB x=1234 sp=F000 pc=5678 sr=C4
+cycles: 10

@@ -1,0 +1,40 @@
+# ADCA - Add with Carry to A
+# Immediate: 0x89, Direct: 0x99, Indexed: 0xA9, Extended: 0xB9
+
+---
+name: immediate with carry
+memory: 89 01
+setup: a=0E C=1
+expect: a=10 H=1 N=0 Z=0 V=0 C=0
+cycles: 2
+
+---
+name: immediate no carry
+memory: 89 01
+setup: a=0E
+expect: a=0F H=0 N=0 Z=0 V=0 C=0
+cycles: 2
+
+---
+name: direct
+memory: 99 42
+setup: a=0E C=1
+at 0042: 01
+expect: a=10 H=1 N=0 Z=0 V=0 C=0
+cycles: 3
+
+---
+name: indexed
+memory: A9 10
+setup: a=0E C=1 x=1000
+at 1010: 01
+expect: a=10 H=1 N=0 Z=0 V=0 C=0
+cycles: 4
+
+---
+name: extended
+memory: B9 12 34
+setup: a=0E C=1
+at 1234: 01
+expect: a=10 H=1 N=0 Z=0 V=0 C=0
+cycles: 4

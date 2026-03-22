@@ -7,3 +7,27 @@ setup: a=F0
 # BITA does not modify A
 expect: a=F0 Z=1 N=0 V=0
 cycles: 2
+
+---
+name: direct nonzero
+memory: 95 42
+setup: a=FF
+at 0042: 0F
+expect: a=FF N=0 Z=0 V=0
+cycles: 3
+
+---
+name: indexed
+memory: A5 10
+setup: a=FF x=1000
+at 1010: 80
+expect: a=FF N=1 Z=0 V=0
+cycles: 4
+
+---
+name: extended
+memory: B5 12 34
+setup: a=FF
+at 1234: 42
+expect: a=FF N=0 Z=0 V=0
+cycles: 4

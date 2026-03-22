@@ -1,0 +1,16 @@
+# BCS - Branch if Carry Set (opcode 0x25)
+# Branches when C=1
+
+---
+name: taken
+memory: 25 0E
+setup: sr=C1
+expect: pc=0030
+cycles: 3
+
+---
+name: not taken
+memory: 25 0E
+setup: sr=C0
+expect: pc=0022
+cycles: 3

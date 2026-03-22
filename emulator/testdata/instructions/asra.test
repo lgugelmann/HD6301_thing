@@ -1,0 +1,26 @@
+# ASRA - Arithmetic Shift Right A (opcode 0x47)
+# Sign bit preserved. Bit 0 -> C. V = N ^ C.
+
+---
+name: shift positive
+memory: 47
+setup: a=04
+# 0x04 >> 1 = 0x02, sign=0 preserved. C=0
+expect: a=02 N=0 Z=0 V=0 C=0
+cycles: 1
+
+---
+name: shift negative preserves sign
+memory: 47
+setup: a=80
+# 0x80 >> 1 | 0x80 = 0xC0. C=0, N=1, V=1^0=1
+expect: a=C0 N=1 Z=0 V=1 C=0
+cycles: 1
+
+---
+name: shift odd negative
+memory: 47
+setup: a=FF
+# 0xFF >> 1 | 0x80 = 0xFF. C=1, N=1, V=1^1=0
+expect: a=FF N=1 Z=0 V=0 C=1
+cycles: 1

@@ -1,0 +1,24 @@
+# INCA - Increment A (opcode 0x4C)
+# V = (old == 0x7F); A += 1; N,Z set from result.
+
+---
+name: basic increment
+memory: 4C
+setup: a=05
+expect: a=06 N=0 Z=0 V=0
+cycles: 1
+
+---
+name: increment 0x7F sets overflow
+memory: 4C
+setup: a=7F
+# V=1 because old was 0x7F
+expect: a=80 N=1 Z=0 V=1
+cycles: 1
+
+---
+name: increment FF wraps to zero
+memory: 4C
+setup: a=FF
+expect: a=00 N=0 Z=1 V=0
+cycles: 1

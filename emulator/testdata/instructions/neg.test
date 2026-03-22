@@ -1,0 +1,37 @@
+# NEG - Negate Memory (2's complement)
+# Indexed: 0x60, Extended: 0x70
+
+---
+name: indexed
+memory: 60 10
+setup: x=1000
+at 1010: 0A
+# -0x0A = 0xF6
+expect: N=1 C=1
+expect_at 1010: F6
+cycles: 6
+
+---
+name: extended
+memory: 70 12 34
+at 1234: 0A
+expect: N=1 C=1
+expect_at 1234: F6
+cycles: 6
+
+---
+name: negate zero extended
+memory: 70 12 34
+at 1234: 00
+expect: N=0 Z=1 V=0 C=0
+expect_at 1234: 00
+cycles: 6
+
+---
+name: negate 0x80 sets overflow
+memory: 70 12 34
+at 1234: 80
+# -0x80 = 0x80 (wraps)
+expect: N=1 Z=0 V=1 C=1
+expect_at 1234: 80
+cycles: 6

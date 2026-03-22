@@ -1,0 +1,16 @@
+# BMI - Branch if Minus (opcode 0x2B)
+# Branches when N=1
+
+---
+name: taken
+memory: 2B 0E
+setup: sr=C8
+expect: pc=0030
+cycles: 3
+
+---
+name: not taken
+memory: 2B 0E
+setup: sr=C0
+expect: pc=0022
+cycles: 3

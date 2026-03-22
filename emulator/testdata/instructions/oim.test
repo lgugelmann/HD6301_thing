@@ -1,0 +1,21 @@
+# OIM - OR Immediate with Memory (HD6301)
+# Indexed: 0x62 [opcode, mask, offset], Direct: 0x72 [opcode, mask, addr]
+
+---
+name: indexed
+memory: 62 0F 10
+setup: x=1000
+at 1010: A0
+# 0xA0 | 0x0F = 0xAF
+expect: N=1 Z=0 V=0
+expect_at 1010: AF
+cycles: 7
+
+---
+name: direct
+memory: 72 80 42
+at 0042: 00
+# 0x00 | 0x80 = 0x80
+expect: N=1 Z=0 V=0
+expect_at 0042: 80
+cycles: 6

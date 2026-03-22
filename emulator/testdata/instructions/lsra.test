@@ -1,0 +1,26 @@
+# LSRA - Logical Shift Right A (opcode 0x44)
+# Bit 0 -> C, 0 -> bit 7. V = N ^ C.
+
+---
+name: shift right
+memory: 44
+setup: a=04
+# 0x04 >> 1 = 0x02, C=0
+expect: a=02 N=0 Z=0 V=0 C=0
+cycles: 1
+
+---
+name: shift right odd
+memory: 44
+setup: a=03
+# 0x03 >> 1 = 0x01, C=1, V=N^C=0^1=1
+expect: a=01 N=0 Z=0 V=1 C=1
+cycles: 1
+
+---
+name: shift right to zero
+memory: 44
+setup: a=01
+# 0x01 >> 1 = 0x00, C=1, V=N^C=0^1=1
+expect: a=00 N=0 Z=1 V=1 C=1
+cycles: 1

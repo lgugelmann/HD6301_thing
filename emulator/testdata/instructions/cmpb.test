@@ -1,0 +1,40 @@
+# CMPB - Compare B
+# Immediate: 0xC1, Direct: 0xD1, Indexed: 0xE1, Extended: 0xF1
+
+---
+name: immediate equal
+memory: C1 42
+setup: b=42
+expect: b=42 N=0 Z=1 V=0 C=0
+cycles: 2
+
+---
+name: immediate less
+memory: C1 10
+setup: b=05
+expect: b=05 N=1 Z=0 V=0 C=1
+cycles: 2
+
+---
+name: direct
+memory: D1 42
+setup: b=42
+at 0042: 42
+expect: b=42 Z=1
+cycles: 3
+
+---
+name: indexed
+memory: E1 10
+setup: b=42 x=1000
+at 1010: 42
+expect: b=42 Z=1
+cycles: 4
+
+---
+name: extended
+memory: F1 12 34
+setup: b=42
+at 1234: 42
+expect: b=42 Z=1
+cycles: 4

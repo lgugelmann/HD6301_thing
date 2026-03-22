@@ -1,0 +1,24 @@
+# TST - Test Memory (compare with 0)
+# Indexed: 0x6D, Extended: 0x7D
+
+---
+name: indexed positive
+memory: 6D 10
+setup: x=1000
+at 1010: 42
+expect: N=0 Z=0 V=0 C=0
+cycles: 4
+
+---
+name: extended zero
+memory: 7D 12 34
+at 1234: 00
+expect: N=0 Z=1 V=0 C=0
+cycles: 4
+
+---
+name: extended negative
+memory: 7D 12 34
+at 1234: 80
+expect: N=1 Z=0 V=0 C=0
+cycles: 4

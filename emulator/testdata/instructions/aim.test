@@ -1,0 +1,30 @@
+# AIM - AND Immediate with Memory (HD6301)
+# Indexed: 0x61 [opcode, mask, offset], Direct: 0x71 [opcode, mask, addr]
+
+---
+name: indexed
+memory: 61 0F 10
+setup: x=1000
+at 1010: AB
+# 0xAB & 0x0F = 0x0B
+expect: N=0 Z=0 V=0
+expect_at 1010: 0B
+cycles: 7
+
+---
+name: direct
+memory: 71 F0 42
+at 0042: AB
+# 0xAB & 0xF0 = 0xA0
+expect: N=1 Z=0 V=0
+expect_at 0042: A0
+cycles: 6
+
+---
+name: direct zero result
+memory: 71 0F 42
+at 0042: F0
+# 0xF0 & 0x0F = 0x00
+expect: N=0 Z=1 V=0
+expect_at 0042: 00
+cycles: 6

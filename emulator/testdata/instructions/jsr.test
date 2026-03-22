@@ -1,0 +1,31 @@
+# JSR - Jump to Subroutine
+# Direct: 0x9D, Indexed: 0xAD, Extended: 0xBD
+# Pushes return address, then jumps.
+
+---
+name: direct
+memory: 9D 42
+# PC after fetch = 0x0022, pushed to stack, then PC = 0x0042
+expect: pc=0042 sp=EFFE
+expect_at EFFF: 00
+expect_at F000: 22
+cycles: 5
+
+---
+name: indexed
+memory: AD 10
+setup: x=1000
+# PC after fetch = 0x0022, pushed to stack, then PC = 0x1010
+expect: pc=1010 sp=EFFE
+expect_at EFFF: 00
+expect_at F000: 22
+cycles: 5
+
+---
+name: extended
+memory: BD 12 34
+# PC after fetch = 0x0023, pushed to stack, then PC = 0x1234
+expect: pc=1234 sp=EFFE
+expect_at EFFF: 00
+expect_at F000: 23
+cycles: 6

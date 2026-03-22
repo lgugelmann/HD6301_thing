@@ -1,0 +1,15 @@
+# ASLB - Arithmetic Shift Left B (opcode 0x58)
+
+---
+name: shift left
+memory: 58
+setup: b=01
+expect: b=02 N=0 Z=0 V=0 C=0
+cycles: 1
+
+---
+name: shift left into carry
+memory: 58
+setup: b=80
+expect: b=00 N=0 Z=1 V=1 C=1
+cycles: 1

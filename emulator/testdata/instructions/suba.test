@@ -1,0 +1,41 @@
+# SUBA - Subtract from A
+# Immediate: 0x80, Direct: 0x90, Indexed: 0xA0, Extended: 0xB0
+
+---
+name: immediate
+memory: 80 05
+setup: a=10
+expect: a=0B N=0 Z=0 V=0 C=0
+cycles: 2
+
+---
+name: immediate borrow
+memory: 80 10
+setup: a=05
+# 0x05 - 0x10 = 0xF5 (unsigned), borrow
+expect: a=F5 N=1 Z=0 V=0 C=1
+cycles: 2
+
+---
+name: direct
+memory: 90 42
+setup: a=10
+at 0042: 05
+expect: a=0B N=0 Z=0 V=0 C=0
+cycles: 3
+
+---
+name: indexed
+memory: A0 10
+setup: a=10 x=1000
+at 1010: 05
+expect: a=0B N=0 Z=0 V=0 C=0
+cycles: 4
+
+---
+name: extended
+memory: B0 12 34
+setup: a=10
+at 1234: 05
+expect: a=0B N=0 Z=0 V=0 C=0
+cycles: 4

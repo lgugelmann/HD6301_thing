@@ -1,0 +1,15 @@
+# CLRA - Clear A (opcode 0x4F)
+# A=0; N=0, Z=1, V=0, C=0
+
+---
+name: clear nonzero
+memory: 4F
+setup: a=42
+expect: a=00 N=0 Z=1 V=0 C=0
+cycles: 1
+
+---
+name: clear already zero
+memory: 4F
+expect: a=00 N=0 Z=1 V=0 C=0
+cycles: 1

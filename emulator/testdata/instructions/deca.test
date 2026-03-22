@@ -1,0 +1,30 @@
+# DECA - Decrement A (opcode 0x4A)
+# V = (old == 0x80); A -= 1; N,Z set from result.
+
+---
+name: basic decrement
+memory: 4A
+setup: a=05
+expect: a=04 N=0 Z=0 V=0
+cycles: 1
+
+---
+name: decrement to zero
+memory: 4A
+setup: a=01
+expect: a=00 N=0 Z=1 V=0
+cycles: 1
+
+---
+name: decrement zero wraps
+memory: 4A
+expect: a=FF N=1 Z=0 V=0
+cycles: 1
+
+---
+name: decrement 0x80 sets overflow
+memory: 4A
+setup: a=80
+# V=1 because old was 0x80
+expect: a=7F N=0 Z=0 V=1
+cycles: 1

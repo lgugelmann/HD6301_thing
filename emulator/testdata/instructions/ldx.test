@@ -1,0 +1,36 @@
+# LDX - Load Index Register X
+# Immediate: 0xCE, Direct: 0xDE, Indexed: 0xEE, Extended: 0xFE
+
+---
+name: immediate
+memory: CE 12 34
+expect: x=1234 N=0 Z=0 V=0
+cycles: 3
+
+---
+name: immediate zero
+memory: CE 00 00
+expect: x=0000 Z=1
+cycles: 3
+
+---
+name: direct
+memory: DE 42
+at 0042: 12 34
+expect: x=1234 N=0 Z=0 V=0
+cycles: 4
+
+---
+name: indexed
+memory: EE 10
+setup: x=1000
+at 1010: AB CD
+expect: x=ABCD N=1 Z=0 V=0
+cycles: 5
+
+---
+name: extended
+memory: FE 12 34
+at 1234: 56 78
+expect: x=5678 N=0 Z=0 V=0
+cycles: 5

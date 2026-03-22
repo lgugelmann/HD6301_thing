@@ -1,0 +1,19 @@
+# CLR - Clear Memory
+# Indexed: 0x6F, Extended: 0x7F
+
+---
+name: indexed
+memory: 6F 10
+setup: x=1000
+at 1010: 42
+expect: N=0 Z=1 V=0 C=0
+expect_at 1010: 00
+cycles: 5
+
+---
+name: extended
+memory: 7F 12 34
+at 1234: FF
+expect: N=0 Z=1 V=0 C=0
+expect_at 1234: 00
+cycles: 5

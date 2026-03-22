@@ -1,0 +1,14 @@
+# TSTB - Test B (opcode 0x5D)
+
+---
+name: test positive
+memory: 5D
+setup: b=42
+expect: b=42 N=0 Z=0 V=0 C=0
+cycles: 1
+
+---
+name: test zero
+memory: 5D
+expect: b=00 N=0 Z=1 V=0 C=0
+cycles: 1

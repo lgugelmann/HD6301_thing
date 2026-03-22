@@ -1,0 +1,36 @@
+# LDS - Load Stack Pointer
+# Immediate: 0x8E, Direct: 0x9E, Indexed: 0xAE, Extended: 0xBE
+
+---
+name: immediate
+memory: 8E 12 34
+expect: sp=1234 N=0 Z=0 V=0
+cycles: 3
+
+---
+name: immediate zero
+memory: 8E 00 00
+expect: sp=0000 Z=1
+cycles: 3
+
+---
+name: direct
+memory: 9E 42
+at 0042: 12 34
+expect: sp=1234 N=0 Z=0 V=0
+cycles: 4
+
+---
+name: indexed
+memory: AE 10
+setup: x=1000
+at 1010: AB CD
+expect: sp=ABCD N=1 Z=0 V=0
+cycles: 5
+
+---
+name: extended
+memory: BE 12 34
+at 1234: 56 78
+expect: sp=5678 N=0 Z=0 V=0
+cycles: 5

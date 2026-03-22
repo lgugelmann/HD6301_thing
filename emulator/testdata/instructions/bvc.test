@@ -1,0 +1,16 @@
+# BVC - Branch if Overflow Clear (opcode 0x28)
+# Branches when V=0
+
+---
+name: taken
+memory: 28 0E
+setup: sr=C0
+expect: pc=0030
+cycles: 3
+
+---
+name: not taken
+memory: 28 0E
+setup: sr=C2
+expect: pc=0022
+cycles: 3

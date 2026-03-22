@@ -1,0 +1,15 @@
+# RORB - Rotate Right B through Carry (opcode 0x56)
+
+---
+name: rotate right carry clear
+memory: 56
+setup: b=02
+expect: b=01 N=0 Z=0 V=0 C=0
+cycles: 1
+
+---
+name: rotate right carry set
+memory: 56
+setup: b=00 C=1
+expect: b=80 N=1 Z=0 V=1 C=0
+cycles: 1

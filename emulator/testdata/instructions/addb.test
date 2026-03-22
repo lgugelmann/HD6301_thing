@@ -1,0 +1,40 @@
+# ADDB - Add to B
+# Immediate: 0xCB, Direct: 0xDB, Indexed: 0xEB, Extended: 0xFB
+
+---
+name: immediate
+memory: CB 01
+setup: b=0F
+expect: b=10 H=1 N=0 Z=0 V=0 C=0
+cycles: 2
+
+---
+name: immediate overflow
+memory: CB 01
+setup: b=7F
+expect: b=80 N=1 V=1 C=0 H=1
+cycles: 2
+
+---
+name: direct
+memory: DB 42
+setup: b=0F
+at 0042: 01
+expect: b=10 H=1 N=0 Z=0 V=0 C=0
+cycles: 3
+
+---
+name: indexed
+memory: EB 10
+setup: b=0F x=1000
+at 1010: 01
+expect: b=10 H=1
+cycles: 4
+
+---
+name: extended
+memory: FB 12 34
+setup: b=0F
+at 1234: 01
+expect: b=10 H=1
+cycles: 4

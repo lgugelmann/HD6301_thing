@@ -1,0 +1,22 @@
+# TSTA - Test A (opcode 0x4D)
+# Compares A with 0. Sets N,Z,V,C. Does not modify A.
+
+---
+name: test positive
+memory: 4D
+setup: a=42
+expect: a=42 N=0 Z=0 V=0 C=0
+cycles: 1
+
+---
+name: test zero
+memory: 4D
+expect: a=00 N=0 Z=1 V=0 C=0
+cycles: 1
+
+---
+name: test negative
+memory: 4D
+setup: a=80
+expect: a=80 N=1 Z=0 V=0 C=0
+cycles: 1

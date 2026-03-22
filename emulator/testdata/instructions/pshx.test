@@ -1,0 +1,10 @@
+# PSHX - Push X to Stack (opcode 0x3C)
+
+---
+name: pushes X to stack
+memory: 3C
+setup: x=1234
+expect: sp=EFFE
+expect_at EFFF: 12
+expect_at F000: 34
+cycles: 5

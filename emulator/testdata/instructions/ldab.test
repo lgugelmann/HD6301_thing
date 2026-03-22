@@ -1,0 +1,36 @@
+# LDAB - Load B
+# Immediate: 0xC6, Direct: 0xD6, Indexed: 0xE6, Extended: 0xF6
+
+---
+name: immediate
+memory: C6 42
+expect: b=42 N=0 Z=0 V=0
+cycles: 2
+
+---
+name: immediate zero
+memory: C6 00
+expect: b=00 Z=1
+cycles: 2
+
+---
+name: direct
+memory: D6 42
+at 0042: AB
+expect: b=AB N=1 Z=0 V=0
+cycles: 3
+
+---
+name: indexed
+memory: E6 10
+setup: x=1000
+at 1010: 42
+expect: b=42 N=0 Z=0 V=0
+cycles: 4
+
+---
+name: extended
+memory: F6 12 34
+at 1234: 42
+expect: b=42 N=0 Z=0 V=0
+cycles: 4

@@ -1,0 +1,20 @@
+# ASR - Arithmetic Shift Right Memory
+# Indexed: 0x67, Extended: 0x77
+
+---
+name: indexed positive
+memory: 67 10
+setup: x=1000
+at 1010: 04
+expect: N=0 Z=0 V=0 C=0
+expect_at 1010: 02
+cycles: 6
+
+---
+name: extended negative preserves sign
+memory: 77 12 34
+at 1234: 80
+# 0x80 >> 1 | 0x80 = 0xC0. C=0, N=1, V=1^0=1
+expect: N=1 Z=0 V=1 C=0
+expect_at 1234: C0
+cycles: 6

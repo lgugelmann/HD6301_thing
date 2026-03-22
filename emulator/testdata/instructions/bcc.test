@@ -1,0 +1,16 @@
+# BCC - Branch if Carry Clear (opcode 0x24)
+# Branches when C=0
+
+---
+name: taken
+memory: 24 0E
+setup: sr=C0
+expect: pc=0030
+cycles: 3
+
+---
+name: not taken
+memory: 24 0E
+setup: sr=C1
+expect: pc=0022
+cycles: 3

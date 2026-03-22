@@ -6,3 +6,27 @@ memory: 88 0F
 setup: a=F0
 expect: a=FF N=1 V=0
 cycles: 2
+
+---
+name: direct
+memory: 98 42
+setup: a=FF
+at 0042: AA
+expect: a=55 N=0 Z=0 V=0
+cycles: 3
+
+---
+name: indexed
+memory: A8 10
+setup: a=FF x=1000
+at 1010: AA
+expect: a=55 N=0 Z=0 V=0
+cycles: 4
+
+---
+name: extended
+memory: B8 12 34
+setup: a=FF
+at 1234: AA
+expect: a=55 N=0 Z=0 V=0
+cycles: 4

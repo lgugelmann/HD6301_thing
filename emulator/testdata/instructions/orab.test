@@ -6,3 +6,27 @@ memory: CA 0F
 setup: b=F0
 expect: b=FF N=1 V=0
 cycles: 2
+
+---
+name: direct
+memory: DA 42
+setup: b=A0
+at 0042: 0F
+expect: b=AF N=1 Z=0 V=0
+cycles: 3
+
+---
+name: indexed
+memory: EA 10
+setup: b=A0 x=1000
+at 1010: 0F
+expect: b=AF N=1 Z=0 V=0
+cycles: 4
+
+---
+name: extended
+memory: FA 12 34
+setup: b=A0
+at 1234: 0F
+expect: b=AF N=1 Z=0 V=0
+cycles: 4

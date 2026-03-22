@@ -1,0 +1,16 @@
+# BLE - Branch if Less or Equal (signed: Z==1 OR N^V==1, but not both) (opcode 0x2F)
+# Branches when exactly one of Z or (N^V) is set (implementation: Z+(N^V)==1)
+
+---
+name: taken
+memory: 2F 0E
+setup: sr=C4
+expect: pc=0030
+cycles: 3
+
+---
+name: not taken
+memory: 2F 0E
+setup: sr=C0
+expect: pc=0022
+cycles: 3

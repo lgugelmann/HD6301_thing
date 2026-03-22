@@ -1,0 +1,21 @@
+# EIM - XOR Immediate with Memory (HD6301)
+# Indexed: 0x65 [opcode, mask, offset], Direct: 0x75 [opcode, mask, addr]
+
+---
+name: indexed
+memory: 65 FF 10
+setup: x=1000
+at 1010: AA
+# 0xAA ^ 0xFF = 0x55
+expect: N=0 Z=0 V=0
+expect_at 1010: 55
+cycles: 7
+
+---
+name: direct
+memory: 75 AA 42
+at 0042: AA
+# 0xAA ^ 0xAA = 0x00
+expect: N=0 Z=1 V=0
+expect_at 0042: 00
+cycles: 6

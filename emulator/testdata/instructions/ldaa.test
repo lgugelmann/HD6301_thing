@@ -1,0 +1,42 @@
+# LDAA - Load A
+# Immediate: 0x86, Direct: 0x96, Indexed: 0xA6, Extended: 0xB6
+
+---
+name: immediate positive
+memory: 86 42
+expect: a=42 N=0 Z=0 V=0
+cycles: 2
+
+---
+name: immediate zero
+memory: 86 00
+expect: a=00 N=0 Z=1 V=0
+cycles: 2
+
+---
+name: immediate negative
+memory: 86 80
+expect: a=80 N=1 Z=0 V=0
+cycles: 2
+
+---
+name: direct
+memory: 96 42
+at 0042: AB
+expect: a=AB N=1 Z=0 V=0
+cycles: 3
+
+---
+name: indexed
+memory: A6 10
+setup: x=1000
+at 1010: 42
+expect: a=42 N=0 Z=0 V=0
+cycles: 4
+
+---
+name: extended
+memory: B6 12 34
+at 1234: 42
+expect: a=42 N=0 Z=0 V=0
+cycles: 4

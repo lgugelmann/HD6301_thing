@@ -1,0 +1,30 @@
+# STX - Store Index Register X
+# Direct: 0xDF, Indexed: 0xEF, Extended: 0xFF
+
+---
+name: direct
+memory: DF 42
+setup: x=1234
+expect: N=0 Z=0 V=0
+expect_at 0042: 12
+expect_at 0043: 34
+cycles: 4
+
+---
+name: indexed
+memory: EF 10
+setup: x=1000
+# X=0x1000, store at 0x1000+0x10=0x1010
+expect: N=0 Z=0 V=0
+expect_at 1010: 10
+expect_at 1011: 00
+cycles: 5
+
+---
+name: extended
+memory: FF 12 34
+setup: x=5678
+expect: N=0 Z=0 V=0
+expect_at 1234: 56
+expect_at 1235: 78
+cycles: 5

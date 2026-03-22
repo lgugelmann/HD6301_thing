@@ -1,0 +1,40 @@
+# SBCA - Subtract with Carry from A
+# Immediate: 0x82, Direct: 0x92, Indexed: 0xA2, Extended: 0xB2
+
+---
+name: immediate with borrow
+memory: 82 01
+setup: a=11 C=1
+expect: a=0F N=0 Z=0 V=0 C=0
+cycles: 2
+
+---
+name: immediate no borrow
+memory: 82 01
+setup: a=11
+expect: a=10 N=0 Z=0 V=0 C=0
+cycles: 2
+
+---
+name: direct
+memory: 92 42
+setup: a=11 C=1
+at 0042: 01
+expect: a=0F N=0 Z=0 V=0 C=0
+cycles: 3
+
+---
+name: indexed
+memory: A2 10
+setup: a=11 C=1 x=1000
+at 1010: 01
+expect: a=0F N=0 Z=0 V=0 C=0
+cycles: 4
+
+---
+name: extended
+memory: B2 12 34
+setup: a=11 C=1
+at 1234: 01
+expect: a=0F N=0 Z=0 V=0 C=0
+cycles: 4

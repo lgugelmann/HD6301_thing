@@ -1,0 +1,15 @@
+# BRN - Branch Never (opcode 0x21)
+# Never branches
+
+---
+name: not taken
+memory: 21 0E
+expect: pc=0022
+cycles: 3
+
+---
+name: not taken with flags set
+memory: 21 0E
+setup: sr=CF
+expect: pc=0022
+cycles: 3

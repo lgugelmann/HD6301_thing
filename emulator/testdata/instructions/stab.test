@@ -1,0 +1,26 @@
+# STAB - Store B
+# Direct: 0xD7, Indexed: 0xE7, Extended: 0xF7
+
+---
+name: direct
+memory: D7 42
+setup: b=AB
+expect: N=1 Z=0 V=0
+expect_at 0042: AB
+cycles: 3
+
+---
+name: indexed
+memory: E7 10
+setup: b=42 x=1000
+expect: N=0 Z=0 V=0
+expect_at 1010: 42
+cycles: 4
+
+---
+name: extended
+memory: F7 12 34
+setup: b=42
+expect: N=0 Z=0 V=0
+expect_at 1234: 42
+cycles: 4
