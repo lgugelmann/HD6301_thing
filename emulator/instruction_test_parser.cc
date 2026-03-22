@@ -2,6 +2,7 @@
 
 #include <charconv>
 #include <fstream>
+#include <ostream>
 #include <sstream>
 
 namespace eight_bit {
@@ -276,6 +277,10 @@ ParseResult ParseAllTestFiles(const std::filesystem::path& directory) {
     }
   }
   return combined;
+}
+
+void PrintTo(const InstructionTestCase& tc, std::ostream* os) {
+  *os << std::filesystem::path(tc.file).stem().string() << "/" << tc.name;
 }
 
 }  // namespace eight_bit

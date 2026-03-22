@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <iosfwd>
 #include <map>
 #include <optional>
 #include <string>
@@ -51,6 +52,9 @@ ParseResult ParseTestFile(const std::filesystem::path& path);
 
 // Discovers and parses all .test files in the given directory.
 ParseResult ParseAllTestFiles(const std::filesystem::path& directory);
+
+// Compact printer so GoogleTest/CTest don't dump raw struct bytes.
+void PrintTo(const InstructionTestCase& tc, std::ostream* os);
 
 }  // namespace eight_bit
 
