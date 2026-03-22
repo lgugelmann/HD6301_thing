@@ -1,6 +1,7 @@
 #ifndef EIGHT_BIT_ADDRESS_SPACE_H
 #define EIGHT_BIT_ADDRESS_SPACE_H
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <span>
@@ -50,16 +51,22 @@ class AddressSpace {
   struct ReadAddressRange {
     uint16_t start;
     uint16_t end;
-    read_callback callback;
   };
   struct WriteAddressRange {
     uint16_t start;
     uint16_t end;
-    write_callback callback;
   };
 
+  // Used for overlap checking during registration.
   std::vector<ReadAddressRange> read_ranges_;
   std::vector<WriteAddressRange> write_ranges_;
+
+  // O(1) address-to-callback dispatch tables. Index 0 is a sentinel for
+  // unregistered addresses; real callbacks start at index 1.
+  std::array<uint8_t, 65536> read_lookup_{};
+  std::array<uint8_t, 65536> write_lookup_{};
+  std::vector<read_callback> read_callbacks_ = {read_callback()};
+  std::vector<write_callback> write_callbacks_ = {write_callback()};
 };
 
 }  // namespace eight_bit
