@@ -178,4 +178,7 @@ if(TARGET benchmark::benchmark)
         absl::statusor
         absl::synchronization
     )
+    if (GPERFTOOLS_BUILD)
+        target_link_libraries(cpu6301_benchmark profiler)
+    endif()
 endif()
