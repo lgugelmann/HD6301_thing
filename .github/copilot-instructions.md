@@ -106,7 +106,8 @@ GoogleTest is used throughout. Test files:
 
 | Test File | What It Tests |
 |-----------|---------------|
-| `emulator/cpu6301_test.cc` | CPU instruction execution, flags, addressing modes |
+| `emulator/testdata/instructions/*.test` | **Declarative CPU instruction tests** — one `.test` file per instruction (~120 files, ~314 cases) |
+| `emulator/cpu6301_test.cc` | CPU test fixture (`Cpu6301Test`) for non-instruction tests |
 | `emulator/w65c22_test.cc` | W65C22 VIA: ports, timers, interrupts |
 | `emulator/w65c22_to_spi_glue_test.cc` | Glue logic between W65C22 and SPI |
 | `emulator/spi_test.cc` | SPI bit-banging protocol |
@@ -114,9 +115,67 @@ GoogleTest is used throughout. Test files:
 | `disassembler/disassembler_test.cc` | Disassembler correctness |
 | `graphics_state/graphics_state_test.cc` | Graphics state and rendering logic |
 
+Test targets: `emulator_tests` (C++ tests), `instruction_tests` (declarative `.test` files).
+
 Run tests:
 ```bash
 cd build && ctest
+```
+
+### Declarative Instruction Tests
+
+CPU instruction tests use a declarative `.test` file format in `emulator/testdata/instructions/`. Each file is named after its instruction (e.g., `adda.test`, `bne.test`, `lsr.test`). The C++ infrastructure is in `instruction_test_parser.{h,cc}` (parser) and `instruction_test_runner.cc` (GoogleTest parameterized runner).
+
+**File format** — each `.test` file contains one or more test cases separated by `---`:
+
+```
+# Comments start with #
+
+---
+name: descriptive test name
+memory: 8B 01           # instruction bytes placed at PC (hex)
+setup: a=0F x=1000 C=1  # initial CPU state (key=value, space-separated)
+at 0042: 12 34           # pre-load memory at address (hex bytes)
+expect: a=10 N=0 Z=0    # expected register/flag values after execution
+expect_at 1010: FF       # expected memory byte at address
+cycles: 2                # expected cycle count
+```
+
+**Fields:**
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name:` | Yes | Test case name (used in GoogleTest output) |
+| `memory:` | Yes | Hex bytes of the instruction, placed at PC |
+| `setup:` | No | Initial register/flag values: `a`, `b`, `x`, `sp`, `pc`, `sr`, `H`, `I`, `N`, `Z`, `V`, `C` |
+| `at XXXX:` | No | Pre-load hex bytes at address XXXX (can appear multiple times) |
+| `expect:` | No | Expected values after execution — same keys as `setup` |
+| `expect_at XXXX:` | No | Expected single byte at address XXXX (can appear multiple times) |
+| `cycles:` | No | Expected cycle count |
+
+**Defaults** (if not specified in `setup`): `a=00, b=00, x=0000, sp=F000, pc=0020, sr=C0` (bits 7–6 always set). Only fields present in `expect` are checked — omitted fields are not asserted.
+
+**Adding a new instruction test:** Create `emulator/testdata/instructions/<mnemonic>.test`. It will be auto-discovered by the test runner. Cover at minimum: basic operation, all relevant addressing modes (IMM/DIR/IDX/EXT), flag effects, and edge cases (zero, overflow, carry).
+
+**Example** (`suba.test`):
+```
+# SUBA - Subtract from A
+# Immediate: 0x80, Direct: 0x90, Indexed: 0xA0, Extended: 0xB0
+
+---
+name: immediate
+memory: 80 05
+setup: a=10
+expect: a=0B N=0 Z=0 V=0 C=0
+cycles: 2
+
+---
+name: direct
+memory: 90 42
+setup: a=10
+at 0042: 05
+expect: a=0B N=0 Z=0 V=0 C=0
+cycles: 3
 ```
 
 ## Running the Emulator
