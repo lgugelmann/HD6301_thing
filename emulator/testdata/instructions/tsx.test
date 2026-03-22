@@ -1,0 +1,8 @@
+# TSX - Transfer SP+1 to X (opcode 0x30)
+
+---
+name: transfers SP plus one to X
+memory: 30
+setup: sp=1000
+expect: x=1001
+cycles: 1

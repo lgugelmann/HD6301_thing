@@ -1,0 +1,8 @@
+# LDD - Load D (16-bit)
+# Immediate: 0xCC
+
+---
+name: immediate
+memory: CC 12 34
+expect: a=12 b=34 N=0 Z=0 V=0
+cycles: 3

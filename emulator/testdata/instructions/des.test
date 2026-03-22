@@ -1,0 +1,15 @@
+# DES - Decrement Stack Pointer (opcode 0x34)
+
+---
+name: decrements SP
+memory: 34
+setup: sp=1000
+expect: sp=0FFF
+cycles: 1
+
+---
+name: rolls over
+memory: 34
+setup: sp=0000
+expect: sp=FFFF
+cycles: 1

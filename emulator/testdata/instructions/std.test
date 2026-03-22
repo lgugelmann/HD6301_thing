@@ -1,0 +1,11 @@
+# STD - Store D (16-bit)
+# Direct: 0xDD
+
+---
+name: direct
+memory: DD 42
+setup: a=12 b=34
+expect: N=0 Z=0 V=0
+expect_at 0042: 12
+expect_at 0043: 34
+cycles: 4

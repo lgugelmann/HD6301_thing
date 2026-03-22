@@ -1,0 +1,10 @@
+# RTS - Return from Subroutine (opcode 0x39)
+
+---
+name: returns from subroutine
+memory: 39
+setup: sp=EFFE
+at EFFF: 12
+at F000: 34
+expect: pc=1234 sp=F000
+cycles: 5

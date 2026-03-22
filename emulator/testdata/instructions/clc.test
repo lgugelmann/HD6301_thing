@@ -1,0 +1,8 @@
+# CLC - Clear Carry Flag (opcode 0x0C)
+
+---
+name: clears carry
+memory: 0C
+setup: C=1
+expect: C=0
+cycles: 1

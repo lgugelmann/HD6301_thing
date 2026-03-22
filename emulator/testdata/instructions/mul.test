@@ -1,0 +1,17 @@
+# MUL - Multiply A by B (opcode 0x3D)
+
+---
+name: multiplies A and B
+memory: 3D
+setup: a=0A b=14
+# 10 * 20 = 200 (0x00C8)
+expect: a=00 b=C8 C=1
+cycles: 7
+
+---
+name: carry not set when bit 7 of B is 0
+memory: 3D
+setup: a=0A b=05
+# 10 * 5 = 50 (0x0032)
+expect: a=00 b=32 C=0
+cycles: 7

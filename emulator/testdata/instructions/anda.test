@@ -1,0 +1,17 @@
+# ANDA - AND Accumulator A
+# Immediate: 0x84, Direct: 0x94
+
+---
+name: immediate zero result
+memory: 84 0F
+setup: a=F0
+expect: a=00 Z=1 N=0 V=0
+cycles: 2
+
+---
+name: direct zero result
+memory: 94 42
+setup: a=F0
+at 0042: 0F
+expect: a=00 Z=1 N=0 V=0
+cycles: 3

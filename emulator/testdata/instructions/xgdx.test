@@ -1,0 +1,8 @@
+# XGDX - Exchange D and X (opcode 0x18)
+
+---
+name: exchanges D and X
+memory: 18
+setup: a=12 b=34 x=5678
+expect: a=56 b=78 x=1234
+cycles: 2

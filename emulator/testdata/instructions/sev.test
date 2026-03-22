@@ -1,0 +1,7 @@
+# SEV - Set Overflow Flag (opcode 0x0B)
+
+---
+name: sets overflow
+memory: 0B
+expect: V=1
+cycles: 1

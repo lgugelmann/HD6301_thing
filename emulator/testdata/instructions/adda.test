@@ -1,0 +1,29 @@
+# ADDA - Add to Accumulator A
+# Immediate: 0x8B, Direct: 0x9B, Indexed: 0xAB, Extended: 0xBB
+
+---
+name: immediate with half carry
+memory: 8B 01
+setup: a=0F
+expect: a=10 H=1 N=0 Z=0 V=0 C=0
+cycles: 2
+
+---
+name: immediate zero result
+memory: 8B 00
+expect: a=00 Z=1 N=0
+cycles: 2
+
+---
+name: immediate overflow
+memory: 8B 01
+setup: a=7F
+expect: a=80 N=1 V=1 C=0 H=1
+cycles: 2
+
+---
+name: immediate carry
+memory: 8B 01
+setup: a=FF
+expect: a=00 Z=1 C=1 H=1
+cycles: 2

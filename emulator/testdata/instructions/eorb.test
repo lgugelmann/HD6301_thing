@@ -1,0 +1,8 @@
+# EORB - Exclusive OR Accumulator B (Immediate: 0xC8)
+
+---
+name: immediate
+memory: C8 0F
+setup: b=F0
+expect: b=FF N=1 V=0
+cycles: 2

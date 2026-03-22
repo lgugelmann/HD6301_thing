@@ -1,0 +1,10 @@
+# PULX - Pull X from Stack (opcode 0x38)
+
+---
+name: pulls value from stack
+memory: 38
+setup: sp=EFFE
+at EFFF: 12
+at F000: 34
+expect: x=1234 sp=F000
+cycles: 4

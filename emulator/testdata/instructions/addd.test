@@ -1,0 +1,33 @@
+# ADDD - Add to D (16-bit)
+# Immediate: 0xC3, Direct: 0xD3, Indexed: 0xE3, Extended: 0xF3
+
+---
+name: immediate
+memory: C3 12 34
+setup: a=10 b=20
+expect: a=22 b=54 N=0 Z=0 V=0 C=0
+cycles: 3
+
+---
+name: direct
+memory: D3 42
+setup: a=10 b=20
+at 0042: 12 34
+expect: a=22 b=54 N=0 Z=0 V=0 C=0
+cycles: 4
+
+---
+name: indexed
+memory: E3 10
+setup: a=10 b=20 x=1000
+at 1010: 12 34
+expect: a=22 b=54 N=0 Z=0 V=0 C=0
+cycles: 5
+
+---
+name: extended
+memory: F3 12 34
+setup: a=30 b=40
+at 1234: 10 20
+expect: a=40 b=60 N=0 Z=0 V=0 C=0
+cycles: 5

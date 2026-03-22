@@ -1,0 +1,22 @@
+# TBA - Transfer B to A (opcode 0x17)
+
+---
+name: transfers B to A
+memory: 17
+setup: a=11 b=42
+expect: a=42 N=0 Z=0 V=0
+cycles: 1
+
+---
+name: transfers negative value
+memory: 17
+setup: a=11 b=80
+expect: a=80 N=1 Z=0 V=0
+cycles: 1
+
+---
+name: transfers zero
+memory: 17
+setup: a=11 b=00
+expect: a=00 Z=1 N=0 V=0
+cycles: 1

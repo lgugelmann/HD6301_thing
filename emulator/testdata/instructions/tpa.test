@@ -1,0 +1,9 @@
+# TPA - Transfer Status Register to A (opcode 0x07)
+
+---
+name: transfers SR to A
+memory: 07
+setup: sr=EA
+# 0xEA = 0b11101010 = bits 7-6 always 1, H=1, N=1, V=1
+expect: a=EA
+cycles: 1

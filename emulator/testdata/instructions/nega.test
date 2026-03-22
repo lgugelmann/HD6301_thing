@@ -1,0 +1,9 @@
+# NEGA - Negate A (opcode 0x40)
+
+---
+name: negates A
+memory: 40
+setup: a=0A
+# -10 = 0xF6
+expect: a=F6 N=1 C=1
+cycles: 1

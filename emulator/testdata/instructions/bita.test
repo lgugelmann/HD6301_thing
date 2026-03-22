@@ -1,0 +1,9 @@
+# BITA - Bit Test A (Immediate: 0x85)
+
+---
+name: immediate zero result
+memory: 85 0F
+setup: a=F0
+# BITA does not modify A
+expect: a=F0 Z=1 N=0 V=0
+cycles: 2

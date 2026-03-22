@@ -1,0 +1,9 @@
+# PSHA - Push A to Stack (opcode 0x36)
+
+---
+name: pushes value to stack
+memory: 36
+setup: a=42
+expect: sp=EFFF
+expect_at F000: 42
+cycles: 4

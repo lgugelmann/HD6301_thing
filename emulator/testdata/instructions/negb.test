@@ -1,0 +1,9 @@
+# NEGB - Negate B (opcode 0x50)
+
+---
+name: negates B
+memory: 50
+setup: b=0A
+# -10 = 0xF6
+expect: b=F6 N=1 C=1
+cycles: 1

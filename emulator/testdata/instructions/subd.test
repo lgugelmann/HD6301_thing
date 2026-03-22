@@ -1,0 +1,33 @@
+# SUBD - Subtract from D (16-bit)
+# Immediate: 0x83, Direct: 0x93, Indexed: 0xA3, Extended: 0xB3
+
+---
+name: immediate
+memory: 83 12 34
+setup: a=56 b=78
+expect: a=44 b=44 N=0 Z=0 V=0 C=0
+cycles: 3
+
+---
+name: direct
+memory: 93 42
+setup: a=56 b=78
+at 0042: 12 34
+expect: a=44 b=44 N=0 Z=0 V=0 C=0
+cycles: 4
+
+---
+name: indexed
+memory: A3 10
+setup: a=56 b=78 x=1000
+at 1010: 12 34
+expect: a=44 b=44 N=0 Z=0 V=0 C=0
+cycles: 5
+
+---
+name: extended
+memory: B3 12 34
+setup: a=50 b=60
+at 1234: 10 20
+expect: a=40 b=40 N=0 Z=0 V=0 C=0
+cycles: 5

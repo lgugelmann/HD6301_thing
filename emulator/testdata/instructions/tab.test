@@ -1,0 +1,22 @@
+# TAB - Transfer A to B (opcode 0x16)
+
+---
+name: transfers A to B
+memory: 16
+setup: a=42 b=11
+expect: b=42 N=0 Z=0 V=0
+cycles: 1
+
+---
+name: transfers negative value
+memory: 16
+setup: a=80 b=11
+expect: b=80 N=1 Z=0 V=0
+cycles: 1
+
+---
+name: transfers zero
+memory: 16
+setup: a=00 b=11
+expect: b=00 Z=1 N=0 V=0
+cycles: 1

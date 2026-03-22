@@ -1,0 +1,22 @@
+# CBA - Compare Accumulators (opcode 0x11)
+
+---
+name: compares equal sets nothing
+memory: 11
+setup: a=10 b=01
+expect: a=10 b=01 N=0 Z=0 C=0
+cycles: 1
+
+---
+name: sets zero when equal
+memory: 11
+setup: a=10 b=10
+expect: a=10 b=10 Z=1
+cycles: 1
+
+---
+name: sets negative and carry when A less than B
+memory: 11
+setup: a=10 b=20
+expect: a=10 b=20 N=1 C=1
+cycles: 1

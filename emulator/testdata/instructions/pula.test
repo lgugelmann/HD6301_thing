@@ -1,0 +1,9 @@
+# PULA - Pull A from Stack (opcode 0x32)
+
+---
+name: pulls value from stack
+memory: 32
+setup: sp=EFFF
+at F000: 42
+expect: a=42 sp=F000
+cycles: 3

@@ -1,0 +1,7 @@
+# SEI - Set Interrupt Mask (opcode 0x0F)
+
+---
+name: sets interrupt mask
+memory: 0F
+expect: I=1
+cycles: 1

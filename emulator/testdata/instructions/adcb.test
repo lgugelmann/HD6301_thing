@@ -1,0 +1,8 @@
+# ADCB - Add with Carry to B (opcode 0xC9)
+
+---
+name: immediate with carry in
+memory: C9 01
+setup: b=0F C=1
+expect: b=11 H=1 C=0
+cycles: 2

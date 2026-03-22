@@ -1,0 +1,8 @@
+# ANDB - AND Accumulator B (Immediate: 0xC4)
+
+---
+name: immediate zero result
+memory: C4 0F
+setup: b=F0
+expect: b=00 Z=1 N=0 V=0
+cycles: 2

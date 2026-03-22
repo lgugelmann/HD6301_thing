@@ -1,0 +1,8 @@
+# SBCB - Subtract with Carry from B (opcode 0xC2)
+
+---
+name: immediate with borrow
+memory: C2 01
+setup: b=11 C=1
+expect: b=0F N=0 Z=0 V=0 C=0
+cycles: 2

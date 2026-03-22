@@ -1,0 +1,8 @@
+# EORA - Exclusive OR Accumulator A (Immediate: 0x88)
+
+---
+name: immediate
+memory: 88 0F
+setup: a=F0
+expect: a=FF N=1 V=0
+cycles: 2

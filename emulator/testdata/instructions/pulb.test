@@ -1,0 +1,9 @@
+# PULB - Pull B from Stack (opcode 0x33)
+
+---
+name: pulls value from stack
+memory: 33
+setup: sp=EFFF
+at F000: 42
+expect: b=42 sp=F000
+cycles: 3

@@ -1,0 +1,9 @@
+# BITB - Bit Test B (Immediate: 0xC5)
+
+---
+name: immediate zero result
+memory: C5 0F
+setup: a=FF b=F0
+# BITB does not modify B, A should be unaffected
+expect: a=FF b=F0 Z=1 N=0 V=0
+cycles: 2

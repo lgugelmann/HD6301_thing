@@ -1,0 +1,8 @@
+# ORAA - OR Accumulator A (Immediate: 0x8A)
+
+---
+name: immediate
+memory: 8A 0F
+setup: a=F0
+expect: a=FF N=1 V=0
+cycles: 2

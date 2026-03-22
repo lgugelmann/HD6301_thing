@@ -1,0 +1,29 @@
+# ABA - Add B to A (opcode 0x1B)
+
+---
+name: adds B to A
+memory: 1B
+setup: a=10 b=01
+expect: a=11 N=0 Z=0 V=0 C=0
+cycles: 1
+
+---
+name: sets zero
+memory: 1B
+setup: a=00 b=00
+expect: a=00 Z=1
+cycles: 1
+
+---
+name: sets negative
+memory: 1B
+setup: a=10 b=80
+expect: a=90 N=1
+cycles: 1
+
+---
+name: sets carry and overflow
+memory: 1B
+setup: a=80 b=80
+expect: a=00 Z=1 C=1 V=1
+cycles: 1

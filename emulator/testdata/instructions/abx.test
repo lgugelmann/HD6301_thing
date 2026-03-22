@@ -1,0 +1,8 @@
+# ABX - Add B to X (opcode 0x3A)
+
+---
+name: adds B to X
+memory: 3A
+setup: b=10 x=1234
+expect: x=1244
+cycles: 1

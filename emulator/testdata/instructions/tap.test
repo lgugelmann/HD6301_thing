@@ -1,0 +1,16 @@
+# TAP - Transfer A to Status Register (opcode 0x06)
+
+---
+name: transfers A to SR
+memory: 06
+setup: a=2A
+# 0x2A = 0b00101010 → H=1, N=1, V=1
+expect: H=1 I=0 N=1 Z=0 V=1 C=0
+cycles: 1
+
+---
+name: sets all flags
+memory: 06
+setup: a=3F
+expect: H=1 I=1 N=1 Z=1 V=1 C=1
+cycles: 1

@@ -1,0 +1,22 @@
+# DEX - Decrement Index Register X (opcode 0x09)
+
+---
+name: decrements X
+memory: 09
+setup: x=1234
+expect: x=1233 Z=0
+cycles: 1
+
+---
+name: rolls over
+memory: 09
+setup: x=0000
+expect: x=FFFF Z=0
+cycles: 1
+
+---
+name: sets zero
+memory: 09
+setup: x=0001
+expect: x=0000 Z=1
+cycles: 1

@@ -1,0 +1,7 @@
+# SEC - Set Carry Flag (opcode 0x0D)
+
+---
+name: sets carry
+memory: 0D
+expect: C=1
+cycles: 1

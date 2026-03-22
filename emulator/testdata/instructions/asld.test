@@ -1,0 +1,22 @@
+# ASLD - Arithmetic Shift Left D (opcode 0x05)
+
+---
+name: shifts left
+memory: 05
+setup: a=40 b=01
+expect: a=80 b=02 N=1 V=1 C=0
+cycles: 1
+
+---
+name: sets carry and zero
+memory: 05
+setup: a=80 b=00
+expect: a=00 b=00 C=1 Z=1 V=1
+cycles: 1
+
+---
+name: sets negative
+memory: 05
+setup: a=40 b=00
+expect: a=80 b=00 N=1 V=1 C=0
+cycles: 1

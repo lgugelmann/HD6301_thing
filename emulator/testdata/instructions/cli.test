@@ -1,0 +1,8 @@
+# CLI - Clear Interrupt Mask (opcode 0x0E)
+
+---
+name: clears interrupt mask
+memory: 0E
+setup: I=1
+expect: I=0
+cycles: 1

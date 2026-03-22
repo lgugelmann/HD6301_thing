@@ -1,0 +1,8 @@
+# CLV - Clear Overflow Flag (opcode 0x0A)
+
+---
+name: clears overflow
+memory: 0A
+setup: V=1
+expect: V=0
+cycles: 1

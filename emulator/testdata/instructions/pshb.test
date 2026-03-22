@@ -1,0 +1,9 @@
+# PSHB - Push B to Stack (opcode 0x37)
+
+---
+name: pushes value to stack
+memory: 37
+setup: b=42
+expect: sp=EFFF
+expect_at F000: 42
+cycles: 4

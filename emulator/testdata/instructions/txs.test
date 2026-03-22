@@ -1,0 +1,8 @@
+# TXS - Transfer X-1 to SP (opcode 0x35)
+
+---
+name: transfers X minus one to SP
+memory: 35
+setup: x=1000
+expect: sp=0FFF
+cycles: 1

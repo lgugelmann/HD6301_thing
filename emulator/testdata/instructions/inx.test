@@ -1,0 +1,15 @@
+# INX - Increment Index Register X (opcode 0x08)
+
+---
+name: increments X
+memory: 08
+setup: x=1234
+expect: x=1235 Z=0
+cycles: 1
+
+---
+name: rolls over and sets zero
+memory: 08
+setup: x=FFFF
+expect: x=0000 Z=1
+cycles: 1
