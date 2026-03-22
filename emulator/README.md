@@ -131,6 +131,72 @@ Some programs disable it and don't turn it back on on exit :-).
 There are also basic implementations of the file system commands `ls`, `cd`, and
 `cat`. They work on the SD card image.
 
+## Testing
+
+The emulator has two test targets:
+
+- **`emulator_tests`** — C++ GoogleTest tests for peripherals (W65C22, SPI,
+  etc.) and any non-instruction CPU tests.
+- **`instruction_tests`** — Declarative CPU instruction tests driven by `.test`
+  files in `testdata/instructions/`.
+
+Run both from the build directory:
+
+```sh
+ctest
+```
+
+Or run just the instruction tests:
+
+```sh
+ctest -R instruction
+```
+
+### Declarative instruction test format
+
+Each `.test` file in `testdata/instructions/` defines one or more test cases for
+a single CPU instruction. Files are auto-discovered by the test runner — just
+create a new `.test` file and it will be picked up.
+
+Test cases are separated by `---`. Lines starting with `#` are comments.
+
+```
+# SUBA - Subtract from A
+
+---
+name: immediate
+memory: 80 05
+setup: a=10
+expect: a=0B N=0 Z=0 V=0 C=0
+cycles: 2
+
+---
+name: direct
+memory: 90 42
+setup: a=10
+at 0042: 05
+expect: a=0B N=0 Z=0 V=0 C=0
+cycles: 3
+```
+
+**Fields:**
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name:` | Yes | Test case name |
+| `memory:` | Yes | Hex bytes of the instruction, placed at PC |
+| `setup:` | No | Initial register/flag values (`a`, `b`, `x`, `sp`, `pc`, `sr`, `H`, `I`, `N`, `Z`, `V`, `C`) |
+| `at XXXX:` | No | Pre-load hex bytes at the given address (repeatable) |
+| `expect:` | No | Expected values after execution — same keys as `setup` |
+| `expect_at XXXX:` | No | Expected byte at address (repeatable) |
+| `cycles:` | No | Expected cycle count |
+
+**Defaults** (when not set in `setup`): `a=00`, `b=00`, `x=0000`, `sp=F000`,
+`pc=0020`, `sr=C0`. Only fields present in `expect` are checked.
+
+The C++ infrastructure lives in `instruction_test_parser.{h,cc}` (parser) and
+`instruction_test_runner.cc` (parameterized GoogleTest runner).
+
 ## Profiling & sanitizer runs
 
 ### Profiling

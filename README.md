@@ -128,6 +128,16 @@ audio sequencer.
 
 See the docs in the 'asm' folder for more details.
 
+#### Emulator
+
+The `emulator` folder contains a full-system emulator for the HD6301V1 computer.
+It emulates the CPU, I/O, graphics, sound, keyboard, and SD card. See
+`emulator/README.md` for details on building and running it.
+
+The emulator includes an extensive test suite with ~314 declarative CPU
+instruction tests (in `emulator/testdata/instructions/`) and GoogleTest-based
+peripheral tests. Run `ctest` from the build directory to execute all tests.
+
 #### Supporting software
 
 - Much of the glue logic (address decoding, PS2 serial/parallel decoding, etc.)
