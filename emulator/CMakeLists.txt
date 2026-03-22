@@ -129,3 +129,31 @@ target_link_libraries(emulator_tests
     absl::synchronization
 )
 gtest_discover_tests(emulator_tests)
+
+# Declarative instruction tests
+set(INSTRUCTION_TESTDATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/testdata")
+add_executable(instruction_tests
+    address_space.cc
+    cpu6301.cc
+    hd6301_serial.cc
+    ioport.cc
+    timer.cc
+    instruction_test_parser.cc
+    instruction_test_runner.cc
+)
+target_compile_definitions(instruction_tests PRIVATE
+    TESTDATA_DIR="${INSTRUCTION_TESTDATA_DIR}"
+)
+target_link_libraries(instruction_tests
+    GTest::gtest_main
+    GTest::gmock
+    absl::strings
+    absl::flags_parse
+    absl::log
+    absl::log_initialize
+    absl::log_flags
+    absl::status
+    absl::statusor
+    absl::synchronization
+)
+gtest_discover_tests(instruction_tests)

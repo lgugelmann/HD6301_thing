@@ -1,0 +1,7 @@
+# NOP - No Operation (opcode 0x01)
+
+---
+name: only increases pc
+memory: 01
+expect: a=00 b=00 x=0000 sp=F000 pc=0021 H=0 I=0 N=0 Z=0 V=0 C=0
+cycles: 1
