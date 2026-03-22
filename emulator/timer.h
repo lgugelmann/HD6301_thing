@@ -18,6 +18,9 @@ class Timer {
   // Increment the counter.
   void tick();
 
+  // Advance the counter by the given number of cycles.
+  void advance(int cycles);
+
   // Read/write access for the status register. The top 3 bits of the status
   // register are read-only and are never changed on writes.
   uint8_t read_status_register();

@@ -55,12 +55,14 @@ Timer::Timer(AddressSpace* address_space, Interrupt* interrupt)
   }
 }
 
-void Timer::tick() {
-  counter_ += 1;
-  if (counter_ == 0) {
+void Timer::tick() { advance(1); }
+
+void Timer::advance(int cycles) {
+  uint32_t new_val =
+      static_cast<uint32_t>(counter_) + static_cast<uint32_t>(cycles);
+  counter_ = static_cast<uint16_t>(new_val);
+  if (new_val > 0xFFFF) {
     VLOG(3) << "Timer overflow";
-    // Counter just overflowed. Set overflow bit, and fire an interrupt if
-    // enabled.
     status_register_ |= kTimerOverflow;
     if (status_register_ & kTimerInterruptEnable) {
       if (interrupt_id_ == 0) {

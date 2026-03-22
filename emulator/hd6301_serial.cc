@@ -114,18 +114,26 @@ absl::StatusOr<std::unique_ptr<HD6301Serial>> HD6301Serial::create(
   return hd6301_serial;
 }
 
-void HD6301Serial::tick() {
+void HD6301Serial::tick() { advance(1); }
+
+void HD6301Serial::advance(int cycles) {
   if (transmit_register_empty_countdown_ > 0) {
-    transmit_register_empty_countdown_ -= 1;
-    if (transmit_register_empty_countdown_ == 0) {
+    if (cycles >= transmit_register_empty_countdown_) {
+      transmit_register_empty_countdown_ = 0;
       trcsr_ |= kTransmitDataRegisterEmpty;
       if (trcsr_ & kTransmitInterruptEnable) {
         transmit_interrupt_id_ = interrupt_->set_interrupt();
       }
+    } else {
+      transmit_register_empty_countdown_ -= cycles;
     }
   }
   if (receive_register_full_countdown_ > 0) {
-    receive_register_full_countdown_ -= 1;
+    if (cycles >= receive_register_full_countdown_) {
+      receive_register_full_countdown_ = 0;
+    } else {
+      receive_register_full_countdown_ -= cycles;
+    }
   }
   if (receive_register_full_countdown_ == 0 &&
       !rx_fifo_empty_.test(std::memory_order_relaxed)) {

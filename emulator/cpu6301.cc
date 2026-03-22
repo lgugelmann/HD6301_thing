@@ -56,14 +56,17 @@ Cpu6301::TickResult Cpu6301::tick(int cycles_to_run, bool ignore_breakpoint) {
       cycles_run += 1;
       continue;
     }
-    for (int i = 0; i < instruction.cycles; ++i) {
-      timer_.tick();
-      serial_->tick();
-      for (const auto& callback : tick_callbacks_) {
-        callback();
+    int cycles = instruction.cycles;
+    timer_.advance(cycles);
+    serial_->advance(cycles);
+    if (!tick_callbacks_.empty()) {
+      for (int i = 0; i < cycles; ++i) {
+        for (const auto& callback : tick_callbacks_) {
+          callback();
+        }
       }
-      cycles_run += 1;
     }
+    cycles_run += cycles;
     execute(instruction);
   }
   return {.cycles_run = cycles_run, .breakpoint_hit = false};
@@ -307,23 +310,6 @@ void Cpu6301::nzv_sr16(uint16_t result) {
   sr.N = (result & 0x8000);
   sr.Z = result == 0;
   sr.V = 0;
-}
-
-void Cpu6301::logic(uint8_t data,
-                    const std::function<uint8_t(uint8_t, uint8_t)>& op,
-                    uint8_t& dest) {
-  dest = op(dest, data);
-  nzv_sr(dest);
-}
-
-void Cpu6301::logic_m(uint16_t address, uint8_t data,
-                      const std::function<uint8_t(uint8_t, uint8_t)>& op,
-                      bool do_set = true) {
-  uint8_t dest = get(address);
-  logic(data, op, dest);
-  if (do_set) {
-    set(address, dest);
-  }
 }
 
 void Cpu6301::com(uint8_t& dest) {
