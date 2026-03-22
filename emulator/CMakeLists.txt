@@ -181,4 +181,40 @@ if(TARGET benchmark::benchmark)
     if (GPERFTOOLS_BUILD)
         target_link_libraries(cpu6301_benchmark profiler)
     endif()
+
+    # Full-system benchmark (all peripherals active)
+    add_executable(full_system_benchmark
+        address_space.cc
+        cpu6301.cc
+        full_system_benchmark.cc
+        graphics.cc
+        hd6301_serial.cc
+        ioport.cc
+        ram.cc
+        rom.cc
+        sd_card_spi.cc
+        sound_opl3.cc
+        spi.cc
+        timer.cc
+        tl16c2550.cc
+        w65c22.cc
+        w65c22_to_spi_glue.cc
+    )
+    target_link_libraries(full_system_benchmark
+        benchmark::benchmark
+        SDL3::SDL3
+        nuked-opl3
+        graphics_state_lib
+        hexdump_lib
+        absl::strings
+        absl::log
+        absl::log_initialize
+        absl::log_flags
+        absl::status
+        absl::statusor
+        absl::synchronization
+    )
+    if (GPERFTOOLS_BUILD)
+        target_link_libraries(full_system_benchmark profiler)
+    endif()
 endif()
