@@ -1,5 +1,10 @@
 add_subdirectory(googletest)
 
+# Google Benchmark
+set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_INSTALL_DOCS OFF CACHE BOOL "" FORCE)
+add_subdirectory(benchmark)
+
 # Abseil
 set(ABSL_PROPAGATE_CXX_STD ON)
 # Certain Abseil headers don't pass e.g. nullability warnings for Clang-20+,

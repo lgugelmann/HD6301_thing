@@ -157,3 +157,25 @@ target_link_libraries(instruction_tests
     absl::synchronization
 )
 gtest_discover_tests(instruction_tests)
+
+# CPU benchmark
+if(TARGET benchmark::benchmark)
+    add_executable(cpu6301_benchmark
+        address_space.cc
+        cpu6301.cc
+        cpu6301_benchmark.cc
+        hd6301_serial.cc
+        ioport.cc
+        timer.cc
+    )
+    target_link_libraries(cpu6301_benchmark
+        benchmark::benchmark
+        absl::strings
+        absl::log
+        absl::log_initialize
+        absl::log_flags
+        absl::status
+        absl::statusor
+        absl::synchronization
+    )
+endif()
