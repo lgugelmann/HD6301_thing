@@ -16,3 +16,6 @@
 [submodule "dependencies/benchmark"]
 	path = dependencies/benchmark
 	url = https://github.com/google/benchmark.git
+[submodule "dependencies/asl"]
+	path = dependencies/asl
+	url = http://john.ccac.rwth-aachen.de:8000/asl.git/
