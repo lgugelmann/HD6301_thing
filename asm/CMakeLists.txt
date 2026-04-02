@@ -1,8 +1,8 @@
 project(asm)
 
-# Make sure we have ASL and the dependency generation tool available
-find_program(ASL asl REQUIRED)
-find_program(P2BIN p2bin REQUIRED)
+# ASL and p2bin are built from the submodule in dependencies/asl
+set(ASL ${ASL_EXECUTABLE})
+set(P2BIN ${P2BIN_EXECUTABLE})
 find_program(DEPGEN ${PROJECT_SOURCE_DIR}/depgen.py REQUIRED)
 find_program(PROGRAMSGEN ${PROJECT_SOURCE_DIR}/generate_programs_list.py)
 find_program(PROGRAMMER ${CMAKE_SOURCE_DIR}/pico_programmer/programmer.py)
@@ -28,6 +28,7 @@ add_custom_command(
     COMMAND ${P2BIN} ${PROJECT_BINARY_DIR}/monitor.p ${PROJECT_BINARY_DIR}/monitor.bin
     DEPENDS ${PROJECT_SOURCE_DIR}/monitor.s
             ${PROJECT_BINARY_DIR}/monitor.d
+            ${ASL} ${P2BIN}
     DEPFILE monitor.d
     COMMENT "Assembling monitor"
 )
@@ -60,6 +61,7 @@ add_custom_command(
     DEPENDS ${PROJECT_SOURCE_DIR}/programs.s
             ${PROJECT_SOURCE_DIR}/monitor.inc
             ${PROJECT_BINARY_DIR}/programs.d
+            ${ASL} ${P2BIN}
     DEPFILE programs.d
     COMMENT "Assembling programs"
 )
@@ -72,6 +74,7 @@ add_custom_command(
     COMMAND ${P2BIN} -segment CODE ${PROJECT_BINARY_DIR}/monitor.p ${PROJECT_BINARY_DIR}/programs.p ${PROJECT_BINARY_DIR}/rom.bin
     DEPENDS ${PROJECT_BINARY_DIR}/monitor.p
             ${PROJECT_BINARY_DIR}/programs.p
+            ${P2BIN}
     COMMENT "Generating ROM"
 )
 
@@ -80,6 +83,7 @@ add_custom_command(
 #
 foreach(TARGET monitor programs rom)
     add_custom_target(${TARGET} ALL DEPENDS ${PROJECT_BINARY_DIR}/${TARGET}.bin)
+    add_dependencies(${TARGET} asl_build)
 endforeach()
 
 #
