@@ -1,0 +1,59 @@
+# DAA - Decimal Adjust Accumulator (opcode 0x19)
+# Adjusts A after a BCD addition using H and C flags.
+
+---
+name: no adjustment needed
+memory: 19
+setup: a=55 H=0 C=0
+expect: a=55 N=0 Z=0 C=0
+cycles: 2
+
+---
+name: low nibble correction via H flag
+memory: 19
+setup: a=0A H=1 C=0
+expect: a=10 N=0 Z=0 C=0
+cycles: 2
+
+---
+name: low nibble correction via nibble > 9
+memory: 19
+setup: a=0A H=0 C=0
+expect: a=10 N=0 Z=0 C=0
+cycles: 2
+
+---
+name: high nibble correction via C flag
+memory: 19
+setup: a=55 H=0 C=1
+expect: a=B5 N=1 Z=0 C=1
+cycles: 2
+
+---
+name: high nibble correction via A > 0x99
+memory: 19
+setup: a=A0 H=0 C=0
+expect: a=00 N=0 Z=1 C=1
+cycles: 2
+
+---
+name: both nibbles corrected
+memory: 19
+setup: a=9A H=0 C=0
+expect: a=00 N=0 Z=1 C=1
+cycles: 2
+
+---
+name: BCD 9+9 result
+# 0x09 + 0x09 = 0x12 in BCD: raw result 0x12, H=0, no correction needed
+memory: 19
+setup: a=12 H=0 C=0
+expect: a=12 N=0 Z=0 C=0
+cycles: 2
+
+---
+name: result is negative
+memory: 19
+setup: a=55 H=0 C=1
+expect: N=1 C=1
+cycles: 2

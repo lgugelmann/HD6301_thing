@@ -114,7 +114,6 @@ The assembler is AS (http://john.ccac.rwth-aachen.de:8000/as/), which supports t
 ## Known emulator limitations
 
 - Mode selection doesn't happen — CPU always behaves as mode 2/4
-- Unimplemented instructions: `daa`, `slp`, `wai`, `swi`
 - SCI: no overrun/framing checks, no wake-up
 - Timer: only counting/overflow, no P2 modes
 - TL16C2550: basic emulation, second UART not implemented

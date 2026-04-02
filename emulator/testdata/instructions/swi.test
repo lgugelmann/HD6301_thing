@@ -1,0 +1,34 @@
+# SWI - Software Interrupt (opcode 0x3F)
+# Stacks PC, X, A, B, SR then jumps to SWI vector at 0xFFFA/0xFFFB.
+
+---
+name: basic swi stacks and jumps
+memory: 3F
+# SWI vector at 0xFFFA points to 0x1234
+at FFFA: 12
+at FFFB: 34
+setup: a=AA b=BB x=CCDD sp=F010 pc=0020 sr=C0
+# After SWI: sp should be F010-7=F009, I flag set, PC=1234
+expect: pc=1234 sp=F009 I=1
+cycles: 12
+
+---
+name: stack contents after swi
+memory: 3F
+at FFFA: 10
+at FFFB: 00
+setup: a=12 b=34 x=5678 sp=F020 pc=0020 sr=C0
+# psh16(pc=0021): F020=0x21 (lo), F01F=0x00 (hi); sp=F01E
+# psh16(x=5678): F01E=0x78 (lo), F01D=0x56 (hi); sp=F01C
+# psh8(a=12):    F01C=0x12; sp=F01B
+# psh8(b=34):    F01B=0x34; sp=F01A
+# psh8(sr=C0):   F01A=0xC0; sp=F019
+expect_at F020: 21
+expect_at F01F: 00
+expect_at F01E: 78
+expect_at F01D: 56
+expect_at F01C: 12
+expect_at F01B: 34
+expect_at F01A: C0
+expect: sp=F019 I=1 pc=1000
+cycles: 12

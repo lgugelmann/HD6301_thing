@@ -1,0 +1,12 @@
+# SLP - Sleep (opcode 0x1A)
+# Halts the CPU until an interrupt occurs.
+# Testing the instruction itself (the halting behavior is tested at the
+# integration level since it requires the emulator loop).
+
+---
+name: slp executes without error
+memory: 1A
+setup: a=42 b=55
+# CPU enters sleep state; registers and flags unaffected
+expect: a=42 b=55
+cycles: 4

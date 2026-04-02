@@ -193,12 +193,18 @@ class Cpu6301 {
   void dec(uint8_t& dest);
   void inc(uint8_t& dest);
   void clr(uint8_t& dest);
+  void daa();
+  void slp();
+  void wai();
+  void swi();
   void bsr(int8_t offset);
   void jsr(uint16_t address);
 
   // Enters an interrupt handler at the given vector address. Returns the number
   // of cycles entering the interrupt takes.
   int enter_interrupt(uint16_t vector);
+  // Like enter_interrupt but without stacking (used after WAI pre-stacked).
+  int enter_interrupt_no_stack(uint16_t vector);
   uint8_t execute(const Instruction& instruction);
 
   Interrupt interrupt_;
@@ -217,6 +223,12 @@ class Cpu6301 {
   uint16_t pc = 0xfffe;
   StatusRegister sr;
   std::optional<uint16_t> breakpoint_;
+
+  // Set by SLP: halt execution until an unmasked interrupt fires.
+  bool halted_ = false;
+  // Set by WAI: halt execution until an unmasked interrupt fires; registers
+  // are already stacked so interrupt entry skips stacking.
+  bool wai_halted_ = false;
 
   AddressSpace* memory_ = nullptr;
   std::array<Instruction, 256> instructions_;

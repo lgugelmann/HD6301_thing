@@ -16,7 +16,7 @@ with enough accuracy that it can run all current code. In particular:
     do overrun and framing checks. It doesn't implement wake-up either.
   - The timer only supports counting / overflow and none of the P2 modes.
   - Only reset, irq, SCI, and timer interrupt vectors are used.
-  - A few instructions aren't implemented yet: `daa`, `slp`, `wai` and `swi`.
+  - All standard HD6301 instructions are implemented.
 - A PS2 keyboard emulation. Ish, it's one way only, and it's 8 bit parallel
   connected to port1 of the CPU instead of serial (like the actual hardware).
 - Full emulation for the `pico_graphics` graphics board

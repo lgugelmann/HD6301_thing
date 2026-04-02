@@ -32,6 +32,41 @@ void Cpu6301::reset() {
 Cpu6301::TickResult Cpu6301::tick(int cycles_to_run, bool ignore_breakpoint) {
   int cycles_run = 0;
   while (cycles_run < cycles_to_run) {
+    // Handle WAI halted state: registers pre-stacked, skip re-stacking on wakeup.
+    if (wai_halted_) {
+      if (interrupt_.has_interrupt() && !sr.I) {
+        wai_halted_ = false;
+        cycles_run += enter_interrupt_no_stack(0xfff8);
+      } else if (timer_interrupt_.has_interrupt() && !sr.I) {
+        wai_halted_ = false;
+        cycles_run += enter_interrupt_no_stack(0xfff2);
+      } else if (serial_interrupt_.has_interrupt() && !sr.I) {
+        wai_halted_ = false;
+        cycles_run += enter_interrupt_no_stack(0xfff0);
+      } else {
+        timer_.advance(1);
+        serial_->advance(1);
+        for (const auto& callback : tick_callbacks_) callback();
+        cycles_run += 1;
+      }
+      continue;
+    }
+
+    // Handle SLP halted state: wake on unmasked interrupt, then service normally.
+    if (halted_) {
+      if ((interrupt_.has_interrupt() || timer_interrupt_.has_interrupt() ||
+           serial_interrupt_.has_interrupt()) && !sr.I) {
+        halted_ = false;
+        // Fall through to normal interrupt handling below.
+      } else {
+        timer_.advance(1);
+        serial_->advance(1);
+        for (const auto& callback : tick_callbacks_) callback();
+        cycles_run += 1;
+        continue;
+      }
+    }
+
     // We are always at instruction boundaries here, so we can check for
     // interrupts.
     if (interrupt_.has_interrupt() & !sr.I) {
@@ -410,6 +445,35 @@ void Cpu6301::jsr(uint16_t address) {
   pc = address;
 }
 
+void Cpu6301::daa() {
+  uint8_t orig = a;
+  uint8_t cf_low = (sr.H || (orig & 0x0F) > 9) ? 0x06 : 0x00;
+  bool cf_high_needed =
+      sr.C || orig > 0x99 || (orig > 0x8F && (orig & 0x0F) > 9);
+  uint8_t cf_high = cf_high_needed ? 0x60 : 0x00;
+  a = orig + cf_low + cf_high;
+  if (cf_high_needed) sr.C = 1;
+  sr.N = a & 0x80;
+  sr.Z = (a == 0);
+}
+
+void Cpu6301::slp() { halted_ = true; }
+
+void Cpu6301::wai() {
+  // Pre-stack all registers exactly as enter_interrupt does.
+  psh16(pc);
+  psh16(x);
+  psh8(a);
+  psh8(b);
+  psh8(sr.as_integer());
+  wai_halted_ = true;
+}
+
+void Cpu6301::swi() {
+  // SWI vector is at 0xFFFA/0xFFFB.
+  enter_interrupt(0xfffa);
+}
+
 // Returns the number of cycles taken.
 int Cpu6301::enter_interrupt(uint16_t vector) {
   VLOG(3) << "Entering interrupt at " << absl::Hex(vector, absl::kZeroPad4);
@@ -424,6 +488,15 @@ int Cpu6301::enter_interrupt(uint16_t vector) {
   // The number of cycles an interrupt takes is not documented - but it's a
   // fair guess that it's as many as there are memory writes.
   return 9;
+}
+
+// Like enter_interrupt but without stacking (used when WAI pre-stacked).
+int Cpu6301::enter_interrupt_no_stack(uint16_t vector) {
+  VLOG(3) << "Entering interrupt (WAI) at "
+          << absl::Hex(vector, absl::kZeroPad4);
+  sr.I = 1;
+  pc = memory_->get16(vector);
+  return 1;
 }
 
 uint8_t Cpu6301::execute(const Instruction& instruction) {
@@ -493,8 +566,8 @@ Cpu6301::Cpu6301(AddressSpace* memory)
   instructions_[0x16] = {"tab", 1, 1, kACA, OP(b = d COMMA nzv_sr(b))};
   instructions_[0x17] = {"tba", 1, 1, kACB, OP(a = d COMMA nzv_sr(a))};
   instructions_[0x18] = {"xgdx", 1, 2, kIMP, OP(xgdx())};
-  // instructions_[0x19] = {"daa", 1, 2, kACA, OP() };
-  // instructions_[0x1a] = {"slp", 1, 2, kIMP, OP() }; // sleep
+  instructions_[0x19] = {"daa", 1, 2, kIMP, OP(daa())};
+  instructions_[0x1a] = {"slp", 1, 4, kIMP, OP(slp())};
   instructions_[0x1b] = {"aba", 1, 1, kACB, OP(add(a, 0, d))};
 
   // Branching
@@ -530,8 +603,8 @@ Cpu6301::Cpu6301(AddressSpace* memory)
   instructions_[0x3b] = {"rti", 1, 10, kIMP, OP(rti())};
   instructions_[0x3c] = {"pshx", 1, 5, kIMP, OP(psh16(x))};
   instructions_[0x3d] = {"mul", 1, 7, kIMP, OP(mul())};
-  // instructions_[0x3e] = {"wai", 1, 9, kIMP, [this](uint16_t) { }};
-  // instructions_[0x3f] = {"swi", 1, 12, kIMP, [this](uint16_t) { }};
+  instructions_[0x3e] = {"wai", 1, 9, kIMP, OP(wai())};
+  instructions_[0x3f] = {"swi", 1, 12, kIMP, OP(swi())};
   // NEG
   instructions_[0x40] = {"nega", 1, 1, kACA, OP(neg(a))};
   instructions_[0x50] = {"negb", 1, 1, kACB, OP(neg(b))};
