@@ -32,6 +32,7 @@ target_link_libraries(disassembler_lib
     absl::log_flags
     absl::status
     absl::statusor
+    absl::str_format
 )
 
 # Tests

@@ -7,6 +7,7 @@ set(P2BIN ${P2BIN_EXECUTABLE})
 find_program(DEPGEN ${PROJECT_SOURCE_DIR}/depgen.py REQUIRED)
 find_program(PROGRAMSGEN ${PROJECT_SOURCE_DIR}/generate_programs_list.py)
 find_program(PROGRAMMER ${CMAKE_SOURCE_DIR}/pico_programmer/programmer.py)
+find_program(EXTRACT_SYMBOLS ${PROJECT_SOURCE_DIR}/extract_symbols.py REQUIRED)
 
 set(ASM_PROGRAMS "" CACHE STRING "A list of programs to build. Empty means all.")
 set(ASM_AUTOSTART_PROGRAM "" CACHE STRING
@@ -72,11 +73,17 @@ add_custom_command(
 #
 add_custom_command(
     OUTPUT ${PROJECT_BINARY_DIR}/rom.bin
+           ${PROJECT_BINARY_DIR}/symbols.txt
     COMMAND ${P2BIN} -segment CODE ${PROJECT_BINARY_DIR}/monitor.p ${PROJECT_BINARY_DIR}/programs.p ${PROJECT_BINARY_DIR}/rom.bin
+    COMMAND ${EXTRACT_SYMBOLS} -o ${PROJECT_BINARY_DIR}/symbols.txt
+            ${PROJECT_SOURCE_DIR}/monitor.lst
+            ${PROJECT_SOURCE_DIR}/programs.lst
     DEPENDS ${PROJECT_BINARY_DIR}/monitor.p
             ${PROJECT_BINARY_DIR}/programs.p
+            ${PROJECT_SOURCE_DIR}/monitor.lst
+            ${PROJECT_SOURCE_DIR}/programs.lst
             ${P2BIN}
-    COMMENT "Generating ROM"
+    COMMENT "Generating ROM and symbol table"
 )
 
 #

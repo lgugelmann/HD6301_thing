@@ -6,6 +6,7 @@
 #include <span>
 #include <stack>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "absl/status/status.h"
@@ -30,6 +31,12 @@ class Disassembler {
   // set_instruction_boundary_hint. Returns an error if nothing could be
   // disassembled.
   absl::Status disassemble();
+
+  // Load symbol names from a symbols file (format: "ADDR name" per line,
+  // ADDR is 4 uppercase hex digits). Call after set_data() but before
+  // disassemble() so real names take priority over auto-generated loc_XXXX
+  // labels. Dotted names like "foo.bar" are displayed as ".bar".
+  absl::Status load_symbols(std::string_view symbols_file_path);
 
   // Print the disassembled data at 'address'.
   std::string print_line(uint16_t address);

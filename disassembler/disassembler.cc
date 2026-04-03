@@ -1,12 +1,14 @@
 #include "disassembler.h"
 
 #include <cstdint>
+#include <fstream>
 #include <optional>
 #include <ranges>
 #include <set>
 #include <span>
 #include <stack>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "absl/log/log.h"
@@ -121,6 +123,49 @@ void Disassembler::update_label(uint16_t address, std::string_view label) {
   }
 }
 
+// Returns the display form of a label: dotted names like "foo.bar" are
+// shortened to ".bar" to indicate locality; plain names are unchanged.
+static std::string display_label(std::string_view label) {
+  size_t dot = label.find('.');
+  if (dot != std::string_view::npos) {
+    return std::string(label.substr(dot));
+  }
+  return std::string(label);
+}
+
+absl::Status Disassembler::load_symbols(std::string_view symbols_file_path) {
+  std::ifstream file{std::string(symbols_file_path)};
+  if (!file.is_open()) {
+    return absl::NotFoundError(
+        absl::StrCat("Cannot open symbols file: ", symbols_file_path));
+  }
+
+  // Format: one symbol per line, "ADDR name" where ADDR is 4 uppercase hex
+  // digits and name is the full symbol name (e.g. "validate_name.loop").
+  int symbols_loaded = 0;
+  std::string line;
+  while (std::getline(file, line)) {
+    if (line.empty() || line[0] == '#') continue;
+    size_t space = line.find(' ');
+    if (space == std::string::npos) continue;
+    std::string addr_str = line.substr(0, space);
+    std::string name = line.substr(space + 1);
+    if (name.empty()) continue;
+    uint32_t address =
+        static_cast<uint32_t>(std::stoul(addr_str, nullptr, 16));
+    if (address > 0xffff) continue;
+    if (annotations_[static_cast<uint16_t>(address)].has_value()) {
+      update_label(static_cast<uint16_t>(address), name);
+      ++symbols_loaded;
+    }
+  }
+
+  if (symbols_loaded == 0) {
+    LOG(WARNING) << "No symbols loaded from: " << symbols_file_path;
+  }
+  return absl::OkStatus();
+}
+
 absl::Status Disassembler::decode_vectors() {
   const auto vectors = std::vector<std::pair<std::string, uint16_t>>{
       {"start", 0xfffe},
@@ -155,7 +200,7 @@ absl::Status Disassembler::decode_vectors() {
     disassembly_[address] = print_annotation(address);
 
     annotations_[destination]->instruction = {.instruction = Instruction{}};
-    annotations_[destination]->label = absl::StrCat("vec_", label);
+    update_label(destination, absl::StrCat("vec_", label));
     worklist_.push(destination);
   }
   return absl::OkStatus();
@@ -248,9 +293,10 @@ std::string Disassembler::print_annotation(uint16_t address) {
   }
   std::string annotation;
   if (annotations_[address]->label.has_value()) {
-    absl::StrAppend(
-        &annotation,
-        absl::StrFormat("%s:\n", annotations_[address]->label.value()));
+    absl::StrAppend(&annotation,
+                    absl::StrFormat("%s:\n", display_label(
+                                                annotations_[address]->label
+                                                    .value())));
   }
   if (annotations_[address]->instruction.has_value()) {
     absl::StrAppend(&annotation, print_instruction(address));
@@ -283,7 +329,7 @@ std::string Disassembler::print_instruction(uint16_t address) {
   if (destination.has_value()) {
     uint16_t dest = destination.value();
     if (annotations_[dest]->label.has_value()) {
-      destination_label = annotations_[dest]->label.value();
+      destination_label = display_label(annotations_[dest]->label.value());
     }
   }
   std::string byte_string =
