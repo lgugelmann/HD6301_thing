@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.20)
 project(asm)
 
 # ASL and p2bin are built from the submodule in dependencies/asl

@@ -15,8 +15,8 @@ namespace eight_bit {
 // mode 0 only.
 class SPI {
  public:
-  typedef std::function<uint8_t(uint8_t)> byte_received_callback;
-  typedef std::function<uint8_t(bool)> chip_select_callback;
+  using byte_received_callback = std::function<uint8_t(uint8_t)>;
+  using chip_select_callback = std::function<uint8_t(bool)>;
 
   ~SPI() = default;
   SPI(const SPI&) = delete;

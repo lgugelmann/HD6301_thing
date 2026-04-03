@@ -20,8 +20,8 @@ class AddressSpace {
   AddressSpace& operator=(const AddressSpace&) = delete;
   ~AddressSpace() = default;
 
-  typedef std::function<uint8_t(uint16_t)> read_callback;
-  typedef std::function<void(uint16_t, uint8_t)> write_callback;
+  using read_callback = std::function<uint8_t(uint16_t)>;
+  using write_callback = std::function<void(uint16_t, uint8_t)>;
 
   // Registers a read callback for a given address range. Returns an error if
   // any part of the range is already registered for reads. Start and end are

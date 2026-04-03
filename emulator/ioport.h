@@ -21,9 +21,9 @@ namespace eight_bit {
 // "inside" the chip) or inputs (from "outside" the chip).
 class IOPort {
  public:
-  typedef std::function<uint8_t()> input_read_callback;
-  typedef std::function<void(uint8_t)> output_change_callback;
-  typedef std::function<void(uint8_t)> input_change_callback;
+  using input_read_callback = std::function<uint8_t()>;
+  using output_change_callback = std::function<void(uint8_t)>;
+  using input_change_callback = std::function<void(uint8_t)>;
 
   IOPort(std::string_view name);
   ~IOPort() = default;

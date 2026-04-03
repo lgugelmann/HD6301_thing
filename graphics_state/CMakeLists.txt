@@ -24,7 +24,7 @@ if (TARGET GTest::gtest_main)
   )
   add_executable(graphics_state_test ${test_SOURCES})
   set(TESTDATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/testdata")
-  add_definitions(-DTESTDATA_DIR="${TESTDATA_DIR}")
+  target_compile_definitions(graphics_state_test PRIVATE TESTDATA_DIR="${TESTDATA_DIR}")
   target_compile_options(graphics_state_test PRIVATE -Wall -Wextra -Werror)
   target_link_libraries(graphics_state_test
       GTest::gtest_main

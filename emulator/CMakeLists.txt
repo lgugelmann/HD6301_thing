@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.20)
 project(emulator)
 
 option(GPERFTOOLS_BUILD "Enable profiling with gperftools" OFF)
@@ -70,7 +70,7 @@ target_link_libraries(hexdump_lib
 
 add_executable(emulator ${emulator_SOURCES})
 
-target_include_directories(emulator PUBLIC "${PROJECT_SOURCE_DIR}" ${SDL2_INCLUDE_DIRS})
+target_include_directories(emulator PUBLIC "${PROJECT_SOURCE_DIR}")
 
 target_compile_options(emulator PRIVATE -Wall -Wextra -Werror -Wno-gcc-compat)
 
@@ -93,7 +93,11 @@ if (RtMidi_FOUND)
     target_link_libraries(emulator RtMidi::rtmidi)
 endif()
 if (GPERFTOOLS_BUILD)
-    target_link_libraries(emulator profiler)
+    find_library(PROFILER_LIB profiler)
+    if (NOT PROFILER_LIB)
+        message(FATAL_ERROR "GPERFTOOLS_BUILD enabled but libprofiler not found")
+    endif()
+    target_link_libraries(emulator ${PROFILER_LIB})
 endif()
 
 enable_testing()

@@ -42,7 +42,7 @@ board.
 
 ## How to compile
 
-The emulator has a hard dependency on SDL2, and an optional one on RtMidi. It
+The emulator has a hard dependency on SDL3, and an optional one on RtMidi. It
 can be built using CMake. Create a build directory somewhere, e.g.
 `emulator/build`. Then in that directory run `cmake [path to CMakeList.txt]`. In
 the example before that's `cmake ..`. After successfully configuring, run `make`

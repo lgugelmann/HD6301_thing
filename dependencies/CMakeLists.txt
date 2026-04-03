@@ -24,7 +24,8 @@ set(IMGUI_SOURCES
     imgui/backends/imgui_impl_sdlrenderer3.cpp
 )
 add_library(imgui STATIC ${IMGUI_SOURCES})
-target_include_directories(imgui PUBLIC imgui imgui/backends ${SDL2_INCLUDE_DIRS})
+target_include_directories(imgui PUBLIC imgui imgui/backends)
+target_link_libraries(imgui PUBLIC SDL3::SDL3)
 set_source_files_properties(${IMGUI_SOURCES} PROPERTIES SKIP_LINTING ON)
 
 # Nuked-OPL3

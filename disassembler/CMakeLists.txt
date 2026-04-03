@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.20)
 project(disassembler)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -44,7 +44,7 @@ set(test_SOURCES
 
 add_executable(disassembler_test ${test_SOURCES})
 set(TESTDATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/testdata")
-add_definitions(-DTESTDATA_DIR="${TESTDATA_DIR}")
+target_compile_definitions(disassembler_test PRIVATE TESTDATA_DIR="${TESTDATA_DIR}")
 target_compile_options(disassembler_test PRIVATE -Wall -Wextra -Werror -Wno-gcc-compat)
 target_link_libraries(disassembler_test
     GTest::gtest_main
