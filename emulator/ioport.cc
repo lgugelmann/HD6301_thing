@@ -42,6 +42,9 @@ void IOPort::write_data_direction_register(uint8_t direction_mask) {
   VLOG(1) << "Setting direction for " << name_ << " to "
           << absl::Hex(direction_mask, absl::kZeroPad2);
   data_direction_ = direction_mask;
+  for (const auto& callback : ddr_change_callbacks_) {
+    callback(direction_mask);
+  }
 }
 
 uint8_t IOPort::read_data_direction_register() const { return data_direction_; }
@@ -54,6 +57,11 @@ void IOPort::register_output_change_callback(
 void IOPort::register_input_change_callback(
     const input_change_callback& callback) {
   input_change_callbacks_.push_back(callback);
+}
+
+void IOPort::register_ddr_change_callback(
+    const ddr_change_callback& callback) {
+  ddr_change_callbacks_.push_back(callback);
 }
 
 }  // namespace eight_bit

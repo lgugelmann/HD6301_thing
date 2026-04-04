@@ -59,11 +59,18 @@ class IOPort {
   // provide_inputs().
   void register_input_change_callback(const input_change_callback& callback);
 
+  using ddr_change_callback = std::function<void(uint8_t)>;
+
+  // Registers a callback that's called when the data direction register
+  // changes. The callback receives the new direction register value.
+  void register_ddr_change_callback(const ddr_change_callback& callback);
+
  private:
   std::string name_;
   // Callbacks for event-driven reaction to changes.
   std::vector<output_change_callback> output_change_callbacks_;
   std::vector<input_change_callback> input_change_callbacks_;
+  std::vector<ddr_change_callback> ddr_change_callbacks_;
 
   // Bits set to 0 are inputs, bits set to 1 are outputs.
   uint8_t data_direction_ = 0;
