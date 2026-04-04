@@ -20,6 +20,7 @@
 #include "sound_opl3.h"
 #include "spi.h"
 #include "tl16c2550.h"
+#include "mcp7940n.h"
 #include "w65c22.h"
 #include "w65c22_to_spi_glue.h"
 
@@ -85,6 +86,7 @@ class HD6301Thing {
       ABSL_GUARDED_BY(emulator_mutex_);
   std::unique_ptr<SPI> spi_ ABSL_GUARDED_BY(emulator_mutex_);
   std::unique_ptr<SDCardSPI> sd_card_spi_ ABSL_GUARDED_BY(emulator_mutex_);
+  std::unique_ptr<MCP7940N> mcp7940n_ ABSL_GUARDED_BY(emulator_mutex_);
 #ifdef HAVE_MIDI
   std::unique_ptr<MidiToSerial> midi_to_serial_
       ABSL_GUARDED_BY(emulator_mutex_);

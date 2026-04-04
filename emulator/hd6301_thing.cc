@@ -14,6 +14,7 @@
 #include "ps2_keyboard_6301.h"
 #include "ram.h"
 #include "rom.h"
+#include "mcp7940n.h"
 #include "sound_opl3.h"
 #include "spi.h"
 #include "tl16c2550.h"
@@ -111,6 +112,9 @@ absl::StatusOr<std::unique_ptr<HD6301Thing>> HD6301Thing::create(
   auto* w65c22_to_spi_glue_ptr = hd6301_thing->w65c22_to_spi_glue_.get();
   hd6301_thing->cpu_->register_tick_callback(
       [w65c22_to_spi_glue_ptr]() { w65c22_to_spi_glue_ptr->tick(); });
+
+  hd6301_thing->mcp7940n_ =
+      eight_bit::MCP7940N::create(hd6301_thing->w65c22_->port_a());
 
   auto spi = eight_bit::SPI::create(
       hd6301_thing->w65c22_->port_ca(), W65C22::kCa2Pin /* CS */,

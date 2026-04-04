@@ -26,6 +26,7 @@ set(emulator_SOURCES
     hd6301_serial.cc
     hd6301_thing.cc
     ioport.cc
+    mcp7940n.cc
     ps2_keyboard_6301.cc
     ram.cc
     rom.cc
