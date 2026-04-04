@@ -6,8 +6,15 @@ __i2c_inc = 1
         include registers
 
         SECTION i2c
-        PUBLIC i2c_init
+        PUBLIC_SHARED i2c_init
+        PUBLIC_SHARED i2c_start
+        PUBLIC_SHARED i2c_stop
+        PUBLIC_SHARED i2c_write_byte
+        PUBLIC_SHARED i2c_read_byte
         PUBLIC_SHARED i2c_send_byte
+
+        ; One-byte scratch buffer used by i2c_read_byte.
+        reserve_system_memory i2c_recv_buf, 1
 
 ; A simple bit-banging i2c implementation. Assumes no clock stretching or bus
 ; sharing. The idea is to write a 0 into the output register for the SCL/SDA
@@ -122,6 +129,40 @@ i2c_send_byte:
 .ack_error:
         jmp i2c_stop
         ; rts in i2c_stop
+
+; Reads one byte from I2C and sends ACK or NACK at the end.
+; On entry: SCL is high, B = DDRA state. A = 0 for ACK, non-zero for NACK.
+; On exit: A = byte read, SCL is high, B = DDRA state. Clobbers X.
+i2c_read_byte:
+        psh a                   ; save ACK/NACK flag
+        clr i2c_recv_buf
+        ldx #8
+.bit_loop:
+        i2c_scl_low
+        i2c_sda_high            ; release SDA so slave can drive it
+        i2c_scl_high
+        lda i2c_recv_buf
+        asl a
+        sta i2c_recv_buf
+        lda IO_IRA
+        and a,#I2C_SDA          ; isolate SDA (bit 1)
+        beq .bit0
+        inc i2c_recv_buf        ; set the LSB of the accumulator
+.bit0:
+        dex
+        bne .bit_loop
+        ; Send ACK or NACK
+        i2c_scl_low
+        pul a                   ; A = 0 for ACK, non-zero for NACK
+        bne .send_nack
+        i2c_sda_low             ; ACK: drive SDA low
+        bra .clock_ack
+.send_nack:
+        i2c_sda_high            ; NACK: release SDA
+.clock_ack:
+        i2c_scl_high            ; clock the ACK/NACK bit
+        lda i2c_recv_buf
+        rts
 
         ENDSECTION i2c
 
