@@ -67,7 +67,6 @@ absl::StatusOr<std::unique_ptr<HD6301Thing>> HD6301Thing::create(
     return cpu_or.status();
   }
   hd6301_thing->cpu_ = std::move(cpu_or.value());
-  hd6301_thing->cpu_->reset();
   std::cout << "CPU serial port: "
             << hd6301_thing->cpu_->get_serial()->get_pty_name() << std::endl;
 
@@ -156,6 +155,7 @@ absl::StatusOr<std::unique_ptr<HD6301Thing>> HD6301Thing::create(
 void HD6301Thing::load_rom(uint16_t address, std::span<uint8_t> data) {
   absl::MutexLock lock(&emulator_mutex_);
   rom_->load(address, data);
+  cpu_->reset();
 }
 
 void HD6301Thing::load_sd_image(
