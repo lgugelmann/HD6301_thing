@@ -154,6 +154,9 @@ i2c_read_byte:
         ; Send ACK or NACK
         i2c_scl_low
         pul a                   ; A = 0 for ACK, non-zero for NACK
+        ; stb in i2c_scl_low sets CC based on B (not A), so we must
+        ; explicitly update CC based on A before branching.
+        tst a
         bne .send_nack
         i2c_sda_low             ; ACK: drive SDA low
         bra .clock_ack
