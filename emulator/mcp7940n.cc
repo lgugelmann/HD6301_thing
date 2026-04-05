@@ -105,6 +105,10 @@ void MCP7940N::on_scl_falling() {
       break;
 
     case State::kMasterAcking:
+      // Release SDA so the master can drive ACK or NACK.
+      port_a_->provide_inputs(kSDAMask, kSDAMask);
+      break;
+
     case State::kIdle:
       break;
   }
@@ -139,8 +143,9 @@ void MCP7940N::on_scl_rising() {
     case State::kSendingData:
       ++bit_count_;
       if (bit_count_ == 8) {
-        // Release SDA so the master can assert ACK or NACK.
-        port_a_->provide_inputs(kSDAMask, kSDAMask);
+        // All 8 bits sent.  Keep driving SDA until the next falling edge
+        // (the master's ACK/NACK clock) so the master can still sample the
+        // LSB; we release SDA there in on_scl_falling / kMasterAcking.
         state_ = State::kMasterAcking;
       }
       break;
