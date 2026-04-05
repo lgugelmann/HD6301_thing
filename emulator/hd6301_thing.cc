@@ -194,6 +194,16 @@ void HD6301Thing::tick(int ticks, bool ignore_breakpoint) {
   cpu_->tick(ticks, ignore_breakpoint);
 }
 
+std::string HD6301Thing::get_screen_text() {
+  absl::MutexLock lock(&emulator_mutex_);
+  return graphics_->get_screen_text();
+}
+
+std::string HD6301Thing::get_serial_pty_name() {
+  absl::MutexLock lock(&emulator_mutex_);
+  return cpu_->get_serial()->get_pty_name();
+}
+
 Cpu6301::CpuState HD6301Thing::get_cpu_state() {
   absl::MutexLock lock(&emulator_mutex_);
   return cpu_->get_state();

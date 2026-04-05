@@ -2,6 +2,9 @@
 
 #include <SDL3/SDL.h>
 
+#include <string>
+#include <string_view>
+
 #include "../pico_graphics/font.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
@@ -137,6 +140,23 @@ void Graphics::render_console() {
     }
   }
   SDL_UnlockSurface(frame_surface_);
+}
+
+std::string Graphics::get_screen_text() {
+  absl::MutexLock lock(&graphics_state_mutex_);
+  const char* buf = graphics_state_.GetCharBuf();
+  std::string result;
+  result.reserve(kNumRows * (kNumColumns + 1));
+  for (int row = 0; row < kNumRows; ++row) {
+    std::string_view line(buf + row * kNumColumns, kNumColumns);
+    // Strip trailing spaces.
+    auto last = line.find_last_not_of(' ');
+    if (last != std::string_view::npos) {
+      result += line.substr(0, last + 1);
+    }
+    result += '\n';
+  }
+  return result;
 }
 
 }  // namespace eight_bit

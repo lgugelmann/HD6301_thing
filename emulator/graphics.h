@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "absl/status/status.h"
@@ -30,6 +31,10 @@ class Graphics {
   absl::Status render(SDL_Renderer* renderer,
                       SDL_FRect* destination_rect = nullptr)
       ABSL_LOCKS_EXCLUDED(graphics_state_mutex_);
+
+  // Returns the current screen contents as text: kNumRows lines of kNumColumns
+  // characters, separated by '\n'. Trailing space is stripped from each line.
+  std::string get_screen_text() ABSL_LOCKS_EXCLUDED(graphics_state_mutex_);
 
  private:
   Graphics(AddressSpace* address_space, uint16_t base_address);

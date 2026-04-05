@@ -58,6 +58,12 @@ class HD6301Thing {
   std::string get_ram_hexdump();
   absl::Status render_graphics(SDL_Renderer* renderer,
                                SDL_FRect* destination_rect = nullptr);
+  // Returns the current PTY device path for the CPU's built-in serial port.
+  // The serial may recreate the PTY if the slave end is disconnected, so this
+  // queries the live name rather than returning a cached value.
+  std::string get_serial_pty_name();
+  // Returns the current screen contents as text rows (for headless mode).
+  std::string get_screen_text();
 
  private:
   HD6301Thing(int ticks_per_second, KeyboardType keyboard_type);
@@ -91,6 +97,7 @@ class HD6301Thing {
   std::unique_ptr<MidiToSerial> midi_to_serial_
       ABSL_GUARDED_BY(emulator_mutex_);
 #endif
+
 
   // Locking the mutex to read these is expensive enough to show up on profiles.
   // These atomic booelans are significantly faster.

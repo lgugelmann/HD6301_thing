@@ -18,10 +18,10 @@ endif()
 
 add_subdirectory(../graphics_state graphics_state)
 
-set(emulator_SOURCES
+# Sources shared between emulator and headless_emulator (no main()).
+set(emulator_COMMON_SOURCES
     address_space.cc
     cpu6301.cc
-    emulator.cc
     graphics.cc
     hd6301_serial.cc
     hd6301_thing.cc
@@ -39,8 +39,10 @@ set(emulator_SOURCES
     w65c22_to_spi_glue.cc
 )
 if (RtMidi_FOUND)
-    list(APPEND emulator_SOURCES midi_to_serial.cc)
+    list(APPEND emulator_COMMON_SOURCES midi_to_serial.cc)
 endif()
+
+set(emulator_SOURCES ${emulator_COMMON_SOURCES} emulator.cc)
 
 set(EMULATOR_CLANG_TIDY_CHECKS
     abseil-*
@@ -101,6 +103,31 @@ if (GPERFTOOLS_BUILD)
     target_link_libraries(emulator ${PROFILER_LIB})
 endif()
 
+add_executable(headless_emulator
+    ${emulator_COMMON_SOURCES}
+    headless_emulator.cc
+)
+target_include_directories(headless_emulator PUBLIC "${PROJECT_SOURCE_DIR}")
+target_compile_options(headless_emulator PRIVATE -Wall -Wextra -Werror -Wno-gcc-compat)
+target_link_libraries(headless_emulator
+    SDL3::SDL3
+    absl::flags_parse
+    absl::log
+    absl::log_initialize
+    $<LINK_LIBRARY:WHOLE_ARCHIVE,absl::log_flags>
+    absl::status
+    absl::statusor
+    absl::synchronization
+    imgui
+    nuked-opl3
+    disassembler_lib
+    graphics_state_lib
+    hexdump_lib
+)
+if (RtMidi_FOUND)
+    target_link_libraries(headless_emulator RtMidi::rtmidi)
+endif()
+
 enable_testing()
 
 include(GoogleTest)
@@ -112,6 +139,8 @@ add_executable(emulator_tests
     hexdump_test.cc
     ioport.cc
     hexdump.cc
+    mcp7940n.cc
+    mcp7940n_test.cc
     spi.cc
     spi_test.cc
     timer.cc
