@@ -20,3 +20,4 @@ enable_testing()
 
 add_subdirectory(disassembler)
 add_subdirectory(emulator)
+add_subdirectory(asm/tests)

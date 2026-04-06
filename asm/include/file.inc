@@ -179,9 +179,9 @@ file_init:
         ; per cluster.
         ldb $0d,x
         stb fat_sectors_per_cluster
+        clr a
         lsr b
         beq .mask_loop_end      ; in case fat_sectors_per_cluster is 1
-        clr a
 .mask_loop:
         aba                     ; B+A -> A
         lsr b
@@ -401,6 +401,16 @@ file_open:
         sta FD_READ_PTR_OFFSET,x
         sta FD_READ_PTR_OFFSET+1,x
 
+        ; Compute FD number = (X - fd_table) / FD_STRUCT_SIZE.
+        ; With only FD_TABLE_ENTRIES=2 entries, compare directly.
+        xgdx                    ; D = FD struct address
+        subd #fd_table          ; D = 0 for FD 0, FD_STRUCT_SIZE for FD 1
+        bne .fd_number_is_one
+        clr a                   ; FD number 0
+        bra .fd_number_done
+.fd_number_is_one:
+        lda #1                  ; FD number 1
+.fd_number_done:
         drop2                   ; Dir entry pointer
         drop2                   ; FD pointer
         drop2                   ; name pointer
@@ -424,7 +434,7 @@ file_open:
 file_close:
         cmp a,#FD_TABLE_ENTRIES
         bge .end                ; A isn't pointing to a valid FD, ignore.
-        ldb #FD_TABLE_SIZE
+        ldb #FD_STRUCT_SIZE
         mul                     ; Result is entirely in B, max size is <255
         ldx #fd_table
         abx                     ; X now points to our FD entry
@@ -837,7 +847,7 @@ find_dir_entry:
 ; set if the name is valid, cleared if it isn't.
 validate_name:
         pshx
-        ldb #12
+        ldb #13
 .loop:
         lda 0,x
         beq .found_zero
